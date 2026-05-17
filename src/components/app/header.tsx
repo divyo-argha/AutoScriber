@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Settings, Mic, RotateCcw, History } from 'lucide-react';
@@ -28,6 +28,13 @@ export function Header() {
   } = useAppStore();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Listen for custom event to open settings (from error recovery)
+  useEffect(() => {
+    const handler = () => setSettingsOpen(true);
+    window.addEventListener('open-settings', handler);
+    return () => window.removeEventListener('open-settings', handler);
+  }, []);
 
   const allModels = [
     ...availableModels,

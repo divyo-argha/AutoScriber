@@ -162,11 +162,12 @@ export const useAppStore = create<AppState>((set) => ({
 
   reset: () => set((prev) => {
     // Revoke old audio URL to prevent memory leak
-    if (prev.audioUrl) {
+    if (prev.audioUrl && !prev.audioUrl.startsWith('/api/')) {
       try { URL.revokeObjectURL(prev.audioUrl); } catch {}
     }
     return {
       ...initialState,
+      // Preserve settings
       geminiApiKey: prev.geminiApiKey,
       geminiApiBaseUrl: prev.geminiApiBaseUrl,
       ollamaUrl: prev.ollamaUrl,
@@ -174,6 +175,7 @@ export const useAppStore = create<AppState>((set) => ({
       overlapDuration: prev.overlapDuration,
       ollamaModels: prev.ollamaModels,
       historyJobs: prev.historyJobs,
+      selectedModel: prev.selectedModel,
     };
   }),
 }));

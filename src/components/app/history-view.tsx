@@ -16,9 +16,11 @@ import {
   Loader2,
   AlertTriangle,
   History,
+  Download,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { TranscriptionResult } from '@/lib/transcriber/types';
+import type { TranscriptionResult, TranscriptionSegment } from '@/lib/transcriber/types';
+import { formatTime, formatTimeSRT } from '@/lib/format-utils';
 
 interface HistoryJobFull {
   id: string;
@@ -98,6 +100,9 @@ export function HistoryView() {
         if (job.status === 'completed' && job.result) {
           const result: TranscriptionResult = JSON.parse(job.result);
           if (result.segments && result.segments.length > 0) {
+            // Clear uploadedFile since we're loading from history (audio comes from /api/audio)
+            setUploadedFile(null);
+            // Set the transcription result with the job ID so AudioPlayer can load audio from /api/audio
             setTranscriptionResult(result.segments, result.fullText, job.id);
             setCurrentView('result');
             return;
@@ -109,7 +114,7 @@ export function HistoryView() {
       console.error('Failed to load job:', err);
       alert('Failed to load transcription.');
     }
-  }, [setTranscriptionResult, setCurrentView]);
+  }, [setTranscriptionResult, setCurrentView, setUploadedFile]);
 
   const deleteJob = useCallback(async (jobId: string) => {
     if (!confirm('Delete this transcription? This cannot be undone.')) return;
@@ -125,6 +130,55 @@ export function HistoryView() {
       setDeleting(null);
     }
   }, []);
+
+  const exportFromHistory = useCallback((jobId: string, format: 'txt' | 'md' | 'srt') => {
+    const job = jobs.find(j => j.id === jobId);
+    if (!job?.result) return;
+
+    try {
+      const result: TranscriptionResult = JSON.parse(job.result);
+      const segments = result.segments;
+      let content = '';
+      let filename = job.fileName.replace(/\.[^/.]+$/, '');
+      let mimeType = 'text/plain';
+
+      switch (format) {
+        case 'txt':
+          content = segments
+            .map(seg => `[${formatTime(seg.startTime)}] ${seg.speaker}: ${seg.text}`)
+            .join('\n');
+          filename += '.txt';
+          break;
+        case 'md':
+          content = generateMarkdown(segments, filename);
+          filename += '.md';
+          break;
+        case 'srt':
+          content = segments
+            .map((seg, idx) => {
+              const index = idx + 1;
+              const start = formatTimeSRT(seg.startTime);
+              const end = formatTimeSRT(seg.endTime);
+              return `${index}\n${start} --> ${end}\n${seg.speaker}: ${seg.text}\n`;
+            })
+            .join('\n');
+          filename += '.srt';
+          break;
+      }
+
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+    }
+  }, [jobs]);
 
   const completedJobs = jobs.filter(j => j.status === 'completed');
   const otherJobs = jobs.filter(j => j.status !== 'completed');
@@ -267,23 +321,56 @@ export function HistoryView() {
                               transition={{ duration: 0.2 }}
                               className="overflow-hidden"
                             >
-                              <div className="border-t px-4 py-3 max-h-[200px] overflow-y-auto bg-muted/30">
-                                {resultData.segments.slice(0, 10).map((seg: Record<string, unknown>, idx: number) => (
-                                  <div key={idx} className="flex gap-2 py-1 text-xs">
-                                    <span className="text-muted-foreground font-mono shrink-0">
-                                      {typeof seg.startTime === 'number'
-                                        ? `${Math.floor(seg.startTime / 60)}:${Math.floor(seg.startTime % 60).toString().padStart(2, '0')}`
-                                        : '0:00'}
-                                    </span>
-                                    <span className="font-medium shrink-0">{seg.speaker}:</span>
-                                    <span className="text-muted-foreground truncate">{seg.text as string}</span>
-                                  </div>
-                                ))}
-                                {resultData.segments.length > 10 && (
-                                  <p className="text-xs text-muted-foreground mt-1 italic">
-                                    ...and {resultData.segments.length - 10} more segments. Click "View" to see full transcription.
-                                  </p>
-                                )}
+                              <div className="border-t px-4 py-3 space-y-3 bg-muted/30">
+                                <div className="max-h-[200px] overflow-y-auto">
+                                  {resultData.segments.slice(0, 10).map((seg: Record<string, unknown>, idx: number) => (
+                                    <div key={idx} className="flex gap-2 py-1 text-xs">
+                                      <span className="text-muted-foreground font-mono shrink-0">
+                                        {typeof seg.startTime === 'number'
+                                          ? `${Math.floor(seg.startTime / 60)}:${Math.floor(seg.startTime % 60).toString().padStart(2, '0')}`
+                                          : '0:00'}
+                                      </span>
+                                      <span className="font-medium shrink-0">{seg.speaker}:</span>
+                                      <span className="text-muted-foreground truncate">{seg.text as string}</span>
+                                    </div>
+                                  ))}
+                                  {resultData.segments.length > 10 && (
+                                    <p className="text-xs text-muted-foreground mt-1 italic">
+                                      ...and {resultData.segments.length - 10} more segments. Click "View" to see full transcription.
+                                    </p>
+                                  )}
+                                </div>
+                                {/* Quick export from history */}
+                                <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Download className="w-3 h-3" />
+                                    Quick export:
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-[10px] gap-1"
+                                    onClick={(e) => { e.stopPropagation(); exportFromHistory(job.id, 'txt'); }}
+                                  >
+                                    TXT
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-[10px] gap-1"
+                                    onClick={(e) => { e.stopPropagation(); exportFromHistory(job.id, 'md'); }}
+                                  >
+                                    MD
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-[10px] gap-1"
+                                    onClick={(e) => { e.stopPropagation(); exportFromHistory(job.id, 'srt'); }}
+                                  >
+                                    SRT
+                                  </Button>
+                                </div>
                               </div>
                             </motion.div>
                           )}
@@ -338,4 +425,19 @@ export function HistoryView() {
       )}
     </div>
   );
+}
+
+function generateMarkdown(segments: TranscriptionSegment[], fileName: string): string {
+  const uniqueSpeakers = [...new Set(segments.map(s => s.speaker))];
+  let md = `# Transcription - ${fileName}\n\n`;
+  md += `> Generated by **autoScriber**\n\n`;
+  md += `## Speakers\n\n`;
+  for (const speaker of uniqueSpeakers) {
+    md += `- **${speaker}**\n`;
+  }
+  md += `\n---\n\n## Transcript\n\n`;
+  for (const seg of segments) {
+    md += `**[${formatTime(seg.startTime)}]** **${seg.speaker}:** ${seg.text}\n\n`;
+  }
+  return md;
 }

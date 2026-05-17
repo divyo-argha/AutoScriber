@@ -20,6 +20,34 @@ function ensureAudioStorageDir() {
   }
 }
 
+/**
+ * Detect if an error is a Gemini "location not supported" error
+ * and return a user-friendly error with actionable suggestions.
+ */
+function classifyGeminiError(err: unknown): { isLocationError: boolean; message: string; suggestion: string } {
+  const errMsg = err instanceof Error ? err.message : String(err);
+
+  const isLocationError =
+    errMsg.includes('User location is not supported') ||
+    errMsg.includes('location is not supported for the API use') ||
+    errMsg.includes('not available in your country') ||
+    errMsg.includes('REGION') && errMsg.includes('not supported');
+
+  if (isLocationError) {
+    return {
+      isLocationError: true,
+      message: 'Gemini API is not available in your region.',
+      suggestion: 'You can fix this by: (1) Setting up a proxy URL in Settings → Cloud → API Base URL, or (2) Switching to a local Ollama model. Go to Settings → Local to set up Ollama with a Gemma model.',
+    };
+  }
+
+  return {
+    isLocationError: false,
+    message: errMsg,
+    suggestion: '',
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -140,6 +168,7 @@ export async function POST(request: NextRequest) {
       const allSegments: TranscriptionSegment[] = [];
       const chunkErrors: string[] = [];
       let chunksDone = 0;
+      let hasLocationError = false;
 
       for (const chunk of chunks) {
         try {
@@ -152,7 +181,7 @@ export async function POST(request: NextRequest) {
               modelId,
               chunk.index,
               chunk.startTime,
-              geminiApiBaseUrl || undefined // Pass custom base URL for proxy support
+              geminiApiBaseUrl || undefined
             );
           } else {
             result = await transcribeChunkWithOllama(
@@ -179,9 +208,16 @@ export async function POST(request: NextRequest) {
             },
           });
         } catch (chunkErr) {
+          const classified = classifyGeminiError(chunkErr);
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
           console.error(`[transcribe] Error processing chunk ${chunk.index}:`, errMsg);
-          chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
+
+          if (classified.isLocationError) {
+            hasLocationError = true;
+            chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
+          } else {
+            chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
+          }
           chunksDone++;
         }
       }
@@ -189,9 +225,18 @@ export async function POST(request: NextRequest) {
       console.log(`[transcribe] Total segments collected: ${allSegments.length}`);
 
       if (allSegments.length === 0) {
-        const errorDetail = chunkErrors.length > 0
-          ? `Transcription produced no results. Errors: ${chunkErrors.join('; ')}`
-          : 'Transcription produced no results. The audio may be empty, too quiet, or in an unsupported format.';
+        // Build a helpful error message
+        let errorDetail: string;
+        let errorType: string = 'generic';
+
+        if (hasLocationError) {
+          errorDetail = `Gemini API is not available in your region. ${chunkErrors.map(e => e.replace(/^Chunk \d+:\s*/, '')).join(' ')}`;
+          errorType = 'location_blocked';
+        } else if (chunkErrors.length > 0) {
+          errorDetail = `Transcription produced no results. Errors: ${chunkErrors.join('; ')}`;
+        } else {
+          errorDetail = 'Transcription produced no results. The audio may be empty, too quiet, or in an unsupported format.';
+        }
 
         await db.transcriptionJob.update({
           where: { id: job.id },
@@ -209,6 +254,7 @@ export async function POST(request: NextRequest) {
           jobId: job.id,
           status: 'failed',
           error: errorDetail,
+          errorType,
         }, { status: 422 });
       }
 
@@ -247,7 +293,17 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (processErr) {
-      const errorMessage = processErr instanceof Error ? processErr.message : 'Unknown error';
+      const classified = classifyGeminiError(processErr);
+      let errorMessage: string;
+      let errorType: string | undefined;
+
+      if (classified.isLocationError) {
+        errorMessage = classified.message + ' ' + classified.suggestion;
+        errorType = 'location_blocked';
+      } else {
+        errorMessage = processErr instanceof Error ? processErr.message : 'Unknown error';
+      }
+
       console.error('[transcribe] Processing error:', errorMessage);
 
       await db.transcriptionJob.update({
@@ -265,6 +321,7 @@ export async function POST(request: NextRequest) {
         jobId: job.id,
         status: 'failed',
         error: errorMessage,
+        ...(errorType ? { errorType } : {}),
       }, { status: 500 });
     }
 

@@ -14,12 +14,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Key, Server, Cpu, CheckCircle2, XCircle, Loader2, Globe } from 'lucide-react';
+import { Key, Server, Cpu, CheckCircle2, XCircle, Loader2, Globe, AlertTriangle, Wifi } from 'lucide-react';
 
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+type GeminiTestStatus = 'idle' | 'testing' | 'connected' | 'location_blocked' | 'auth_failed' | 'quota_exceeded' | 'error';
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const {
@@ -30,6 +32,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     overlapDuration,
     setSettings,
     setOllamaModels,
+    selectedModel,
+    setSelectedModel,
   } = useAppStore();
 
   const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
@@ -38,6 +42,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [localChunkDuration, setLocalChunkDuration] = useState(String(chunkDuration));
   const [localOverlapDuration, setLocalOverlapDuration] = useState(String(overlapDuration));
   const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'connected' | 'disconnected'>('disconnected');
+  const [geminiStatus, setGeminiStatus] = useState<GeminiTestStatus>('idle');
+  const [geminiErrorMsg, setGeminiErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -59,6 +65,46 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       }
     } catch {
       setOllamaStatus('disconnected');
+    }
+  };
+
+  const testGemini = async () => {
+    if (!localApiKey) {
+      setGeminiStatus('error');
+      setGeminiErrorMsg('Please enter an API key first');
+      return;
+    }
+    setGeminiStatus('testing');
+    setGeminiErrorMsg('');
+    try {
+      const params = new URLSearchParams({
+        apiKey: localApiKey,
+        model: 'gemini-2.5-flash',
+      });
+      if (localApiBaseUrl) {
+        params.set('baseUrl', localApiBaseUrl);
+      }
+      const res = await fetch(`/api/gemini-test?${params}`);
+      const data = await res.json();
+
+      if (data.connected) {
+        setGeminiStatus('connected');
+      } else if (data.errorType === 'location_blocked') {
+        setGeminiStatus('location_blocked');
+        setGeminiErrorMsg(data.suggestion || 'Gemini API is not available in your region.');
+      } else if (data.errorType === 'auth_failed') {
+        setGeminiStatus('auth_failed');
+        setGeminiErrorMsg(data.suggestion || 'API key is invalid.');
+      } else if (data.errorType === 'quota_exceeded') {
+        setGeminiStatus('quota_exceeded');
+        setGeminiErrorMsg(data.suggestion || 'API quota exceeded.');
+      } else {
+        setGeminiStatus('error');
+        setGeminiErrorMsg(data.error || 'Connection test failed');
+      }
+    } catch {
+      setGeminiStatus('error');
+      setGeminiErrorMsg('Failed to test connection. Check your network.');
     }
   };
 
@@ -117,12 +163,92 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           }
         })
         .catch(() => {});
+
+      // Reset test status
+      setGeminiStatus('idle');
+      setGeminiErrorMsg('');
     }
   }, [open, setSettings]);
 
+  const renderGeminiTestResult = () => {
+    switch (geminiStatus) {
+      case 'testing':
+        return (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Testing connection...
+          </div>
+        );
+      case 'connected':
+        return (
+          <div className="flex items-center gap-2 text-sm text-emerald-600">
+            <CheckCircle2 className="w-4 h-4" />
+            Connected! Gemini API is working.
+          </div>
+        );
+      case 'location_blocked':
+        return (
+          <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 space-y-2">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-sm font-medium">
+              <Globe className="w-4 h-4" />
+              Region Not Supported
+            </div>
+            <p className="text-xs text-amber-600 dark:text-amber-500">
+              {geminiErrorMsg}
+            </p>
+            <div className="flex flex-col gap-2 mt-2">
+              <div className="flex items-start gap-2 p-2 rounded bg-amber-100/50 dark:bg-amber-900/20">
+                <Wifi className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-600" />
+                <div>
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Set up a proxy above</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500">Enter a proxy URL in the API Base URL field to route through a supported region.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-2 rounded bg-amber-100/50 dark:bg-amber-900/20">
+                <Cpu className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-600" />
+                <div>
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Switch to local model</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500">Use the Local tab to set up Ollama with a Gemma model for offline transcription.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'auth_failed':
+        return (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">Invalid API Key</p>
+              <p className="text-xs mt-0.5 opacity-80">{geminiErrorMsg}</p>
+            </div>
+          </div>
+        );
+      case 'quota_exceeded':
+        return (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
+            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">Quota Exceeded</p>
+              <p className="text-xs mt-0.5 opacity-80">{geminiErrorMsg}</p>
+            </div>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <p className="text-xs">{geminiErrorMsg}</p>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
@@ -154,7 +280,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 type="password"
                 placeholder="Enter your Gemini API key"
                 value={localApiKey}
-                onChange={(e) => setLocalApiKey(e.target.value)}
+                onChange={(e) => { setLocalApiKey(e.target.value); setGeminiStatus('idle'); }}
               />
               <p className="text-xs text-muted-foreground">
                 Get your API key from{' '}
@@ -177,15 +303,41 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <Input
                 id="gemini-base-url"
                 type="url"
-                placeholder="https://generativelanguage.googleapis.com"
+                placeholder="https://your-proxy.example.com"
                 value={localApiBaseUrl}
-                onChange={(e) => setLocalApiBaseUrl(e.target.value)}
+                onChange={(e) => { setLocalApiBaseUrl(e.target.value); setGeminiStatus('idle'); }}
               />
               <p className="text-xs text-muted-foreground">
-                If you see &ldquo;User location is not supported&rdquo; error, set this to your proxy URL.
-                Leave empty to use the default Google endpoint.
+                If you see &ldquo;User location is not supported&rdquo; error, set this to your proxy URL
+                to route through a supported region. Leave empty to use the default Google endpoint.
               </p>
             </div>
+
+            {/* Test Connection Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={testGemini}
+                disabled={geminiStatus === 'testing' || !localApiKey}
+                className="gap-1.5"
+              >
+                {geminiStatus === 'testing' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : geminiStatus === 'connected' ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                ) : (
+                  <Wifi className="w-3.5 h-3.5" />
+                )}
+                Test Connection
+              </Button>
+              {geminiStatus === 'connected' && (
+                <span className="text-xs text-emerald-600">API is working!</span>
+              )}
+            </div>
+
+            {/* Test Results */}
+            {renderGeminiTestResult()}
 
             <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-2">
               <p className="font-medium">Cloud Models Available:</p>
@@ -252,13 +404,38 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
 
             <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 text-sm space-y-1">
-              <p className="font-medium text-amber-700 dark:text-amber-400">Note on Local Models</p>
+              <p className="font-medium text-amber-700 dark:text-amber-400">Important: Local Model Limitations</p>
               <p className="text-xs text-amber-600 dark:text-amber-500">
-                Local Gemma models via Ollama may have limited audio transcription capabilities compared to cloud Gemini models.
-                For best Bangla-English mixed transcription with diarization, we recommend using Gemini Flash (cloud).
-                Local models work well for shorter audio clips and as a privacy-preserving offline option.
+                Local Gemma models via Ollama currently have limited audio transcription capabilities. They process audio as base64 data but may not provide the same quality as cloud Gemini models. For best Bangla-English mixed transcription with diarization, we recommend using Gemini Flash (cloud) with a proxy if you&apos;re in a restricted region. Local models work as a privacy-preserving offline option for shorter audio clips.
               </p>
             </div>
+
+            {/* Quick switch to local model */}
+            {ollamaStatus === 'connected' && (
+              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 space-y-2">
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Switch to Local Model</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-500">
+                  Ollama is connected. You can switch to a local model from the model selector in the header.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
+                  onClick={() => {
+                    // Try to set to a local model
+                    const ollamaModel = useAppStore.getState().ollamaModels.find(m =>
+                      m.includes('gemma3')
+                    ) || useAppStore.getState().ollamaModels[0];
+                    if (ollamaModel) {
+                      setSelectedModel(ollamaModel);
+                    }
+                  }}
+                >
+                  <Cpu className="w-3.5 h-3.5" />
+                  Switch to Local Model
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-4 mt-4">

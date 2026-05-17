@@ -5,7 +5,7 @@ import { useAppStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock, AlertTriangle, Globe, Settings, Wifi } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionResult } from '@/lib/transcriber/types';
 
@@ -48,6 +48,13 @@ export function ProcessingView() {
 
   const modelInfo = availableModels.find(m => m.id === selectedModel);
 
+  // Parse the error type from the status message
+  const isLocationError = processingStatus.includes('location') && processingStatus.includes('not supported');
+  const isAuthError = processingStatus.includes('API key') && (processingStatus.includes('not valid') || processingStatus.includes('invalid'));
+  const isFailed = !isProcessing && (
+    processingStatus.startsWith('Failed') || processingStatus.startsWith('Error')
+  );
+
   const startTranscription = useCallback(async () => {
     if (!uploadedFile || hasStarted.current) return;
     hasStarted.current = true;
@@ -86,9 +93,10 @@ export function ProcessingView() {
       if (!response.ok) {
         // Server returned an error status
         const errorMsg = data.error || `Server error (${response.status})`;
+        const errorType = data.errorType || '';
         setProcessingState({
           isProcessing: false,
-          processingStatus: `Failed: ${errorMsg}`,
+          processingStatus: `Failed: ${errorMsg}${errorType ? ` [${errorType}]` : ''}`,
         });
         return;
       }
@@ -117,9 +125,11 @@ export function ProcessingView() {
           setCurrentView('result');
         }, 800);
       } else if (data.status === 'failed') {
+        const errorMsg = data.error || 'Transcription failed';
+        const errorType = data.errorType || '';
         setProcessingState({
           isProcessing: false,
-          processingStatus: `Failed: ${data.error || 'Transcription failed'}`,
+          processingStatus: `Failed: ${errorMsg}${errorType ? ` [${errorType}]` : ''}`,
         });
       } else {
         setProcessingState({
@@ -141,10 +151,6 @@ export function ProcessingView() {
       startTranscription();
     }
   }, [uploadedFile, startTranscription]);
-
-  const isFailed = !isProcessing && (
-    processingStatus.startsWith('Failed') || processingStatus.startsWith('Error')
-  );
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -177,9 +183,11 @@ export function ProcessingView() {
             <h2 className="text-lg font-semibold">
               {isProcessing ? 'Transcribing Audio' : processingProgress === 100 ? 'Complete!' : isFailed ? 'Transcription Failed' : 'Processing'}
             </h2>
-            <p className={`text-sm ${isFailed ? 'text-destructive' : 'text-muted-foreground'}`}>
-              {processingStatus}
-            </p>
+            {!isFailed && (
+              <p className="text-sm text-muted-foreground">
+                {processingStatus}
+              </p>
+            )}
             {isProcessing && estimatedTime && (
               <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                 <Clock className="w-3 h-3" />
@@ -264,33 +272,121 @@ export function ProcessingView() {
           {/* Error Actions */}
           {isFailed && (
             <div className="space-y-3">
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-medium">Transcription Failed</p>
-                  <p className="text-xs mt-1 opacity-80 break-words">{processingStatus.replace(/^(Failed|Error):\s*/, '')}</p>
+              {/* Location-specific error */}
+              {isLocationError ? (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
+                    <Globe className="w-5 h-5 mt-0.5 shrink-0" />
+                    <div className="min-w-0 space-y-2">
+                      <p className="font-semibold">Gemini API is not available in your region</p>
+                      <p className="text-xs opacity-80">
+                        Google restricts the Gemini API in certain countries. You have two options to fix this:
+                      </p>
+                      <div className="space-y-2 mt-2">
+                        <div className="flex items-start gap-2 p-2 rounded bg-amber-100/50 dark:bg-amber-900/20">
+                          <Wifi className="w-4 h-4 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium">Option 1: Use a Proxy</p>
+                            <p className="text-xs opacity-70">Set up a proxy URL in Settings → Cloud → API Base URL to route through a supported region.</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2 p-2 rounded bg-amber-100/50 dark:bg-amber-900/20">
+                          <Cpu className="w-4 h-4 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium">Option 2: Use Local Model</p>
+                            <p className="text-xs opacity-70">Switch to a local Ollama model (e.g., gemma3:4b). Go to Settings → Local to set up Ollama.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        hasStarted.current = false;
+                        setCurrentView('upload');
+                      }}
+                    >
+                      Go Back
+                    </Button>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 gap-1.5"
+                      onClick={() => {
+                        hasStarted.current = false;
+                        setCurrentView('upload');
+                        // Open settings dialog - we'll dispatch a custom event
+                        window.dispatchEvent(new CustomEvent('open-settings'));
+                      }}
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      Open Settings
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex justify-center gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    hasStarted.current = false;
-                    setCurrentView('upload');
-                  }}
-                >
-                  Go Back
-                </Button>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  onClick={() => {
-                    hasStarted.current = false;
-                    startTranscription();
-                  }}
-                >
-                  Retry
-                </Button>
-              </div>
+              ) : isAuthError ? (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium">Invalid API Key</p>
+                      <p className="text-xs mt-1 opacity-80">Your Gemini API key appears to be invalid. Please check your key in Settings and try again.</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        hasStarted.current = false;
+                        setCurrentView('upload');
+                      }}
+                    >
+                      Go Back
+                    </Button>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 gap-1.5"
+                      onClick={() => {
+                        hasStarted.current = false;
+                        setCurrentView('upload');
+                        window.dispatchEvent(new CustomEvent('open-settings'));
+                      }}
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      Open Settings
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium">Transcription Failed</p>
+                      <p className="text-xs mt-1 opacity-80 break-words">{processingStatus.replace(/^(Failed|Error):\s*/, '')}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        hasStarted.current = false;
+                        setCurrentView('upload');
+                      }}
+                    >
+                      Go Back
+                    </Button>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      onClick={() => {
+                        hasStarted.current = false;
+                        startTranscription();
+                      }}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

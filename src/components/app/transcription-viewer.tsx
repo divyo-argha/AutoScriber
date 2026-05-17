@@ -39,11 +39,11 @@ const stagger = {
 };
 
 export function TranscriptionViewer() {
-  const { transcriptionSegments, transcriptionText, reset, setCurrentView } = useAppStore();
+  const { transcriptionSegments, transcriptionText, reset, setCurrentView, jobId } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('player');
-  
+
   const speakerColors = useMemo(() => {
     const colors = [
       'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -65,12 +65,12 @@ export function TranscriptionViewer() {
     }
     return map;
   }, [transcriptionSegments]);
-  
+
   const uniqueSpeakers = useMemo(() => {
     const speakers = new Set(transcriptionSegments.map(s => s.speaker));
     return Array.from(speakers);
   }, [transcriptionSegments]);
-  
+
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(transcriptionText);
@@ -80,12 +80,12 @@ export function TranscriptionViewer() {
       console.error('Failed to copy:', err);
     }
   };
-  
+
   const exportClientFile = (format: 'txt' | 'md' | 'srt') => {
     let content = '';
     let filename = 'transcription';
     let mimeType = 'text/plain';
-    
+
     switch (format) {
       case 'txt':
         content = transcriptionSegments
@@ -109,7 +109,7 @@ export function TranscriptionViewer() {
         filename += '.srt';
         break;
     }
-    
+
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -120,7 +120,7 @@ export function TranscriptionViewer() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  
+
   const exportServerFile = async (format: 'docx' | 'pdf') => {
     setExportingFormat(format);
     try {
@@ -133,9 +133,9 @@ export function TranscriptionViewer() {
           fileName: 'transcription',
         }),
       });
-      
+
       if (!response.ok) throw new Error('Export failed');
-      
+
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -151,7 +151,7 @@ export function TranscriptionViewer() {
       setExportingFormat(null);
     }
   };
-  
+
   const handleExport = (format: ExportFormat) => {
     if (format === 'docx' || format === 'pdf') {
       exportServerFile(format);
@@ -159,12 +159,12 @@ export function TranscriptionViewer() {
       exportClientFile(format);
     }
   };
-  
+
   const handleNewTranscription = () => {
     reset();
     setCurrentView('upload');
   };
-  
+
   if (transcriptionSegments.length === 0) {
     return (
       <div className="text-center py-12 space-y-4">
@@ -178,7 +178,7 @@ export function TranscriptionViewer() {
       </div>
     );
   }
-  
+
   const exportFormats: { format: ExportFormat; label: string; icon: React.ReactNode }[] = [
     { format: 'txt', label: 'TXT', icon: <FileText className="w-3.5 h-3.5" /> },
     { format: 'md', label: 'Markdown', icon: <FileType2 className="w-3.5 h-3.5" /> },
@@ -186,7 +186,7 @@ export function TranscriptionViewer() {
     { format: 'docx', label: 'DOCX', icon: <FileDown className="w-3.5 h-3.5" /> },
     { format: 'pdf', label: 'PDF', icon: <FileDown className="w-3.5 h-3.5" /> },
   ];
-  
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -209,9 +209,14 @@ export function TranscriptionViewer() {
           <User className="w-3 h-3" />
           {uniqueSpeakers.length} speaker{uniqueSpeakers.length !== 1 ? 's' : ''}
         </Badge>
-        
+        {jobId && (
+          <Badge variant="outline" className="gap-1 text-xs">
+            Saved in history
+          </Badge>
+        )}
+
         <div className="flex-1" />
-        
+
         {/* View Mode Toggle */}
         <div className="flex items-center bg-muted rounded-lg p-0.5">
           <Button
@@ -233,7 +238,7 @@ export function TranscriptionViewer() {
             List
           </Button>
         </div>
-        
+
         <Button variant="outline" size="sm" onClick={copyToClipboard} className="gap-1.5">
           {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           {copied ? 'Copied!' : 'Copy'}
@@ -243,7 +248,7 @@ export function TranscriptionViewer() {
           New
         </Button>
       </motion.div>
-      
+
       {/* Speaker Legend */}
       <AnimatePresence>
         {uniqueSpeakers.length > 1 && (
@@ -269,7 +274,7 @@ export function TranscriptionViewer() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Main Content Area */}
       <AnimatePresence mode="wait">
         {viewMode === 'player' ? (
@@ -328,7 +333,7 @@ export function TranscriptionViewer() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Export Section */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -370,7 +375,7 @@ export function TranscriptionViewer() {
 
 function generateMarkdown(segments: TranscriptionSegment[]): string {
   const uniqueSpeakers = [...new Set(segments.map(s => s.speaker))];
-  
+
   let md = `# Transcription\n\n`;
   md += `> Generated by **autoScriber** on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}\n\n`;
   md += `## Speakers\n\n`;
@@ -382,6 +387,6 @@ function generateMarkdown(segments: TranscriptionSegment[]): string {
   for (const seg of segments) {
     md += `**[${formatTime(seg.startTime)}]** **${seg.speaker}:** ${seg.text}\n\n`;
   }
-  
+
   return md;
 }
