@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     const modelId = (formData.get('model') as string) || 'gemini-2.5-flash';
     const geminiApiKey = (formData.get('geminiApiKey') as string) || '';
     const ollamaUrl = (formData.get('ollamaUrl') as string) || 'http://localhost:11434';
-    const chunkDuration = parseInt(formData.get('chunkDuration') as string) || '300';
-    const overlapDuration = parseInt(formData.get('overlapDuration') as string) || '10';
+    const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300;
+    const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 10;
     
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -41,9 +41,10 @@ export async function POST(request: NextRequest) {
     fs.writeFileSync(filePath, buffer);
     
     // Get audio duration
-    let duration = 0;
+    let duration: number | null = null;
     try {
-      duration = await getAudioDuration(filePath);
+      const dur = await getAudioDuration(filePath);
+      duration = (typeof dur === 'number' && isFinite(dur)) ? dur : null;
     } catch (err) {
       console.error('Failed to get audio duration:', err);
     }
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
       const result: TranscriptionResult = {
         segments: mergedSegments,
         fullText,
-        duration,
+        duration: duration ?? 0,
         language: 'bn',
         model: modelId,
       };

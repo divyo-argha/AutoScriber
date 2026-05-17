@@ -44,6 +44,20 @@ interface AppState {
   jobId: string | null;
   setTranscriptionResult: (segments: TranscriptionSegment[], text: string) => void;
   
+  // Audio playback state
+  audioUrl: string | null;
+  isPlaying: boolean;
+  currentTime: number;
+  audioDuration: number;
+  activeSegmentIndex: number;
+  setAudioPlayback: (state: Partial<{
+    audioUrl: string | null;
+    isPlaying: boolean;
+    currentTime: number;
+    audioDuration: number;
+    activeSegmentIndex: number;
+  }>) => void;
+  
   // Settings
   geminiApiKey: string;
   ollamaUrl: string;
@@ -81,6 +95,11 @@ const initialState = {
   transcriptionSegments: [] as TranscriptionSegment[],
   transcriptionText: '',
   jobId: null as string | null,
+  audioUrl: null as string | null,
+  isPlaying: false,
+  currentTime: 0,
+  audioDuration: 0,
+  activeSegmentIndex: -1,
   geminiApiKey: '',
   ollamaUrl: 'http://localhost:11434',
   chunkDuration: 300,
@@ -110,16 +129,24 @@ export const useAppStore = create<AppState>((set) => ({
     transcriptionText: text,
   }),
   
+  setAudioPlayback: (state) => set((prev) => ({ ...prev, ...state })),
+  
   setSettings: (settings) => set((prev) => ({ ...prev, ...settings })),
   
   setOllamaModels: (models) => set({ ollamaModels: models }),
   
-  reset: () => set({
-    ...initialState,
-    geminiApiKey: useAppStore.getState().geminiApiKey,
-    ollamaUrl: useAppStore.getState().ollamaUrl,
-    chunkDuration: useAppStore.getState().chunkDuration,
-    overlapDuration: useAppStore.getState().overlapDuration,
-    ollamaModels: useAppStore.getState().ollamaModels,
+  reset: () => set((prev) => {
+    // Revoke old audio URL to prevent memory leak
+    if (prev.audioUrl) {
+      try { URL.revokeObjectURL(prev.audioUrl); } catch {}
+    }
+    return {
+      ...initialState,
+      geminiApiKey: prev.geminiApiKey,
+      ollamaUrl: prev.ollamaUrl,
+      chunkDuration: prev.chunkDuration,
+      overlapDuration: prev.overlapDuration,
+      ollamaModels: prev.ollamaModels,
+    };
   }),
 }));

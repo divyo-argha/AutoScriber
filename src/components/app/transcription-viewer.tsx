@@ -5,7 +5,6 @@ import { useAppStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
   Download,
@@ -18,22 +17,38 @@ import {
   CheckCircle2,
   RotateCcw,
   Loader2,
+  Headphones,
+  List,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionSegment } from '@/lib/transcriber/types';
 import { formatTime, formatTimeSRT } from '@/lib/format-utils';
+import { AudioPlayer } from './audio-player';
 
 type ExportFormat = 'txt' | 'md' | 'srt' | 'docx' | 'pdf';
+type ViewMode = 'player' | 'list';
+
+const fadeUp = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+
+const stagger = {
+  animate: { transition: { staggerChildren: 0.04 } },
+};
 
 export function TranscriptionViewer() {
   const { transcriptionSegments, transcriptionText, reset, setCurrentView } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('player');
   
   const speakerColors = useMemo(() => {
     const colors = [
       'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-      'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+      'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400',
+      'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400',
       'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
       'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400',
       'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400',
@@ -66,7 +81,6 @@ export function TranscriptionViewer() {
     }
   };
   
-  // Client-side export for .txt, .md, .srt
   const exportClientFile = (format: 'txt' | 'md' | 'srt') => {
     let content = '';
     let filename = 'transcription';
@@ -79,12 +93,10 @@ export function TranscriptionViewer() {
           .join('\n');
         filename += '.txt';
         break;
-        
       case 'md':
         content = generateMarkdown(transcriptionSegments);
         filename += '.md';
         break;
-        
       case 'srt':
         content = transcriptionSegments
           .map((seg, idx) => {
@@ -109,7 +121,6 @@ export function TranscriptionViewer() {
     URL.revokeObjectURL(url);
   };
   
-  // Server-side export for .docx and .pdf
   const exportServerFile = async (format: 'docx' | 'pdf') => {
     setExportingFormat(format);
     try {
@@ -123,9 +134,7 @@ export function TranscriptionViewer() {
         }),
       });
       
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
+      if (!response.ok) throw new Error('Export failed');
       
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -173,9 +182,19 @@ export function TranscriptionViewer() {
   ];
   
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="max-w-4xl mx-auto space-y-4"
+    >
       {/* Stats Bar */}
-      <div className="flex flex-wrap items-center gap-3">
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-wrap items-center gap-3"
+      >
         <Badge variant="outline" className="gap-1">
           <Clock className="w-3 h-3" />
           {transcriptionSegments.length} segments
@@ -184,93 +203,162 @@ export function TranscriptionViewer() {
           <User className="w-3 h-3" />
           {uniqueSpeakers.length} speaker{uniqueSpeakers.length !== 1 ? 's' : ''}
         </Badge>
+        
         <div className="flex-1" />
+        
+        {/* View Mode Toggle */}
+        <div className="flex items-center bg-muted rounded-lg p-0.5">
+          <Button
+            variant={viewMode === 'player' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('player')}
+            className="gap-1.5 h-7 text-xs rounded-md"
+          >
+            <Headphones className="w-3 h-3" />
+            Player
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className="gap-1.5 h-7 text-xs rounded-md"
+          >
+            <List className="w-3 h-3" />
+            List
+          </Button>
+        </div>
+        
         <Button variant="outline" size="sm" onClick={copyToClipboard} className="gap-1.5">
           {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? 'Copied!' : 'Copy All'}
+          {copied ? 'Copied!' : 'Copy'}
         </Button>
         <Button variant="outline" size="sm" onClick={handleNewTranscription} className="gap-1.5">
           <RotateCcw className="w-3.5 h-3.5" />
           New
         </Button>
-      </div>
+      </motion.div>
       
       {/* Speaker Legend */}
-      {uniqueSpeakers.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          {uniqueSpeakers.map(speaker => (
-            <Badge key={speaker} className={`${speakerColors[speaker]} border-0`}>
-              {speaker}
-            </Badge>
-          ))}
-        </div>
-      )}
-      
-      {/* Transcription Content */}
-      <Card className="overflow-hidden">
-        <ScrollArea className="max-h-[60vh]">
-          <div className="p-4 sm:p-6 space-y-1">
-            {transcriptionSegments.map((segment, idx) => (
-              <div
-                key={idx}
-                className="group flex gap-3 py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors"
+      <AnimatePresence>
+        {uniqueSpeakers.length > 1 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
+            className="flex flex-wrap gap-2"
+          >
+            {uniqueSpeakers.map((speaker, i) => (
+              <motion.div
+                key={speaker}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
               >
-                {/* Timestamp */}
-                <div className="shrink-0 w-24 pt-0.5">
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {formatTime(segment.startTime)}
-                  </span>
-                </div>
-                
-                {/* Speaker Badge */}
-                <div className="shrink-0 w-24">
-                  <Badge
-                    className={`${speakerColors[segment.speaker] || 'bg-muted text-muted-foreground'} border-0 text-[10px] px-1.5 py-0 truncate max-w-full`}
-                  >
-                    {segment.speaker}
-                  </Badge>
-                </div>
-                
-                {/* Text */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm leading-relaxed">{segment.text}</p>
-                </div>
-              </div>
+                <Badge className={`${speakerColors[speaker]} border-0`}>
+                  {speaker}
+                </Badge>
+              </motion.div>
             ))}
-          </div>
-        </ScrollArea>
-      </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Main Content Area */}
+      <AnimatePresence mode="wait">
+        {viewMode === 'player' ? (
+          <motion.div
+            key="player"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AudioPlayer segments={transcriptionSegments} speakerColors={speakerColors} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="overflow-hidden">
+              <div className="max-h-[60vh] overflow-y-auto scroll-smooth">
+                <motion.div
+                  variants={stagger}
+                  initial="initial"
+                  animate="animate"
+                  className="p-4 sm:p-6 space-y-0.5"
+                >
+                  {transcriptionSegments.map((segment, idx) => (
+                    <motion.div
+                      key={idx}
+                      variants={fadeUp}
+                      transition={{ duration: 0.2 }}
+                      className="group flex gap-3 py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="shrink-0 w-24 pt-0.5">
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {formatTime(segment.startTime)}
+                        </span>
+                      </div>
+                      <div className="shrink-0 w-24">
+                        <Badge
+                          className={`${speakerColors[segment.speaker] || 'bg-muted text-muted-foreground'} border-0 text-[10px] px-1.5 py-0 truncate max-w-full`}
+                        >
+                          {segment.speaker}
+                        </Badge>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm leading-relaxed">{segment.text}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Export Section */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Download as</span>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.15 }}
+      >
+        <Card className="p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Download as</span>
+            </div>
+            <Separator orientation="vertical" className="hidden sm:block h-6" />
+            <div className="flex flex-wrap gap-2">
+              {exportFormats.map(({ format, label, icon }) => (
+                <Button
+                  key={format}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExport(format)}
+                  disabled={exportingFormat !== null}
+                  className="gap-1.5 transition-all duration-200 hover:scale-105"
+                >
+                  {exportingFormat === format ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    icon
+                  )}
+                  {label}
+                </Button>
+              ))}
+            </div>
           </div>
-          <Separator orientation="vertical" className="hidden sm:block h-6" />
-          <div className="flex flex-wrap gap-2">
-            {exportFormats.map(({ format, label, icon }) => (
-              <Button
-                key={format}
-                variant="outline"
-                size="sm"
-                onClick={() => handleExport(format)}
-                disabled={exportingFormat !== null}
-                className="gap-1.5"
-              >
-                {exportingFormat === format ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  icon
-                )}
-                {label}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </Card>
-    </div>
+        </Card>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -279,15 +367,11 @@ function generateMarkdown(segments: TranscriptionSegment[]): string {
   
   let md = `# Transcription\n\n`;
   md += `> Generated by **autoScriber** on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}\n\n`;
-  
-  // Speaker legend
   md += `## Speakers\n\n`;
   for (const speaker of uniqueSpeakers) {
     md += `- **${speaker}**\n`;
   }
   md += `\n---\n\n`;
-  
-  // Segments
   md += `## Transcript\n\n`;
   for (const seg of segments) {
     md += `**[${formatTime(seg.startTime)}]** **${seg.speaker}:** ${seg.text}\n\n`;
