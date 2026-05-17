@@ -96,7 +96,7 @@ export function UploadArea() {
     }
   }, [handleFile]);
   
-  const handleRecordingComplete = useCallback((file: File) => {
+  const handleRecordingComplete = useCallback((file: File, _blob: Blob) => {
     setError(null);
     setUploadedFile(file);
   }, [setUploadedFile]);

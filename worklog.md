@@ -83,3 +83,30 @@ Stage Summary:
 - Word-progress highlighting shows exactly where in the text the audio is
 - Player/List view toggle for different use cases
 - All existing features intact and working
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Fix AudioRecorder "Cannot close a closed AudioContext" error and no sound recording issue
+
+Work Log:
+- Identified root cause of AudioContext error: stopRecording() and cleanup useEffect both call audioContextRef.current.close() without checking if it's already closed
+- Identified root cause of no audio: blob was created immediately after mediaRecorder.stop(), but the final ondataavailable event fires asynchronously after stop(), so chunksRef.current was incomplete when the blob was assembled
+- Rewrote audio-recorder.tsx with the following fixes:
+  1. Added closeAudioContext() helper that checks state !== 'closed' before closing
+  2. Moved blob creation into mediaRecorder.onstop callback (fires after all ondataavailable events)
+  3. Changed timeslice from 1000ms to 100ms for more frequent data collection
+  4. Disabled echoCancellation/noiseSuppression/autoGainControl for better raw audio capture
+  5. Added better MIME type detection with fallback chain (webm;codecs=opus → webm → ogg;codecs=opus → default)
+  6. Added recorder.requestData() before stop() to flush remaining data
+  7. Added error handling if no chunks were collected
+  8. Refactored cleanup helpers (stopTimer, stopAnimationLoop, stopStream, closeAudioContext)
+- Fixed handleRecordingComplete signature in upload-area.tsx to match (file: File, blob: Blob) => void
+- Verified duration field in transcribe route already uses null (not "N/A")
+- Build compiles cleanly with no errors
+
+Stage Summary:
+- Fixed AudioContext double-close error with state check guard
+- Fixed recording producing empty/silent audio files by using onstop callback
+- Improved audio capture quality (disabled browser audio processing)
+- Build passes successfully

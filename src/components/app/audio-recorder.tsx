@@ -36,45 +36,117 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+
+  /** Safely close the AudioContext, ignoring if already closed */
+  const closeAudioContext = useCallback(() => {
+    const ctx = audioContextRef.current;
+    if (ctx && ctx.state !== 'closed') {
+      try {
+        ctx.close();
+      } catch {
+        // Ignore errors from already-closed contexts
+      }
+    }
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    sourceNodeRef.current = null;
+  }, []);
+
+  /** Stop the animation loop */
+  const stopAnimationLoop = useCallback(() => {
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+  }, []);
+
+  /** Stop the timer */
+  const stopTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  /** Stop all media stream tracks */
+  const stopStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  /** Audio level monitoring loop */
+  const startAudioMonitoring = useCallback(() => {
+    const updateLevel = () => {
+      if (analyserRef.current) {
+        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        setAudioLevel(avg / 255);
+        setWaveform(prev => [...prev.slice(1), avg / 255]);
+      }
+      animFrameRef.current = requestAnimationFrame(updateLevel);
+    };
+    updateLevel();
+  }, []);
   
   const startRecording = useCallback(async () => {
     try {
       setError(null);
+      
+      // Request microphone access with minimal constraints for best quality
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
           sampleRate: 44100,
         },
       });
       
       streamRef.current = stream;
       
-      // Set up audio analyser for waveform
+      // Set up audio analyser for waveform visualization
       const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
       const source = audioContext.createMediaStreamSource(stream);
+      sourceNodeRef.current = source;
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
       analyserRef.current = analyser;
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : 'audio/webm',
-      });
+      // Determine best supported MIME type
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+            ? 'audio/ogg;codecs=opus'
+            : '';
+
+      const mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
       
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
+        if (e.data && e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
       };
       
-      mediaRecorder.start(1000); // Collect data every second
+      // Start recording with 100ms timeslice for frequent data collection
+      mediaRecorder.start(100);
       setStatus('recording');
       setDuration(0);
       
@@ -84,25 +156,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
       }, 1000);
       
       // Start audio level monitoring
-      const updateLevel = () => {
-        if (analyserRef.current) {
-          const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-          analyserRef.current.getByteFrequencyData(dataArray);
-          
-          // Calculate average level
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) {
-            sum += dataArray[i];
-          }
-          const avg = sum / dataArray.length;
-          setAudioLevel(avg / 255);
-          
-          // Update waveform data (shift left, add new value)
-          setWaveform(prev => [...prev.slice(1), avg / 255]);
-        }
-        animFrameRef.current = requestAnimationFrame(updateLevel);
-      };
-      updateLevel();
+      startAudioMonitoring();
       
     } catch (err) {
       console.error('Failed to start recording:', err);
@@ -114,87 +168,94 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
         setError(`Failed to start recording: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
-  }, []);
+  }, [startAudioMonitoring]);
   
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && status === 'recording') {
       mediaRecorderRef.current.pause();
       setStatus('paused');
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      stopTimer();
+      stopAnimationLoop();
     }
-  }, [status]);
+  }, [status, stopTimer, stopAnimationLoop]);
   
   const resumeRecording = useCallback(() => {
     if (mediaRecorderRef.current && status === 'paused') {
       mediaRecorderRef.current.resume();
       setStatus('recording');
+      
       timerRef.current = setInterval(() => {
         setDuration(prev => prev + 1);
       }, 1000);
       
-      // Resume audio level monitoring
-      const updateLevel = () => {
-        if (analyserRef.current) {
-          const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-          analyserRef.current.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) {
-            sum += dataArray[i];
-          }
-          const avg = sum / dataArray.length;
-          setAudioLevel(avg / 255);
-          setWaveform(prev => [...prev.slice(1), avg / 255]);
-        }
-        animFrameRef.current = requestAnimationFrame(updateLevel);
-      };
-      updateLevel();
+      startAudioMonitoring();
     }
-  }, [status]);
+  }, [status, startAudioMonitoring]);
   
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      setStatus('stopped');
-      
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      
-      // Stop all tracks
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+
+    // Stop timer and animation immediately
+    stopTimer();
+    stopAnimationLoop();
+    setAudioLevel(0);
+    setStatus('stopped');
+
+    // Stop the media stream tracks right away (no more audio input)
+    stopStream();
+
+    // Set up the onstop handler: MediaRecorder fires onstop AFTER
+    // the final ondataavailable, so chunksRef is guaranteed to be complete.
+    recorder.onstop = () => {
+      const collectedChunks = chunksRef.current;
+      if (collectedChunks.length === 0) {
+        setError('No audio data was recorded. Please check your microphone and try again.');
+        return;
       }
-      
-      // Close audio context
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      
-      setAudioLevel(0);
-      
-      // Create file from recorded chunks
-      const mimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
-      const blob = new Blob(chunksRef.current, { type: mimeType });
-      const ext = mimeType.includes('webm') ? 'webm' : 'ogg';
-      const file = new File([blob], `recording_${Date.now()}.${ext}`, { type: mimeType });
-      
+
+      const actualMimeType = recorder.mimeType || 'audio/webm';
+      const blob = new Blob(collectedChunks, { type: actualMimeType });
+      const ext = actualMimeType.includes('ogg') ? 'ogg' : 'webm';
+      const file = new File([blob], `recording_${Date.now()}.${ext}`, { type: actualMimeType });
+
+      // Close AudioContext only after recording is fully done
+      closeAudioContext();
+
       onRecordingComplete(file, blob);
+
+      // Clear chunks for next recording
+      chunksRef.current = [];
+    };
+
+    // Request any remaining data, then stop — triggers onstop after final ondataavailable
+    try {
+      recorder.requestData();
+    } catch {
+      // Some browsers throw if already stopped
     }
-  }, [onRecordingComplete]);
+    recorder.stop();
+  }, [onRecordingComplete, stopTimer, stopAnimationLoop, stopStream, closeAudioContext]);
   
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      stopTimer();
+      stopAnimationLoop();
+      stopStream();
+      closeAudioContext();
+      
+      // If there's an active recorder, stop it (without callback)
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        try {
+          recorder.stop();
+        } catch {
+          // Ignore
+        }
       }
     };
-  }, []);
+  }, [stopTimer, stopAnimationLoop, stopStream, closeAudioContext]);
   
   const isRecording = status === 'recording';
   const isPaused = status === 'paused';
