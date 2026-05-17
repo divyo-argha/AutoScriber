@@ -10,19 +10,24 @@ import { Separator } from '@/components/ui/separator';
 import {
   Download,
   FileText,
+  FileType2,
+  FileDown,
   Clock,
   User,
   Copy,
   CheckCircle2,
   RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import type { TranscriptionSegment } from '@/lib/transcriber/types';
-import { formatTime, formatTimeSRT, formatTimeVTT } from '@/lib/format-utils';
+import { formatTime, formatTimeSRT } from '@/lib/format-utils';
+
+type ExportFormat = 'txt' | 'md' | 'srt' | 'docx' | 'pdf';
 
 export function TranscriptionViewer() {
   const { transcriptionSegments, transcriptionText, reset, setCurrentView } = useAppStore();
   const [copied, setCopied] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'txt' | 'srt' | 'vtt' | 'json'>('txt');
+  const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
   
   const speakerColors = useMemo(() => {
     const colors = [
@@ -61,7 +66,8 @@ export function TranscriptionViewer() {
     }
   };
   
-  const exportFile = (format: 'txt' | 'srt' | 'vtt' | 'json') => {
+  // Client-side export for .txt, .md, .srt
+  const exportClientFile = (format: 'txt' | 'md' | 'srt') => {
     let content = '';
     let filename = 'transcription';
     let mimeType = 'text/plain';
@@ -74,6 +80,11 @@ export function TranscriptionViewer() {
         filename += '.txt';
         break;
         
+      case 'md':
+        content = generateMarkdown(transcriptionSegments);
+        filename += '.md';
+        break;
+        
       case 'srt':
         content = transcriptionSegments
           .map((seg, idx) => {
@@ -84,29 +95,6 @@ export function TranscriptionViewer() {
           })
           .join('\n');
         filename += '.srt';
-        break;
-        
-      case 'vtt':
-        content = 'WEBVTT\n\n' + transcriptionSegments
-          .map((seg, idx) => {
-            const index = idx + 1;
-            const start = formatTimeVTT(seg.startTime);
-            const end = formatTimeVTT(seg.endTime);
-            return `${index}\n${start} --> ${end}\n<v ${seg.speaker}>${seg.text}</v>\n`;
-          })
-          .join('\n');
-        filename += '.vtt';
-        mimeType = 'text/vtt';
-        break;
-        
-      case 'json':
-        content = JSON.stringify({
-          segments: transcriptionSegments,
-          fullText: transcriptionText,
-          exportedAt: new Date().toISOString(),
-        }, null, 2);
-        filename += '.json';
-        mimeType = 'application/json';
         break;
     }
     
@@ -121,6 +109,48 @@ export function TranscriptionViewer() {
     URL.revokeObjectURL(url);
   };
   
+  // Server-side export for .docx and .pdf
+  const exportServerFile = async (format: 'docx' | 'pdf') => {
+    setExportingFormat(format);
+    try {
+      const response = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          format,
+          segments: transcriptionSegments,
+          fileName: 'transcription',
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transcription.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+  
+  const handleExport = (format: ExportFormat) => {
+    if (format === 'docx' || format === 'pdf') {
+      exportServerFile(format);
+    } else {
+      exportClientFile(format);
+    }
+  };
+  
   const handleNewTranscription = () => {
     reset();
     setCurrentView('upload');
@@ -133,6 +163,14 @@ export function TranscriptionViewer() {
       </div>
     );
   }
+  
+  const exportFormats: { format: ExportFormat; label: string; icon: React.ReactNode }[] = [
+    { format: 'txt', label: 'TXT', icon: <FileText className="w-3.5 h-3.5" /> },
+    { format: 'md', label: 'Markdown', icon: <FileType2 className="w-3.5 h-3.5" /> },
+    { format: 'srt', label: 'SRT', icon: <FileText className="w-3.5 h-3.5" /> },
+    { format: 'docx', label: 'DOCX', icon: <FileDown className="w-3.5 h-3.5" /> },
+    { format: 'pdf', label: 'PDF', icon: <FileDown className="w-3.5 h-3.5" /> },
+  ];
   
   return (
     <div className="max-w-4xl mx-auto space-y-4">
@@ -208,29 +246,52 @@ export function TranscriptionViewer() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex items-center gap-2">
             <Download className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Export</span>
+            <span className="text-sm font-medium">Download as</span>
           </div>
           <Separator orientation="vertical" className="hidden sm:block h-6" />
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => exportFile('txt')} className="gap-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              TXT
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => exportFile('srt')} className="gap-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              SRT
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => exportFile('vtt')} className="gap-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              VTT
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => exportFile('json')} className="gap-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              JSON
-            </Button>
+            {exportFormats.map(({ format, label, icon }) => (
+              <Button
+                key={format}
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport(format)}
+                disabled={exportingFormat !== null}
+                className="gap-1.5"
+              >
+                {exportingFormat === format ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  icon
+                )}
+                {label}
+              </Button>
+            ))}
           </div>
         </div>
       </Card>
     </div>
   );
+}
+
+function generateMarkdown(segments: TranscriptionSegment[]): string {
+  const uniqueSpeakers = [...new Set(segments.map(s => s.speaker))];
+  
+  let md = `# Transcription\n\n`;
+  md += `> Generated by **autoScriber** on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}\n\n`;
+  
+  // Speaker legend
+  md += `## Speakers\n\n`;
+  for (const speaker of uniqueSpeakers) {
+    md += `- **${speaker}**\n`;
+  }
+  md += `\n---\n\n`;
+  
+  // Segments
+  md += `## Transcript\n\n`;
+  for (const seg of segments) {
+    md += `**[${formatTime(seg.startTime)}]** **${seg.speaker}:** ${seg.text}\n\n`;
+  }
+  
+  return md;
 }

@@ -28,3 +28,30 @@ Stage Summary:
 - Export to TXT, SRT, VTT, JSON formats
 - Electron desktop wrapper ready for packaging
 - App running at localhost:3000 with clean compilation
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Add in-app audio recording and enhanced export formats
+
+Work Log:
+- Built AudioRecorder component with Web Audio API + MediaRecorder
+- Implemented real-time waveform visualization using AnalyserNode
+- Added recording controls (start, pause/resume, stop) with timer
+- Integrated recorder into upload flow with Upload/Record tabs
+- Installed docx and pdfkit libraries for server-side export
+- Created /api/export API route for DOCX and PDF generation
+- Updated TranscriptionViewer with 5 export formats: TXT, Markdown, SRT, DOCX, PDF
+- Client-side export for TXT, MD, SRT; server-side for DOCX, PDF
+- DOCX export includes styled document with colored speakers and timestamps
+- PDF export includes formatted layout with speaker colors and metadata
+- Markdown export includes speaker legend and structured transcript
+- Fixed lint errors (waveform ref → state, estimated time effect → useMemo)
+- All lint checks pass, app compiles cleanly
+
+Stage Summary:
+- Audio recording from browser with waveform visualization
+- Tabbed UI: Upload File / Record Audio
+- 5 export formats: .txt, .md, .docx, .pdf, .srt
+- Server-side DOCX/PDF generation with styled formatting
+- All existing features intact and working

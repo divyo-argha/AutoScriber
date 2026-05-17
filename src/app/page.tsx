@@ -59,7 +59,7 @@ export default function Home() {
                 Transcribe Your Bangla Audio
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto">
-                Upload audio files and get accurate Bangla-English mixed transcriptions with 
+                Upload an audio file or record directly from your browser. Get accurate Bangla-English mixed transcriptions with 
                 timestamps and speaker diarization. Built for researchers.
               </p>
             </div>

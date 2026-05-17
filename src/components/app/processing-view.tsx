@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,20 @@ export function ProcessingView() {
   } = useAppStore();
   
   const hasStarted = useRef(false);
-  const [estimatedTime, setEstimatedTime] = useState<string>('');
   const startTimeRef = useRef<number>(0);
+
+  const estimatedTime = useMemo(() => {
+    if (!isProcessing || processingProgress <= 0 || processingProgress >= 100) return '';
+    const elapsed = Date.now() - startTimeRef.current;
+    const rate = processingProgress / elapsed;
+    const remaining = (100 - processingProgress) / rate;
+    if (remaining > 0) {
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      return mins > 0 ? `~${mins}m ${secs}s remaining` : `~${secs}s remaining`;
+    }
+    return '';
+  }, [isProcessing, processingProgress]);
   
   const modelInfo = availableModels.find(m => m.id === selectedModel);
   
@@ -97,20 +109,7 @@ export function ProcessingView() {
     }
   }, [uploadedFile, selectedModel, geminiApiKey, ollamaUrl, chunkDuration, overlapDuration, setProcessingState, setTranscriptionResult, setCurrentView]);
   
-  // Estimate remaining time
-  useEffect(() => {
-    if (!isProcessing || processingProgress <= 0) return;
-    
-    const elapsed = Date.now() - startTimeRef.current;
-    const rate = processingProgress / elapsed;
-    const remaining = (100 - processingProgress) / rate;
-    
-    if (remaining > 0) {
-      const mins = Math.floor(remaining / 60000);
-      const secs = Math.floor((remaining % 60000) / 1000);
-      setEstimatedTime(mins > 0 ? `~${mins}m ${secs}s remaining` : `~${secs}s remaining`);
-    }
-  }, [isProcessing, processingProgress]);
+
   
   useEffect(() => {
     if (uploadedFile && !hasStarted.current) {
