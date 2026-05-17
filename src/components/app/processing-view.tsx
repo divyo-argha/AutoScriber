@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionResult } from '@/lib/transcriber/types';
 
 export function ProcessingView() {
@@ -193,26 +194,42 @@ export function ProcessingView() {
           </div>
           
           {/* Processing Steps */}
-          {isProcessing && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs">
-                <div className={`w-2 h-2 rounded-full ${processingProgress > 0 ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
-                <span className={processingProgress > 0 ? 'text-foreground' : 'text-muted-foreground'}>Upload audio</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <div className={`w-2 h-2 rounded-full ${chunksTotal > 0 ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
-                <span className={chunksTotal > 0 ? 'text-foreground' : 'text-muted-foreground'}>Split into chunks</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <div className={`w-2 h-2 rounded-full ${processingProgress > 50 ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
-                <span className={processingProgress > 50 ? 'text-foreground' : 'text-muted-foreground'}>Transcribe chunks</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <div className={`w-2 h-2 rounded-full ${processingProgress === 100 ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
-                <span className={processingProgress === 100 ? 'text-foreground' : 'text-muted-foreground'}>Assemble results</span>
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {isProcessing && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-2 overflow-hidden"
+              >
+                {[
+                  { label: 'Upload audio', done: processingProgress > 0 },
+                  { label: 'Split into chunks', done: chunksTotal > 0 },
+                  { label: 'Transcribe chunks', done: processingProgress > 50 },
+                  { label: 'Assemble results', done: processingProgress === 100 },
+                ].map((step, i) => (
+                  <motion.div
+                    key={step.label}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <motion.div
+                      animate={{
+                        backgroundColor: step.done ? '#10b981' : 'rgba(120,120,120,0.3)',
+                        scale: step.done ? [1, 1.3, 1] : 1,
+                      }}
+                      transition={{ duration: 0.3 }}
+                      className="w-2 h-2 rounded-full"
+                    />
+                    <span className={step.done ? 'text-foreground' : 'text-muted-foreground'}>{step.label}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           {/* Error Actions */}
           {!isProcessing && (processingStatus.startsWith('Failed') || processingStatus.startsWith('Error')) && (
