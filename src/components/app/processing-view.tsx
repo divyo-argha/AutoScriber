@@ -5,7 +5,7 @@ import { useAppStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionResult } from '@/lib/transcriber/types';
 
@@ -28,7 +28,7 @@ export function ProcessingView() {
     setCurrentView,
     availableModels,
   } = useAppStore();
-  
+
   const hasStarted = useRef(false);
   const startTimeRef = useRef<number>(0);
 
@@ -44,14 +44,14 @@ export function ProcessingView() {
     }
     return '';
   }, [isProcessing, processingProgress]);
-  
+
   const modelInfo = availableModels.find(m => m.id === selectedModel);
-  
+
   const startTranscription = useCallback(async () => {
     if (!uploadedFile || hasStarted.current) return;
     hasStarted.current = true;
     startTimeRef.current = Date.now();
-    
+
     setProcessingState({
       isProcessing: true,
       processingProgress: 0,
@@ -60,7 +60,7 @@ export function ProcessingView() {
       chunksDone: 0,
       currentChunkIndex: 0,
     });
-    
+
     try {
       const formData = new FormData();
       formData.append('file', uploadedFile);
@@ -69,55 +69,81 @@ export function ProcessingView() {
       formData.append('ollamaUrl', ollamaUrl);
       formData.append('chunkDuration', String(chunkDuration));
       formData.append('overlapDuration', String(overlapDuration));
-      
+
       setProcessingState({
         processingStatus: 'Splitting audio into chunks...',
       });
-      
+
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData,
       });
-      
+
       const data = await response.json();
-      
+
+      if (!response.ok) {
+        // Server returned an error status
+        const errorMsg = data.error || `Server error (${response.status})`;
+        setProcessingState({
+          isProcessing: false,
+          processingStatus: `Failed: ${errorMsg}`,
+        });
+        return;
+      }
+
       if (data.status === 'completed' && data.result) {
         const result: TranscriptionResult = data.result;
-        
+
+        // Validate that segments actually exist
+        if (!result.segments || result.segments.length === 0) {
+          setProcessingState({
+            isProcessing: false,
+            processingStatus: 'Failed: Transcription produced no results. The audio may be empty or too quiet to transcribe.',
+          });
+          return;
+        }
+
         setProcessingState({
           isProcessing: false,
           processingProgress: 100,
           processingStatus: 'Transcription complete!',
         });
-        
+
         setTranscriptionResult(result.segments, result.fullText);
-        
+
         setTimeout(() => {
           setCurrentView('result');
         }, 800);
+      } else if (data.status === 'failed') {
+        setProcessingState({
+          isProcessing: false,
+          processingStatus: `Failed: ${data.error || 'Transcription failed'}`,
+        });
       } else {
         setProcessingState({
           isProcessing: false,
-          processingStatus: `Failed: ${data.error || 'Unknown error'}`,
+          processingStatus: `Failed: ${data.error || 'Unexpected response from server'}`,
         });
       }
     } catch (err) {
       console.error('Transcription error:', err);
       setProcessingState({
         isProcessing: false,
-        processingStatus: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        processingStatus: `Error: ${err instanceof Error ? err.message : 'Network error. Please check your connection and try again.'}`,
       });
     }
   }, [uploadedFile, selectedModel, geminiApiKey, ollamaUrl, chunkDuration, overlapDuration, setProcessingState, setTranscriptionResult, setCurrentView]);
-  
 
-  
   useEffect(() => {
     if (uploadedFile && !hasStarted.current) {
       startTranscription();
     }
   }, [uploadedFile, startTranscription]);
-  
+
+  const isFailed = !isProcessing && (
+    processingStatus.startsWith('Failed') || processingStatus.startsWith('Error')
+  );
+
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <Card className="p-6 sm:p-8">
@@ -133,7 +159,7 @@ export function ProcessingView() {
               <div className="flex items-center justify-center w-24 h-24 rounded-full bg-emerald-50 dark:bg-emerald-950/30">
                 <CheckCircle2 className="w-10 h-10 text-emerald-600" />
               </div>
-            ) : processingStatus.startsWith('Failed') || processingStatus.startsWith('Error') ? (
+            ) : isFailed ? (
               <div className="flex items-center justify-center w-24 h-24 rounded-full bg-destructive/10">
                 <XCircle className="w-10 h-10 text-destructive" />
               </div>
@@ -143,13 +169,15 @@ export function ProcessingView() {
               </div>
             )}
           </div>
-          
+
           {/* Status Text */}
           <div className="text-center space-y-2">
             <h2 className="text-lg font-semibold">
-              {isProcessing ? 'Transcribing Audio' : processingProgress === 100 ? 'Complete!' : 'Processing'}
+              {isProcessing ? 'Transcribing Audio' : processingProgress === 100 ? 'Complete!' : isFailed ? 'Transcription Failed' : 'Processing'}
             </h2>
-            <p className="text-sm text-muted-foreground">{processingStatus}</p>
+            <p className={`text-sm ${isFailed ? 'text-destructive' : 'text-muted-foreground'}`}>
+              {processingStatus}
+            </p>
             {isProcessing && estimatedTime && (
               <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                 <Clock className="w-3 h-3" />
@@ -157,7 +185,7 @@ export function ProcessingView() {
               </div>
             )}
           </div>
-          
+
           {/* Progress Bar */}
           <div className="space-y-2">
             <Progress value={processingProgress} className="h-2.5" />
@@ -168,7 +196,7 @@ export function ProcessingView() {
               </span>
             </div>
           </div>
-          
+
           {/* File & Model Info */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
@@ -192,7 +220,7 @@ export function ProcessingView() {
               </div>
             </div>
           </div>
-          
+
           {/* Processing Steps */}
           <AnimatePresence>
             {isProcessing && (
@@ -230,28 +258,37 @@ export function ProcessingView() {
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           {/* Error Actions */}
-          {!isProcessing && (processingStatus.startsWith('Failed') || processingStatus.startsWith('Error')) && (
-            <div className="flex justify-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  hasStarted.current = false;
-                  setCurrentView('upload');
-                }}
-              >
-                Go Back
-              </Button>
-              <Button
-                className="bg-emerald-600 hover:bg-emerald-700"
-                onClick={() => {
-                  hasStarted.current = false;
-                  startTranscription();
-                }}
-              >
-                Retry
-              </Button>
+          {isFailed && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-medium">Transcription Failed</p>
+                  <p className="text-xs mt-1 opacity-80 break-words">{processingStatus.replace(/^(Failed|Error):\s*/, '')}</p>
+                </div>
+              </div>
+              <div className="flex justify-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    hasStarted.current = false;
+                    setCurrentView('upload');
+                  }}
+                >
+                  Go Back
+                </Button>
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => {
+                    hasStarted.current = false;
+                    startTranscription();
+                  }}
+                >
+                  Retry
+                </Button>
+              </div>
             </div>
           )}
         </div>

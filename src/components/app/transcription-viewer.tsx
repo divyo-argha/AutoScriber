@@ -167,8 +167,14 @@ export function TranscriptionViewer() {
   
   if (transcriptionSegments.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No transcription results yet.</p>
+      <div className="text-center py-12 space-y-4">
+        <FileText className="w-12 h-12 mx-auto text-muted-foreground" />
+        <p className="text-muted-foreground">No transcription results available.</p>
+        <p className="text-xs text-muted-foreground">The transcription may have produced empty results. Try uploading a different audio file.</p>
+        <Button variant="outline" onClick={handleNewTranscription} className="gap-1.5">
+          <RotateCcw className="w-3.5 h-3.5" />
+          Start New Transcription
+        </Button>
       </div>
     );
   }

@@ -110,3 +110,25 @@ Stage Summary:
 - Fixed recording producing empty/silent audio files by using onstop callback
 - Improved audio capture quality (disabled browser audio processing)
 - Build passes successfully
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Fix "No transcription results yet" after transcription completes
+
+Work Log:
+- Diagnosed root cause chain: when getAudioDuration fails (returns 0), splitAudioIntoChunks creates a chunk with duration=0, ffmpeg extracts 0 seconds producing an empty file, Gemini API gets empty audio and returns no segments
+- The API route returned status:'completed' even with 0 segments, and ProcessingView navigated to result view with empty data
+- Fixed chunker.ts: added graceful fallback when duration cannot be determined - uses whole file as single chunk instead of creating 0-duration chunk
+- Fixed transcribe/route.ts: added file size validation (0 bytes check), empty file detection after save, chunking fallback on ffmpeg errors, 0-segment detection (returns HTTP 422 with descriptive error), detailed console logging throughout the pipeline
+- Fixed processing-view.tsx: validates segments exist before navigating to result view, handles non-ok HTTP responses, shows descriptive error messages with AlertTriangle icon, structured error display with retry button
+- Fixed transcription-viewer.tsx: better empty state with FileText icon, explanation text, and "Start New Transcription" button
+- Added detailed logging to gemini.ts: file validation before API call, response length logging, JSON parse error logging with raw text preview
+- Build compiles cleanly
+
+Stage Summary:
+- Transcription now fails gracefully with clear error messages instead of silently showing "No results"
+- Chunker handles unknown duration by using whole file as single chunk
+- API returns 422 when no segments are produced, with detailed error info
+- Client validates segments before navigating to result view
+- All edge cases (empty file, 0 duration, parse failures) have fallback paths

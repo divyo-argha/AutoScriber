@@ -22,19 +22,19 @@ function getMimeType(filePath: string): string {
 function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
   // Try to extract JSON from the response
   let jsonStr = text.trim();
-  
+
   // Remove markdown code fences if present
   const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonMatch) {
     jsonStr = jsonMatch[1].trim();
   }
-  
+
   // Try to find JSON array in the text
   const arrayMatch = jsonStr.match(/\[[\s\S]*\]/);
   if (arrayMatch) {
     jsonStr = arrayMatch[0];
   }
-  
+
   try {
     const parsed = JSON.parse(jsonStr);
     if (Array.isArray(parsed)) {
@@ -45,7 +45,9 @@ function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
         text: String(seg.text || ''),
       }));
     }
-  } catch {
+  } catch (parseErr) {
+    console.error('[gemini] Failed to parse JSON response:', parseErr);
+    console.error('[gemini] Raw response text (first 500 chars):', text.substring(0, 500));
     // If JSON parsing fails, create a single segment from the raw text
     if (text.trim()) {
       return [{
@@ -56,7 +58,7 @@ function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
       }];
     }
   }
-  
+
   return [];
 }
 
@@ -69,9 +71,20 @@ export async function transcribeWithGemini(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: modelId });
 
+  // Validate file exists and has content
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Audio file not found: ${filePath}`);
+  }
+  const fileStats = fs.statSync(filePath);
+  if (fileStats.size === 0) {
+    throw new Error(`Audio file is empty (0 bytes): ${filePath}`);
+  }
+
   const audioData = fs.readFileSync(filePath);
   const mimeType = getMimeType(filePath);
-  
+
+  console.log(`[gemini] Transcribing file: ${path.basename(filePath)}, size: ${audioData.length} bytes, mime: ${mimeType}`);
+
   const audioPart = {
     inlineData: {
       data: audioData.toString('base64'),
@@ -84,9 +97,11 @@ export async function transcribeWithGemini(
   const result = await model.generateContent([prompt, audioPart]);
   const response = result.response;
   const text = response.text();
-  
+
+  console.log(`[gemini] API response length: ${text.length} chars`);
+
   let segments = parseTranscriptionResponse(text);
-  
+
   // Apply time offset for chunks
   if (timeOffset > 0) {
     segments = segments.map(seg => ({
@@ -113,9 +128,20 @@ export async function transcribeChunkWithGemini(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: modelId });
 
+  // Validate file exists and has content
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Chunk file not found: ${filePath}`);
+  }
+  const fileStats = fs.statSync(filePath);
+  if (fileStats.size === 0) {
+    throw new Error(`Chunk file is empty (0 bytes): ${filePath}`);
+  }
+
   const audioData = fs.readFileSync(filePath);
   const mimeType = getMimeType(filePath);
-  
+
+  console.log(`[gemini] Transcribing chunk ${chunkIndex}: ${path.basename(filePath)}, size: ${audioData.length} bytes, mime: ${mimeType}`);
+
   const audioPart = {
     inlineData: {
       data: audioData.toString('base64'),
@@ -126,9 +152,11 @@ export async function transcribeChunkWithGemini(
   const result = await model.generateContent([GEMINI_CHUNK_PROMPT, audioPart]);
   const response = result.response;
   const text = response.text();
-  
+
+  console.log(`[gemini] Chunk ${chunkIndex} response length: ${text.length} chars`);
+
   let segments = parseTranscriptionResponse(text);
-  
+
   // Apply time offset for chunks
   if (timeOffset > 0) {
     segments = segments.map(seg => ({
