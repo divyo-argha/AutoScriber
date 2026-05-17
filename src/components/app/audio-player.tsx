@@ -19,6 +19,7 @@ interface AudioPlayerProps {
 export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
   const {
     uploadedFile,
+    jobId,
     audioUrl,
     isPlaying,
     currentTime,
@@ -34,13 +35,19 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
   const activeSegmentRef = useRef<HTMLDivElement | null>(null);
   const subtitleContainerRef = useRef<HTMLDivElement | null>(null);
   
-  // Create audio URL from uploaded file
+  // Create audio URL from uploaded file or from server (history)
   useEffect(() => {
-    if (uploadedFile && !audioUrl) {
+    if (audioUrl) return; // Already have a URL
+
+    if (uploadedFile) {
       const url = URL.createObjectURL(uploadedFile);
       setAudioPlayback({ audioUrl: url });
+    } else if (jobId) {
+      // Load from server via API (for history playback)
+      const url = `/api/audio?jobId=${jobId}`;
+      setAudioPlayback({ audioUrl: url });
     }
-  }, [uploadedFile, audioUrl, setAudioPlayback]);
+  }, [uploadedFile, jobId, audioUrl, setAudioPlayback]);
   
   // Set up audio element
   useEffect(() => {

@@ -9,7 +9,16 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-export const maxDuration = 300; // 5 minutes max for the API route
+export const maxDuration = 300;
+
+// Directory for persistent audio storage
+const AUDIO_STORAGE_DIR = path.join(process.cwd(), 'data', 'audio');
+
+function ensureAudioStorageDir() {
+  if (!fs.existsSync(AUDIO_STORAGE_DIR)) {
+    fs.mkdirSync(AUDIO_STORAGE_DIR, { recursive: true });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +26,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const modelId = (formData.get('model') as string) || 'gemini-2.5-flash';
     const geminiApiKey = (formData.get('geminiApiKey') as string) || '';
+    const geminiApiBaseUrl = (formData.get('geminiApiBaseUrl') as string) || '';
     const ollamaUrl = (formData.get('ollamaUrl') as string) || 'http://localhost:11434';
     const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300;
     const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 10;
@@ -25,7 +35,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Validate file size (not empty)
     if (file.size === 0) {
       return NextResponse.json({
         error: 'The uploaded file is empty (0 bytes). Please ensure the audio was recorded properly and try again.',
@@ -59,6 +68,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`[transcribe] File saved: ${file.name}, size: ${savedStats.size} bytes`);
 
+    // Also save to persistent storage for history playback
+    ensureAudioStorageDir();
+    const persistentAudioPath = path.join(AUDIO_STORAGE_DIR, `${Date.now()}_${file.name}`);
+    try {
+      fs.copyFileSync(filePath, persistentAudioPath);
+      console.log(`[transcribe] Audio saved to persistent storage: ${persistentAudioPath}`);
+    } catch (err) {
+      console.error('[transcribe] Failed to save audio to persistent storage:', err);
+    }
+
     // Get audio duration
     let duration: number | null = null;
     try {
@@ -80,6 +99,7 @@ export async function POST(request: NextRequest) {
         progress: 0,
         chunksTotal: 0,
         chunksDone: 0,
+        audioPath: persistentAudioPath,
       },
     });
 
@@ -97,8 +117,6 @@ export async function POST(request: NextRequest) {
           overlapDuration
         );
       } catch (chunkErr) {
-        // If chunking fails (e.g., ffmpeg can't parse the file),
-        // fall back to using the whole file as a single chunk
         console.error('[transcribe] Chunking failed, using whole file as fallback:', chunkErr);
         chunks = [{
           index: 0,
@@ -133,7 +151,8 @@ export async function POST(request: NextRequest) {
               geminiApiKey,
               modelId,
               chunk.index,
-              chunk.startTime
+              chunk.startTime,
+              geminiApiBaseUrl || undefined // Pass custom base URL for proxy support
             );
           } else {
             result = await transcribeChunkWithOllama(
@@ -164,17 +183,15 @@ export async function POST(request: NextRequest) {
           console.error(`[transcribe] Error processing chunk ${chunk.index}:`, errMsg);
           chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
           chunksDone++;
-          // Continue with other chunks even if one fails
         }
       }
 
       console.log(`[transcribe] Total segments collected: ${allSegments.length}`);
 
-      // If no segments at all were produced, return a meaningful error
       if (allSegments.length === 0) {
         const errorDetail = chunkErrors.length > 0
           ? `Transcription produced no results. Errors: ${chunkErrors.join('; ')}`
-          : 'Transcription produced no results. The audio may be empty, too quiet, or in an unsupported format. Please check your audio file and try again.';
+          : 'Transcription produced no results. The audio may be empty, too quiet, or in an unsupported format.';
 
         await db.transcriptionJob.update({
           where: { id: job.id },
@@ -184,7 +201,6 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Cleanup temp files
         cleanupChunks(chunks);
         try { fs.unlinkSync(filePath); } catch {}
         try { fs.rmdirSync(tempDir); } catch {}
@@ -196,10 +212,8 @@ export async function POST(request: NextRequest) {
         }, { status: 422 });
       }
 
-      // Merge overlapping segments and deduplicate speakers
       const mergedSegments = mergeSegments(allSegments);
 
-      // Build full text
       const fullText = mergedSegments
         .map(seg => `[${formatTime(seg.startTime)} - ${formatTime(seg.endTime)}] ${seg.speaker}: ${seg.text}`)
         .join('\n');
@@ -222,7 +236,6 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Cleanup temp files
       cleanupChunks(chunks);
       try { fs.unlinkSync(filePath); } catch {}
       try { fs.rmdirSync(tempDir); } catch {}
@@ -245,7 +258,6 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Cleanup
       try { fs.unlinkSync(filePath); } catch {}
       try { fs.rmdirSync(tempDir); } catch {}
 
@@ -267,7 +279,6 @@ export async function POST(request: NextRequest) {
 function mergeSegments(segments: TranscriptionSegment[]): TranscriptionSegment[] {
   if (segments.length === 0) return [];
 
-  // Sort by start time
   const sorted = [...segments].sort((a, b) => a.startTime - b.startTime);
 
   const merged: TranscriptionSegment[] = [];
@@ -276,12 +287,10 @@ function mergeSegments(segments: TranscriptionSegment[]): TranscriptionSegment[]
   for (let i = 1; i < sorted.length; i++) {
     const seg = sorted[i];
 
-    // If same speaker and segments overlap or are close (within 2 seconds)
     if (
       current.speaker === seg.speaker &&
       seg.startTime - current.endTime < 2
     ) {
-      // Merge
       current.endTime = Math.max(current.endTime, seg.endTime);
       current.text = current.text + ' ' + seg.text;
     } else {

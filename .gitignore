@@ -50,5 +50,9 @@ test
 prompt
 
 server.log
+
+# Persistent data (audio files, database)
+/data/audio/
+
 # Skills directory
 /skills/

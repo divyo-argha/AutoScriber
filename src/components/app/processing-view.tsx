@@ -15,6 +15,7 @@ export function ProcessingView() {
     uploadedFileName,
     selectedModel,
     geminiApiKey,
+    geminiApiBaseUrl,
     ollamaUrl,
     chunkDuration,
     overlapDuration,
@@ -66,6 +67,7 @@ export function ProcessingView() {
       formData.append('file', uploadedFile);
       formData.append('model', selectedModel);
       formData.append('geminiApiKey', geminiApiKey);
+      formData.append('geminiApiBaseUrl', geminiApiBaseUrl);
       formData.append('ollamaUrl', ollamaUrl);
       formData.append('chunkDuration', String(chunkDuration));
       formData.append('overlapDuration', String(overlapDuration));
@@ -109,7 +111,7 @@ export function ProcessingView() {
           processingStatus: 'Transcription complete!',
         });
 
-        setTranscriptionResult(result.segments, result.fullText);
+        setTranscriptionResult(result.segments, result.fullText, data.jobId);
 
         setTimeout(() => {
           setCurrentView('result');
@@ -132,7 +134,7 @@ export function ProcessingView() {
         processingStatus: `Error: ${err instanceof Error ? err.message : 'Network error. Please check your connection and try again.'}`,
       });
     }
-  }, [uploadedFile, selectedModel, geminiApiKey, ollamaUrl, chunkDuration, overlapDuration, setProcessingState, setTranscriptionResult, setCurrentView]);
+  }, [uploadedFile, selectedModel, geminiApiKey, geminiApiBaseUrl, ollamaUrl, chunkDuration, overlapDuration, setProcessingState, setTranscriptionResult, setCurrentView]);
 
   useEffect(() => {
     if (uploadedFile && !hasStarted.current) {

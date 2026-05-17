@@ -6,13 +6,13 @@ export async function GET() {
     let settings = await db.appSettings.findUnique({
       where: { id: 'default' },
     });
-    
+
     if (!settings) {
       settings = await db.appSettings.create({
         data: { id: 'default' },
       });
     }
-    
+
     return NextResponse.json(settings);
   } catch (err) {
     console.error('Error fetching settings:', err);
@@ -23,11 +23,12 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     const settings = await db.appSettings.upsert({
       where: { id: 'default' },
       update: {
         geminiApiKey: body.geminiApiKey,
+        geminiApiBaseUrl: body.geminiApiBaseUrl,
         ollamaUrl: body.ollamaUrl,
         defaultModel: body.defaultModel,
         chunkDuration: body.chunkDuration,
@@ -36,13 +37,14 @@ export async function POST(request: NextRequest) {
       create: {
         id: 'default',
         geminiApiKey: body.geminiApiKey || '',
+        geminiApiBaseUrl: body.geminiApiBaseUrl || '',
         ollamaUrl: body.ollamaUrl || 'http://localhost:11434',
         defaultModel: body.defaultModel || 'gemini-2.5-flash',
         chunkDuration: body.chunkDuration || 300,
         overlapDuration: body.overlapDuration || 10,
       },
     });
-    
+
     return NextResponse.json(settings);
   } catch (err) {
     console.error('Error saving settings:', err);

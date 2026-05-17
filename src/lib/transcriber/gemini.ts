@@ -20,7 +20,6 @@ function getMimeType(filePath: string): string {
 }
 
 function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
-  // Try to extract JSON from the response
   let jsonStr = text.trim();
 
   // Remove markdown code fences if present
@@ -48,7 +47,6 @@ function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
   } catch (parseErr) {
     console.error('[gemini] Failed to parse JSON response:', parseErr);
     console.error('[gemini] Raw response text (first 500 chars):', text.substring(0, 500));
-    // If JSON parsing fails, create a single segment from the raw text
     if (text.trim()) {
       return [{
         speaker: 'Speaker Unknown',
@@ -62,16 +60,33 @@ function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
   return [];
 }
 
+/**
+ * Create a GoogleGenerativeAI client, optionally using a custom base URL (proxy).
+ *
+ * The @google/generative-ai SDK accepts a `baseUrl` in the constructor options
+ * which allows routing requests through a proxy — this is the fix for the
+ * "User location is not supported for the API use" error.
+ */
+function createGenAIClient(apiKey: string, baseUrl?: string): GoogleGenerativeAI {
+  if (baseUrl && baseUrl.trim()) {
+    // Strip trailing slash
+    const url = baseUrl.trim().replace(/\/+$/, '');
+    console.log(`[gemini] Using custom API base URL: ${url}`);
+    return new GoogleGenerativeAI(apiKey, url);
+  }
+  return new GoogleGenerativeAI(apiKey);
+}
+
 export async function transcribeWithGemini(
   filePath: string,
   apiKey: string,
   modelId: string = 'gemini-2.5-flash',
-  timeOffset: number = 0
+  timeOffset: number = 0,
+  baseUrl?: string
 ): Promise<ChunkResult> {
-  const genAI = new GoogleGenerativeAI(apiKey);
+  const genAI = createGenAIClient(apiKey, baseUrl);
   const model = genAI.getGenerativeModel({ model: modelId });
 
-  // Validate file exists and has content
   if (!fs.existsSync(filePath)) {
     throw new Error(`Audio file not found: ${filePath}`);
   }
@@ -102,7 +117,6 @@ export async function transcribeWithGemini(
 
   let segments = parseTranscriptionResponse(text);
 
-  // Apply time offset for chunks
   if (timeOffset > 0) {
     segments = segments.map(seg => ({
       ...seg,
@@ -123,12 +137,12 @@ export async function transcribeChunkWithGemini(
   apiKey: string,
   modelId: string,
   chunkIndex: number,
-  timeOffset: number
+  timeOffset: number,
+  baseUrl?: string
 ): Promise<ChunkResult> {
-  const genAI = new GoogleGenerativeAI(apiKey);
+  const genAI = createGenAIClient(apiKey, baseUrl);
   const model = genAI.getGenerativeModel({ model: modelId });
 
-  // Validate file exists and has content
   if (!fs.existsSync(filePath)) {
     throw new Error(`Chunk file not found: ${filePath}`);
   }
@@ -157,7 +171,6 @@ export async function transcribeChunkWithGemini(
 
   let segments = parseTranscriptionResponse(text);
 
-  // Apply time offset for chunks
   if (timeOffset > 0) {
     segments = segments.map(seg => ({
       ...seg,
@@ -173,9 +186,9 @@ export async function transcribeChunkWithGemini(
   };
 }
 
-export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.5-flash'): Promise<boolean> {
+export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.5-flash', baseUrl?: string): Promise<boolean> {
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = createGenAIClient(apiKey, baseUrl);
     const model = genAI.getGenerativeModel({ model: modelId });
     const result = await model.generateContent('Say "OK" if you can hear me.');
     return !!result.response.text();

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Key, Server, Cpu, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Key, Server, Cpu, CheckCircle2, XCircle, Loader2, Globe } from 'lucide-react';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -24,27 +24,30 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const {
     geminiApiKey,
+    geminiApiBaseUrl,
     ollamaUrl,
     chunkDuration,
     overlapDuration,
     setSettings,
     setOllamaModels,
   } = useAppStore();
-  
+
   const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
+  const [localApiBaseUrl, setLocalApiBaseUrl] = useState(geminiApiBaseUrl);
   const [localOllamaUrl, setLocalOllamaUrl] = useState(ollamaUrl);
   const [localChunkDuration, setLocalChunkDuration] = useState(String(chunkDuration));
   const [localOverlapDuration, setLocalOverlapDuration] = useState(String(overlapDuration));
   const [ollamaStatus, setOllamaStatus] = useState<'checking' | 'connected' | 'disconnected'>('disconnected');
   const [saving, setSaving] = useState(false);
-  
+
   useEffect(() => {
     setLocalApiKey(geminiApiKey);
+    setLocalApiBaseUrl(geminiApiBaseUrl);
     setLocalOllamaUrl(ollamaUrl);
     setLocalChunkDuration(String(chunkDuration));
     setLocalOverlapDuration(String(overlapDuration));
-  }, [geminiApiKey, ollamaUrl, chunkDuration, overlapDuration]);
-  
+  }, [geminiApiKey, geminiApiBaseUrl, ollamaUrl, chunkDuration, overlapDuration]);
+
   const checkOllama = async () => {
     setOllamaStatus('checking');
     try {
@@ -58,26 +61,26 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       setOllamaStatus('disconnected');
     }
   };
-  
+
   const saveSettings = async () => {
     setSaving(true);
     try {
       const settings = {
         geminiApiKey: localApiKey,
+        geminiApiBaseUrl: localApiBaseUrl,
         ollamaUrl: localOllamaUrl,
         chunkDuration: parseInt(localChunkDuration) || 300,
         overlapDuration: parseInt(localOverlapDuration) || 10,
       };
-      
+
       setSettings(settings);
-      
-      // Save to database
+
       await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
       });
-      
+
       onOpenChange(false);
     } catch (err) {
       console.error('Error saving settings:', err);
@@ -85,7 +88,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       setSaving(false);
     }
   };
-  
+
   // Load settings on open
   useEffect(() => {
     if (open) {
@@ -95,6 +98,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           if (data.geminiApiKey) {
             setLocalApiKey(data.geminiApiKey);
             setSettings({ geminiApiKey: data.geminiApiKey });
+          }
+          if (data.geminiApiBaseUrl) {
+            setLocalApiBaseUrl(data.geminiApiBaseUrl);
+            setSettings({ geminiApiBaseUrl: data.geminiApiBaseUrl });
           }
           if (data.ollamaUrl) {
             setLocalOllamaUrl(data.ollamaUrl);
@@ -112,7 +119,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         .catch(() => {});
     }
   }, [open, setSettings]);
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -122,7 +129,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             Configure your transcription models and preferences
           </DialogDescription>
         </DialogHeader>
-        
+
         <Tabs defaultValue="cloud" className="mt-2">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="cloud" className="gap-1.5">
@@ -138,7 +145,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               Advanced
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="cloud" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="gemini-key">Gemini API Key</Label>
@@ -161,7 +168,25 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 </a>
               </p>
             </div>
-            
+
+            <div className="space-y-2">
+              <Label htmlFor="gemini-base-url" className="flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5" />
+                API Base URL (Proxy)
+              </Label>
+              <Input
+                id="gemini-base-url"
+                type="url"
+                placeholder="https://generativelanguage.googleapis.com"
+                value={localApiBaseUrl}
+                onChange={(e) => setLocalApiBaseUrl(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                If you see &ldquo;User location is not supported&rdquo; error, set this to your proxy URL.
+                Leave empty to use the default Google endpoint.
+              </p>
+            </div>
+
             <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-2">
               <p className="font-medium">Cloud Models Available:</p>
               <div className="flex flex-wrap gap-1.5">
@@ -174,7 +199,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </p>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="local" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="ollama-url">Ollama Server URL</Label>
@@ -207,7 +232,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <p className="text-xs text-destructive">Cannot connect to Ollama. Make sure it&apos;s running.</p>
               )}
             </div>
-            
+
             <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-2">
               <p className="font-medium">Setup Local Models:</p>
               <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground">
@@ -225,17 +250,17 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 Recommended for MacBook Air M5 16GB: <strong>gemma3:12b</strong> or <strong>gemma3:4b</strong>
               </p>
             </div>
-            
+
             <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 text-sm space-y-1">
               <p className="font-medium text-amber-700 dark:text-amber-400">Note on Local Models</p>
               <p className="text-xs text-amber-600 dark:text-amber-500">
-                Local Gemma models via Ollama may have limited audio transcription capabilities compared to cloud Gemini models. 
-                For best Bangla-English mixed transcription with diarization, we recommend using Gemini Flash (cloud). 
+                Local Gemma models via Ollama may have limited audio transcription capabilities compared to cloud Gemini models.
+                For best Bangla-English mixed transcription with diarization, we recommend using Gemini Flash (cloud).
                 Local models work well for shorter audio clips and as a privacy-preserving offline option.
               </p>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="advanced" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="chunk-duration">Chunk Duration (seconds)</Label>
@@ -251,7 +276,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 How long each audio chunk should be. Larger chunks = better context, but slower per chunk. Default: 300s (5 min)
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="overlap-duration">Overlap Duration (seconds)</Label>
               <Input
@@ -266,18 +291,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 Overlap between chunks to prevent cutting mid-sentence. Default: 10s
               </p>
             </div>
-            
+
             <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-2">
               <p className="font-medium">Memory Management</p>
               <p className="text-xs text-muted-foreground">
-                For large files (1+ hours), audio is split into chunks and processed sequentially. 
-                Each chunk is loaded into memory individually, then freed after processing. 
+                For large files (1+ hours), audio is split into chunks and processed sequentially.
+                Each chunk is loaded into memory individually, then freed after processing.
                 This ensures the app remains efficient even with 1.5-hour audio files.
               </p>
             </div>
           </TabsContent>
         </Tabs>
-        
+
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

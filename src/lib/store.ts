@@ -2,18 +2,30 @@ import { create } from 'zustand';
 import type { TranscriptionSegment, ModelInfo } from './transcriber/types';
 import { AVAILABLE_MODELS } from './transcriber/types';
 
-export type AppView = 'upload' | 'processing' | 'result';
+export type AppView = 'upload' | 'processing' | 'result' | 'history';
+
+interface HistoryJob {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  duration: number | null;
+  status: string;
+  model: string;
+  createdAt: string;
+  segmentsCount: number;
+  speakersCount: number;
+}
 
 interface AppState {
   // Current view
   currentView: AppView;
   setCurrentView: (view: AppView) => void;
-  
+
   // Selected model
   selectedModel: string;
   setSelectedModel: (model: string) => void;
   availableModels: ModelInfo[];
-  
+
   // File info
   uploadedFile: File | null;
   uploadedFileName: string;
@@ -21,7 +33,7 @@ interface AppState {
   uploadedFileDuration: number;
   setUploadedFile: (file: File | null) => void;
   setUploadedFileDuration: (duration: number) => void;
-  
+
   // Processing state
   isProcessing: boolean;
   processingProgress: number;
@@ -37,13 +49,13 @@ interface AppState {
     chunksDone: number;
     currentChunkIndex: number;
   }>) => void;
-  
+
   // Results
   transcriptionSegments: TranscriptionSegment[];
   transcriptionText: string;
   jobId: string | null;
-  setTranscriptionResult: (segments: TranscriptionSegment[], text: string) => void;
-  
+  setTranscriptionResult: (segments: TranscriptionSegment[], text: string, jobId?: string) => void;
+
   // Audio playback state
   audioUrl: string | null;
   isPlaying: boolean;
@@ -57,23 +69,29 @@ interface AppState {
     audioDuration: number;
     activeSegmentIndex: number;
   }>) => void;
-  
+
   // Settings
   geminiApiKey: string;
+  geminiApiBaseUrl: string;
   ollamaUrl: string;
   chunkDuration: number;
   overlapDuration: number;
   setSettings: (settings: Partial<{
     geminiApiKey: string;
+    geminiApiBaseUrl: string;
     ollamaUrl: string;
     chunkDuration: number;
     overlapDuration: number;
   }>) => void;
-  
+
   // Ollama models
   ollamaModels: string[];
   setOllamaModels: (models: string[]) => void;
-  
+
+  // History
+  historyJobs: HistoryJob[];
+  setHistoryJobs: (jobs: HistoryJob[]) => void;
+
   // Reset
   reset: () => void;
 }
@@ -101,40 +119,47 @@ const initialState = {
   audioDuration: 0,
   activeSegmentIndex: -1,
   geminiApiKey: '',
+  geminiApiBaseUrl: '',
   ollamaUrl: 'http://localhost:11434',
   chunkDuration: 300,
   overlapDuration: 10,
   ollamaModels: [] as string[],
+  historyJobs: [] as HistoryJob[],
 };
+
+export type { HistoryJob };
 
 export const useAppStore = create<AppState>((set) => ({
   ...initialState,
-  
+
   setCurrentView: (view) => set({ currentView: view }),
-  
+
   setSelectedModel: (model) => set({ selectedModel: model }),
-  
+
   setUploadedFile: (file) => set({
     uploadedFile: file,
     uploadedFileName: file?.name || '',
     uploadedFileSize: file?.size || 0,
   }),
-  
+
   setUploadedFileDuration: (duration) => set({ uploadedFileDuration: duration }),
-  
+
   setProcessingState: (state) => set((prev) => ({ ...prev, ...state })),
-  
-  setTranscriptionResult: (segments, text) => set({
+
+  setTranscriptionResult: (segments, text, jobId) => set({
     transcriptionSegments: segments,
     transcriptionText: text,
+    ...(jobId ? { jobId } : {}),
   }),
-  
+
   setAudioPlayback: (state) => set((prev) => ({ ...prev, ...state })),
-  
+
   setSettings: (settings) => set((prev) => ({ ...prev, ...settings })),
-  
+
   setOllamaModels: (models) => set({ ollamaModels: models }),
-  
+
+  setHistoryJobs: (jobs) => set({ historyJobs: jobs }),
+
   reset: () => set((prev) => {
     // Revoke old audio URL to prevent memory leak
     if (prev.audioUrl) {
@@ -143,10 +168,12 @@ export const useAppStore = create<AppState>((set) => ({
     return {
       ...initialState,
       geminiApiKey: prev.geminiApiKey,
+      geminiApiBaseUrl: prev.geminiApiBaseUrl,
       ollamaUrl: prev.ollamaUrl,
       chunkDuration: prev.chunkDuration,
       overlapDuration: prev.overlapDuration,
       ollamaModels: prev.ollamaModels,
+      historyJobs: prev.historyJobs,
     };
   }),
 }));

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Settings, Mic, RotateCcw } from 'lucide-react';
+import { Settings, Mic, RotateCcw, History } from 'lucide-react';
 import { SettingsDialog } from './settings-dialog';
 import {
   Select,
@@ -26,9 +26,9 @@ export function Header() {
     availableModels,
     isProcessing,
   } = useAppStore();
-  
+
   const [settingsOpen, setSettingsOpen] = useState(false);
-  
+
   const allModels = [
     ...availableModels,
     ...ollamaModels
@@ -43,16 +43,19 @@ export function Header() {
         supportsTimestamps: true,
       })),
   ];
-  
+
   const currentModelInfo = allModels.find(m => m.id === selectedModel);
-  
+
   return (
     <>
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo & Title */}
-            <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-3 cursor-pointer"
+              onClick={() => { if (!isProcessing) { reset(); setCurrentView('upload'); } }}
+            >
               <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
                 <Mic className="w-5 h-5" />
               </div>
@@ -61,7 +64,7 @@ export function Header() {
                 <p className="text-xs text-muted-foreground -mt-0.5">Bangla Audio Transcription</p>
               </div>
             </div>
-            
+
             {/* Model Selector - Center */}
             <div className="hidden sm:flex items-center gap-3">
               <span className="text-sm text-muted-foreground">Model:</span>
@@ -86,18 +89,15 @@ export function Header() {
                 </SelectContent>
               </Select>
               {currentModelInfo && (
-                <Badge
-                  variant="outline"
-                  className="text-xs"
-                >
+                <Badge variant="outline" className="text-xs">
                   {currentModelInfo.provider === 'gemini' ? '☁️' : '🖥️'} {currentModelInfo.provider === 'gemini' ? 'Cloud' : 'Local'}
                 </Badge>
               )}
             </div>
-            
+
             {/* Actions */}
             <div className="flex items-center gap-2">
-              {currentView !== 'upload' && !isProcessing && (
+              {currentView !== 'upload' && currentView !== 'history' && !isProcessing && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -109,6 +109,16 @@ export function Header() {
                 </Button>
               )}
               <Button
+                variant={currentView === 'history' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentView(currentView === 'history' ? 'upload' : 'history')}
+                disabled={isProcessing}
+                className="gap-1.5"
+              >
+                <History className="w-4 h-4" />
+                <span className="hidden sm:inline">History</span>
+              </Button>
+              <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSettingsOpen(true)}
@@ -118,7 +128,7 @@ export function Header() {
               </Button>
             </div>
           </div>
-          
+
           {/* Mobile Model Selector */}
           <div className="sm:hidden pb-3">
             <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isProcessing}>
@@ -141,7 +151,7 @@ export function Header() {
           </div>
         </div>
       </header>
-      
+
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   );
