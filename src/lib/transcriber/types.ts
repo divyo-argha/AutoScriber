@@ -75,6 +75,15 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     supportsTimestamps: true,
   },
   {
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    provider: 'gemini',
+    description: 'Previous generation Gemini Flash. Slightly cheaper, good Bangla accuracy.',
+    maxAudioLength: 3600,
+    supportsDiarization: true,
+    supportsTimestamps: true,
+  },
+  {
     id: 'gemma3:12b',
     name: 'Gemma 3 12B (Local)',
     provider: 'ollama',

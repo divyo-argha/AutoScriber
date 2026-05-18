@@ -22,8 +22,6 @@ export default function Home() {
           const data = await res.json();
           if (data) {
             setSettings({
-              geminiApiKey: data.geminiApiKey || '',
-              geminiApiBaseUrl: data.geminiApiBaseUrl || '',
               ollamaUrl: data.ollamaUrl || 'http://localhost:11434',
               chunkDuration: data.chunkDuration || 300,
               overlapDuration: data.overlapDuration || 10,

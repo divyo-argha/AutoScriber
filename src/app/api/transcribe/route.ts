@@ -53,9 +53,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const modelId = (formData.get('model') as string) || 'gemini-2.5-flash';
-    const geminiApiKey = (formData.get('geminiApiKey') as string) || '';
-    const geminiApiBaseUrl = (formData.get('geminiApiBaseUrl') as string) || '';
-    const ollamaUrl = (formData.get('ollamaUrl') as string) || 'http://localhost:11434';
+    const geminiApiKey = process.env.GEMINI_API_KEY || '';
+    const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
     const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300;
     const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 10;
 
@@ -180,8 +179,7 @@ export async function POST(request: NextRequest) {
               geminiApiKey,
               modelId,
               chunk.index,
-              chunk.startTime,
-              geminiApiBaseUrl || undefined
+              chunk.startTime
             );
           } else {
             result = await transcribeChunkWithOllama(

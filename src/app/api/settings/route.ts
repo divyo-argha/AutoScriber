@@ -13,7 +13,11 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json(settings);
+    return NextResponse.json({
+      ...settings,
+      geminiApiKey: process.env.GEMINI_API_KEY ? '***' : '',
+      ollamaUrl: process.env.OLLAMA_URL || settings.ollamaUrl,
+    });
   } catch (err) {
     console.error('Error fetching settings:', err);
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
@@ -27,8 +31,6 @@ export async function POST(request: NextRequest) {
     const settings = await db.appSettings.upsert({
       where: { id: 'default' },
       update: {
-        geminiApiKey: body.geminiApiKey,
-        geminiApiBaseUrl: body.geminiApiBaseUrl,
         ollamaUrl: body.ollamaUrl,
         defaultModel: body.defaultModel,
         chunkDuration: body.chunkDuration,
@@ -36,8 +38,6 @@ export async function POST(request: NextRequest) {
       },
       create: {
         id: 'default',
-        geminiApiKey: body.geminiApiKey || '',
-        geminiApiBaseUrl: body.geminiApiBaseUrl || '',
         ollamaUrl: body.ollamaUrl || 'http://localhost:11434',
         defaultModel: body.defaultModel || 'gemini-2.5-flash',
         chunkDuration: body.chunkDuration || 300,

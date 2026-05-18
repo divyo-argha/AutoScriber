@@ -72,13 +72,10 @@ interface AppState {
 
   // Settings
   geminiApiKey: string;
-  geminiApiBaseUrl: string;
   ollamaUrl: string;
   chunkDuration: number;
   overlapDuration: number;
   setSettings: (settings: Partial<{
-    geminiApiKey: string;
-    geminiApiBaseUrl: string;
     ollamaUrl: string;
     chunkDuration: number;
     overlapDuration: number;
@@ -119,7 +116,6 @@ const initialState = {
   audioDuration: 0,
   activeSegmentIndex: -1,
   geminiApiKey: '',
-  geminiApiBaseUrl: '',
   ollamaUrl: 'http://localhost:11434',
   chunkDuration: 300,
   overlapDuration: 10,
@@ -169,7 +165,6 @@ export const useAppStore = create<AppState>((set) => ({
       ...initialState,
       // Preserve settings
       geminiApiKey: prev.geminiApiKey,
-      geminiApiBaseUrl: prev.geminiApiBaseUrl,
       ollamaUrl: prev.ollamaUrl,
       chunkDuration: prev.chunkDuration,
       overlapDuration: prev.overlapDuration,

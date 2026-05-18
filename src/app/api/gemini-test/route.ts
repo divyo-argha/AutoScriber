@@ -3,26 +3,19 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const apiKey = searchParams.get('apiKey');
   const modelId = searchParams.get('model') || 'gemini-2.5-flash';
-  const baseUrl = searchParams.get('baseUrl') || '';
+  const apiKey = process.env.GEMINI_API_KEY || '';
 
   if (!apiKey) {
     return NextResponse.json({
       connected: false,
-      error: 'API key is required',
+      error: 'GEMINI_API_KEY is not set in environment',
       errorType: 'no_key',
     });
   }
 
   try {
-    let genAI: GoogleGenerativeAI;
-    if (baseUrl && baseUrl.trim()) {
-      const url = baseUrl.trim().replace(/\/+$/, '');
-      genAI = new GoogleGenerativeAI(apiKey, url);
-    } else {
-      genAI = new GoogleGenerativeAI(apiKey);
-    }
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({ model: modelId });
     const result = await model.generateContent('Respond with only the word "OK".');

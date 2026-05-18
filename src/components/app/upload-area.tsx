@@ -32,8 +32,6 @@ export function UploadArea() {
     setUploadedFile,
     setCurrentView,
     selectedModel,
-    geminiApiKey,
-    geminiApiBaseUrl,
   } = useAppStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -116,17 +114,15 @@ export function UploadArea() {
   const canStart = useCallback(() => {
     const modelInfo = useAppStore.getState().availableModels.find(m => m.id === selectedModel);
     if (!modelInfo) return false;
-    if (modelInfo.provider === 'gemini' && !geminiApiKey) return false;
     return !!uploadedFile;
-  }, [uploadedFile, selectedModel, geminiApiKey]);
+  }, [uploadedFile, selectedModel]);
 
   const getStartWarning = useCallback((): string | null => {
     const modelInfo = useAppStore.getState().availableModels.find(m => m.id === selectedModel);
     if (!modelInfo) return 'Please select a model';
-    if (modelInfo.provider === 'gemini' && !geminiApiKey) return 'Please set your Gemini API key in Settings';
     if (!uploadedFile) return 'Please upload or record an audio file';
     return null;
-  }, [selectedModel, geminiApiKey, uploadedFile]);
+  }, [selectedModel, uploadedFile]);
 
   /**
    * Pre-flight check: Before starting transcription, test if the selected
@@ -137,61 +133,50 @@ export function UploadArea() {
     setPreflightWarning(null);
     const modelInfo = useAppStore.getState().availableModels.find(m => m.id === selectedModel);
 
-    if (modelInfo?.provider === 'gemini' && geminiApiKey) {
+    if (modelInfo?.provider === 'gemini') {
       setPreflightChecking(true);
       try {
-        const params = new URLSearchParams({
-          apiKey: geminiApiKey,
-          model: selectedModel,
-        });
-        if (geminiApiBaseUrl) {
-          params.set('baseUrl', geminiApiBaseUrl);
-        }
+        const params = new URLSearchParams({ model: selectedModel });
         const res = await fetch(`/api/gemini-test?${params}`);
         const data = await res.json();
 
+        setPreflightChecking(false);
         if (data.connected) {
-          // API is working, proceed
-          setPreflightChecking(false);
           setCurrentView('processing');
+        } else if (data.errorType === 'no_key') {
+          setPreflightWarning('GEMINI_API_KEY is not set in the server environment. Please add it to .env.local and restart.');
         } else if (data.errorType === 'location_blocked') {
-          setPreflightChecking(false);
-          setPreflightWarning('Gemini API is not available in your region. Please set up a proxy URL in Settings → Cloud → API Base URL, or switch to a local Ollama model.');
+          setPreflightWarning('Gemini API is not available in your region. Switch to a local Ollama model.');
         } else if (data.errorType === 'auth_failed') {
-          setPreflightChecking(false);
-          setPreflightWarning('Your Gemini API key appears to be invalid. Please check it in Settings.');
+          setPreflightWarning('Gemini API key is invalid. Please check GEMINI_API_KEY in .env.local.');
         } else {
-          // Other errors - proceed anyway, it might work for actual transcription
-          setPreflightChecking(false);
+          // Other errors — proceed anyway
           setCurrentView('processing');
         }
       } catch {
-        // Network error - proceed anyway, the transcription will handle it
         setPreflightChecking(false);
         setCurrentView('processing');
       }
     } else {
-      // Ollama or no key - just proceed
       setCurrentView('processing');
     }
-  }, [selectedModel, geminiApiKey, geminiApiBaseUrl, setCurrentView]);
+  }, [selectedModel, setCurrentView]);
 
-  // If file is already selected, show the file preview
   if (uploadedFile) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-4">
         <Card className="border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/10">
-          <div className="p-6 sm:p-8 text-center space-y-4">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-2xl bg-emerald-100 dark:bg-emerald-900/30">
-              <FileAudio className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-5 sm:p-8 text-center space-y-4">
+            <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-emerald-100 dark:bg-emerald-900/30">
+              <FileAudio className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">{uploadedFile.name}</p>
+              <p className="text-sm font-medium text-foreground break-all">{uploadedFile.name}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {formatFileSize(uploadedFile.size)}
               </p>
             </div>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -239,15 +224,15 @@ export function UploadArea() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="upload" className="gap-2">
-            <FolderOpen className="w-4 h-4" />
+          <TabsTrigger value="upload" className="gap-1.5 text-xs sm:text-sm">
+            <FolderOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Upload File
           </TabsTrigger>
-          <TabsTrigger value="record" className="gap-2">
-            <Mic className="w-4 h-4" />
+          <TabsTrigger value="record" className="gap-1.5 text-xs sm:text-sm">
+            <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Record Audio
           </TabsTrigger>
         </TabsList>
@@ -264,15 +249,15 @@ export function UploadArea() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <div className="p-8 sm:p-12 text-center space-y-4">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-2xl bg-muted">
-                <Upload className="w-8 h-8 text-muted-foreground" />
+            <div className="p-6 sm:p-12 text-center space-y-4">
+              <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-muted">
+                <Upload className="w-7 h-7 sm:w-8 sm:h-8 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-base font-medium text-foreground">
+                <p className="text-sm sm:text-base font-medium text-foreground">
                   Drop your audio file here
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   or click to browse
                 </p>
               </div>
@@ -294,7 +279,7 @@ export function UploadArea() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Supports MP3, WAV, OGG, FLAC, M4A, WEBM, AAC, WMA — up to 2GB
+                MP3, WAV, OGG, FLAC, M4A, WEBM, AAC, WMA — up to 2GB
               </p>
             </div>
           </Card>
@@ -318,18 +303,18 @@ export function UploadArea() {
       )}
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-600">1.5h</p>
-          <p className="text-xs text-muted-foreground mt-1">Max Audio Length</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <Card className="p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-emerald-600">1.5h</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Max Audio Length</p>
         </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-600">BN+EN</p>
-          <p className="text-xs text-muted-foreground mt-1">Bangla-English Mixed</p>
+        <Card className="p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-emerald-600">BN+EN</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Bangla-English Mixed</p>
         </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-600">5+</p>
-          <p className="text-xs text-muted-foreground mt-1">Export Formats</p>
+        <Card className="p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-emerald-600">5+</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Export Formats</p>
         </Card>
       </div>
     </div>

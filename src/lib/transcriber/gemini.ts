@@ -61,19 +61,9 @@ function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
 }
 
 /**
- * Create a GoogleGenerativeAI client, optionally using a custom base URL (proxy).
- *
- * The @google/generative-ai SDK accepts a `baseUrl` in the constructor options
- * which allows routing requests through a proxy — this is the fix for the
- * "User location is not supported for the API use" error.
+ * Create a GoogleGenerativeAI client.
  */
-function createGenAIClient(apiKey: string, baseUrl?: string): GoogleGenerativeAI {
-  if (baseUrl && baseUrl.trim()) {
-    // Strip trailing slash
-    const url = baseUrl.trim().replace(/\/+$/, '');
-    console.log(`[gemini] Using custom API base URL: ${url}`);
-    return new GoogleGenerativeAI(apiKey, url);
-  }
+function createGenAIClient(apiKey: string): GoogleGenerativeAI {
   return new GoogleGenerativeAI(apiKey);
 }
 
@@ -81,10 +71,9 @@ export async function transcribeWithGemini(
   filePath: string,
   apiKey: string,
   modelId: string = 'gemini-2.5-flash',
-  timeOffset: number = 0,
-  baseUrl?: string
+  timeOffset: number = 0
 ): Promise<ChunkResult> {
-  const genAI = createGenAIClient(apiKey, baseUrl);
+  const genAI = createGenAIClient(apiKey);
   const model = genAI.getGenerativeModel({ model: modelId });
 
   if (!fs.existsSync(filePath)) {
@@ -137,10 +126,9 @@ export async function transcribeChunkWithGemini(
   apiKey: string,
   modelId: string,
   chunkIndex: number,
-  timeOffset: number,
-  baseUrl?: string
+  timeOffset: number
 ): Promise<ChunkResult> {
-  const genAI = createGenAIClient(apiKey, baseUrl);
+  const genAI = createGenAIClient(apiKey);
   const model = genAI.getGenerativeModel({ model: modelId });
 
   if (!fs.existsSync(filePath)) {
@@ -186,9 +174,9 @@ export async function transcribeChunkWithGemini(
   };
 }
 
-export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.5-flash', baseUrl?: string): Promise<boolean> {
+export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.5-flash'): Promise<boolean> {
   try {
-    const genAI = createGenAIClient(apiKey, baseUrl);
+    const genAI = createGenAIClient(apiKey);
     const model = genAI.getGenerativeModel({ model: modelId });
     const result = await model.generateContent('Say "OK" if you can hear me.');
     return !!result.response.text();
