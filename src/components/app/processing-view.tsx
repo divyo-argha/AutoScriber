@@ -14,8 +14,6 @@ export function ProcessingView() {
     uploadedFile,
     uploadedFileName,
     selectedModel,
-    geminiApiKey,
-    geminiApiBaseUrl,
     ollamaUrl,
     chunkDuration,
     overlapDuration,
@@ -73,8 +71,6 @@ export function ProcessingView() {
       const formData = new FormData();
       formData.append('file', uploadedFile);
       formData.append('model', selectedModel);
-      formData.append('geminiApiKey', geminiApiKey);
-      formData.append('geminiApiBaseUrl', geminiApiBaseUrl);
       formData.append('ollamaUrl', ollamaUrl);
       formData.append('chunkDuration', String(chunkDuration));
       formData.append('overlapDuration', String(overlapDuration));
@@ -144,7 +140,7 @@ export function ProcessingView() {
         processingStatus: `Error: ${err instanceof Error ? err.message : 'Network error. Please check your connection and try again.'}`,
       });
     }
-  }, [uploadedFile, selectedModel, geminiApiKey, geminiApiBaseUrl, ollamaUrl, chunkDuration, overlapDuration, setProcessingState, setTranscriptionResult, setCurrentView]);
+  }, [uploadedFile, selectedModel, ollamaUrl, chunkDuration, overlapDuration, setProcessingState, setTranscriptionResult, setCurrentView]);
 
   useEffect(() => {
     if (uploadedFile && !hasStarted.current) {

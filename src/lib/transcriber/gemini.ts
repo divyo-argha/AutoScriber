@@ -22,42 +22,50 @@ function getMimeType(filePath: string): string {
 function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
   let jsonStr = text.trim();
 
-  // Remove markdown code fences if present
+  if (!jsonStr) return [];
+
+  // Remove markdown code fences
   const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonMatch) {
     jsonStr = jsonMatch[1].trim();
   }
 
-  // Try to find JSON array in the text
-  const arrayMatch = jsonStr.match(/\[[\s\S]*\]/);
-  if (arrayMatch) {
+  // Extract JSON array - be strict about it
+  const arrayMatch = jsonStr.match(/^\s*\[[\s\S]*\]\s*$/);
+  if (!arrayMatch) {
+    // Try to find array within text
+    const innerMatch = jsonStr.match(/\[[\s\S]*\]/);
+    if (innerMatch) {
+      jsonStr = innerMatch[0];
+    } else {
+      console.error('[gemini] No JSON array found in response');
+      return [];
+    }
+  } else {
     jsonStr = arrayMatch[0];
   }
 
   try {
     const parsed = JSON.parse(jsonStr);
-    if (Array.isArray(parsed)) {
-      return parsed.map((seg: Record<string, unknown>) => ({
-        speaker: String(seg.speaker || 'Speaker Unknown'),
-        startTime: Number(seg.startTime || 0),
-        endTime: Number(seg.endTime || 0),
-        text: String(seg.text || ''),
-      }));
+    if (!Array.isArray(parsed)) {
+      console.error('[gemini] Response is not an array');
+      return [];
     }
-  } catch (parseErr) {
-    console.error('[gemini] Failed to parse JSON response:', parseErr);
-    console.error('[gemini] Raw response text (first 500 chars):', text.substring(0, 500));
-    if (text.trim()) {
-      return [{
-        speaker: 'Speaker Unknown',
-        startTime: 0,
-        endTime: 0,
-        text: text.trim(),
-      }];
-    }
-  }
 
-  return [];
+    return parsed
+      .filter(seg => seg && typeof seg === 'object')
+      .map((seg: Record<string, unknown>) => ({
+        speaker: String(seg.speaker || 'Speaker Unknown'),
+        startTime: Number(seg.startTime) || 0,
+        endTime: Number(seg.endTime) || 0,
+        text: String(seg.text || ''),
+      }))
+      .filter(seg => seg.text.trim().length > 0);
+  } catch (parseErr) {
+    console.error('[gemini] JSON parse failed:', parseErr);
+    console.error('[gemini] Attempted to parse:', jsonStr.substring(0, 200));
+    return [];
+  }
 }
 
 /**

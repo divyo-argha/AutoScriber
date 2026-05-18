@@ -103,79 +103,48 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
   },
 ];
 
-export const GEMINI_TRANSCRIPTION_PROMPT = `You are an expert transcription system specialized in Bangla (Bengali) and English mixed-language audio transcription.
+export const GEMINI_TRANSCRIPTION_PROMPT = `You are a Bangla-English audio transcription system. Your ONLY job is to output valid JSON.
 
-TASK: Transcribe the provided audio accurately with the following requirements:
+RULES:
+1. Transcribe audio in the language spoken (Bangla or English)
+2. Identify speakers as Speaker 1, Speaker 2, etc
+3. Provide accurate timestamps in seconds
+4. Output ONLY a valid JSON array - nothing else, no markdown, no explanation
 
-1. LANGUAGE: The audio contains a mix of Bangla and English. Transcribe each word in the language it was spoken. Do NOT translate English words to Bangla or vice versa. Keep the original language of each word as spoken.
-
-2. SPEAKER DIARIZATION: Identify different speakers and label them as Speaker 1, Speaker 2, Speaker 3, etc. Each segment should indicate who is speaking.
-
-3. TIMESTAMPS: For each speaker segment, provide the start and end timestamps in seconds.
-
-4. FORMAT: Return the transcription as a JSON array with this exact structure:
+OUTPUT FORMAT (REQUIRED):
 [
-  {
-    "speaker": "Speaker 1",
-    "startTime": 0.0,
-    "endTime": 5.2,
-    "text": "আমি মনে করি this is very important"
-  },
-  {
-    "speaker": "Speaker 2",
-    "startTime": 5.5,
-    "endTime": 10.1,
-    "text": "হ্যাঁ, I agree with that point"
-  }
+  {"speaker": "Speaker 1", "startTime": 0.0, "endTime": 5.2, "text": "আমি মনে করি this is very important"},
+  {"speaker": "Speaker 2", "startTime": 5.5, "endTime": 10.1, "text": "হ্যাঁ, I agree"}
 ]
 
-IMPORTANT RULES:
-- Keep English words in English script, Bangla words in Bangla script
-- Preserve natural speech patterns including filler words
-- Include timestamps accurate to 0.1 seconds
-- If you cannot determine the speaker, label as "Speaker Unknown"
-- Return ONLY the JSON array, no additional text or markdown formatting`;
+CRITICAL: Output ONLY the JSON array. No markdown. No code blocks. No text before or after.`;
 
-export const GEMINI_CHUNK_PROMPT = `You are an expert transcription system specialized in Bangla (Bengali) and English mixed-language audio transcription.
+export const GEMINI_CHUNK_PROMPT = `You are a Bangla-English audio transcription system. Your ONLY job is to output valid JSON.
 
-TASK: Transcribe the provided audio chunk accurately with the following requirements:
+RULES:
+1. Transcribe audio in the language spoken (Bangla or English)
+2. Identify speakers as Speaker 1, Speaker 2, etc
+3. Provide accurate timestamps in seconds (relative to chunk start)
+4. Output ONLY a valid JSON array - nothing else, no markdown, no explanation
 
-1. LANGUAGE: The audio contains a mix of Bangla and English. Transcribe each word in the language it was spoken. Do NOT translate. Keep original languages.
-
-2. SPEAKER DIARIZATION: Identify different speakers and label them as Speaker 1, Speaker 2, etc.
-
-3. TIMESTAMPS: For each segment, provide the start and end timestamps in seconds (relative to the start of this chunk).
-
-4. FORMAT: Return the transcription as a JSON array:
+OUTPUT FORMAT (REQUIRED):
 [
-  {
-    "speaker": "Speaker 1",
-    "startTime": 0.0,
-    "endTime": 5.2,
-    "text": "আমি মনে করি this is very important"
-  }
+  {"speaker": "Speaker 1", "startTime": 0.0, "endTime": 5.2, "text": "আমি মনে করি this is very important"}
 ]
 
-IMPORTANT RULES:
-- Keep English words in English script, Bangla words in Bangla script
-- Preserve natural speech patterns including filler words
-- Return ONLY the JSON array, no additional text or markdown`;
+CRITICAL: Output ONLY the JSON array. No markdown. No code blocks. No text before or after.`;
 
-export const OLLAMA_TRANSCRIPTION_PROMPT = `You are a Bangla-English mixed language transcription assistant. The user will provide an audio recording. Transcribe it accurately following these rules:
+export const OLLAMA_TRANSCRIPTION_PROMPT = `You are a Bangla-English audio transcription system. Your ONLY job is to output valid JSON.
 
-1. Keep Bangla words in Bangla script and English words in English script
-2. Preserve the original language of each word as spoken
-3. Include timestamps for each segment
-4. Identify different speakers if possible
+RULES:
+1. Transcribe audio in the language spoken (Bangla or English)
+2. Identify speakers as Speaker 1, Speaker 2, etc
+3. Provide accurate timestamps in seconds
+4. Output ONLY a valid JSON array - nothing else, no markdown, no explanation
 
-Return the transcription as a JSON array:
+OUTPUT FORMAT (REQUIRED):
 [
-  {
-    "speaker": "Speaker 1",
-    "startTime": 0.0,
-    "endTime": 5.2,
-    "text": "transcribed text here"
-  }
+  {"speaker": "Speaker 1", "startTime": 0.0, "endTime": 5.2, "text": "আমি মনে করি this is very important"}
 ]
 
-Return ONLY valid JSON, no additional text.`;
+CRITICAL: Output ONLY the JSON array. No markdown. No code blocks. No text before or after.`;

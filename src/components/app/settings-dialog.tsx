@@ -10,8 +10,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Key, Server, Cpu, CheckCircle2, XCircle, Loader2, Globe, AlertTriangle, Wifi } from 'lucide-react';
@@ -26,7 +26,6 @@ type GeminiTestStatus = 'idle' | 'testing' | 'connected' | 'location_blocked' | 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const {
     geminiApiKey,
-    geminiApiBaseUrl,
     ollamaUrl,
     chunkDuration,
     overlapDuration,
@@ -36,8 +35,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setSelectedModel,
   } = useAppStore();
 
-  const [localApiKey, setLocalApiKey] = useState(geminiApiKey);
-  const [localApiBaseUrl, setLocalApiBaseUrl] = useState(geminiApiBaseUrl);
   const [localOllamaUrl, setLocalOllamaUrl] = useState(ollamaUrl);
   const [localChunkDuration, setLocalChunkDuration] = useState(String(chunkDuration));
   const [localOverlapDuration, setLocalOverlapDuration] = useState(String(overlapDuration));
@@ -47,12 +44,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setLocalApiKey(geminiApiKey);
-    setLocalApiBaseUrl(geminiApiBaseUrl);
     setLocalOllamaUrl(ollamaUrl);
     setLocalChunkDuration(String(chunkDuration));
     setLocalOverlapDuration(String(overlapDuration));
-  }, [geminiApiKey, geminiApiBaseUrl, ollamaUrl, chunkDuration, overlapDuration]);
+  }, [ollamaUrl, chunkDuration, overlapDuration]);
 
   const checkOllama = async () => {
     setOllamaStatus('checking');
@@ -69,26 +64,17 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   };
 
   const testGemini = async () => {
-    if (!localApiKey) {
-      setGeminiStatus('error');
-      setGeminiErrorMsg('Please enter an API key first');
-      return;
-    }
     setGeminiStatus('testing');
     setGeminiErrorMsg('');
     try {
-      const params = new URLSearchParams({
-        apiKey: localApiKey,
-        model: 'gemini-2.5-flash',
-      });
-      if (localApiBaseUrl) {
-        params.set('baseUrl', localApiBaseUrl);
-      }
-      const res = await fetch(`/api/gemini-test?${params}`);
+      const res = await fetch(`/api/gemini-test?model=gemini-2.5-flash`);
       const data = await res.json();
 
       if (data.connected) {
         setGeminiStatus('connected');
+      } else if (data.errorType === 'no_key') {
+        setGeminiStatus('error');
+        setGeminiErrorMsg('GEMINI_API_KEY is not set in .env.local.');
       } else if (data.errorType === 'location_blocked') {
         setGeminiStatus('location_blocked');
         setGeminiErrorMsg(data.suggestion || 'Gemini API is not available in your region.');
@@ -112,21 +98,16 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setSaving(true);
     try {
       const settings = {
-        geminiApiKey: localApiKey,
-        geminiApiBaseUrl: localApiBaseUrl,
         ollamaUrl: localOllamaUrl,
         chunkDuration: parseInt(localChunkDuration) || 300,
         overlapDuration: parseInt(localOverlapDuration) || 10,
       };
-
       setSettings(settings);
-
       await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
       });
-
       onOpenChange(false);
     } catch (err) {
       console.error('Error saving settings:', err);
@@ -141,30 +122,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       fetch('/api/settings')
         .then(res => res.json())
         .then(data => {
-          if (data.geminiApiKey) {
-            setLocalApiKey(data.geminiApiKey);
-            setSettings({ geminiApiKey: data.geminiApiKey });
-          }
-          if (data.geminiApiBaseUrl) {
-            setLocalApiBaseUrl(data.geminiApiBaseUrl);
-            setSettings({ geminiApiBaseUrl: data.geminiApiBaseUrl });
-          }
-          if (data.ollamaUrl) {
-            setLocalOllamaUrl(data.ollamaUrl);
-            setSettings({ ollamaUrl: data.ollamaUrl });
-          }
-          if (data.chunkDuration) {
-            setLocalChunkDuration(String(data.chunkDuration));
-            setSettings({ chunkDuration: data.chunkDuration });
-          }
-          if (data.overlapDuration) {
-            setLocalOverlapDuration(String(data.overlapDuration));
-            setSettings({ overlapDuration: data.overlapDuration });
-          }
+          if (data.ollamaUrl) { setLocalOllamaUrl(data.ollamaUrl); setSettings({ ollamaUrl: data.ollamaUrl }); }
+          if (data.chunkDuration) { setLocalChunkDuration(String(data.chunkDuration)); setSettings({ chunkDuration: data.chunkDuration }); }
+          if (data.overlapDuration) { setLocalOverlapDuration(String(data.overlapDuration)); setSettings({ overlapDuration: data.overlapDuration }); }
         })
         .catch(() => {});
-
-      // Reset test status
       setGeminiStatus('idle');
       setGeminiErrorMsg('');
     }
@@ -273,43 +235,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </TabsList>
 
           <TabsContent value="cloud" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="gemini-key">Gemini API Key</Label>
-              <Input
-                id="gemini-key"
-                type="password"
-                placeholder="Enter your Gemini API key"
-                value={localApiKey}
-                onChange={(e) => { setLocalApiKey(e.target.value); setGeminiStatus('idle'); }}
-              />
+            <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+              <p className="font-medium">API Key configured via environment</p>
               <p className="text-xs text-muted-foreground">
-                Get your API key from{' '}
-                <a
-                  href="https://aistudio.google.com/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-emerald-600 hover:underline"
-                >
-                  Google AI Studio
-                </a>
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="gemini-base-url" className="flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5" />
-                API Base URL (Proxy)
-              </Label>
-              <Input
-                id="gemini-base-url"
-                type="url"
-                placeholder="https://your-proxy.example.com"
-                value={localApiBaseUrl}
-                onChange={(e) => { setLocalApiBaseUrl(e.target.value); setGeminiStatus('idle'); }}
-              />
-              <p className="text-xs text-muted-foreground">
-                If you see &ldquo;User location is not supported&rdquo; error, set this to your proxy URL
-                to route through a supported region. Leave empty to use the default Google endpoint.
+                Your <code className="bg-muted px-1 rounded">GEMINI_API_KEY</code> is set in <code className="bg-muted px-1 rounded">.env.local</code>.
+                {geminiApiKey === '***' ? ' ✓ Key detected.' : ' No key detected — add it to .env.local and restart.'}
               </p>
             </div>
 
@@ -319,7 +249,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 variant="outline"
                 size="sm"
                 onClick={testGemini}
-                disabled={geminiStatus === 'testing' || !localApiKey}
+                disabled={geminiStatus === 'testing'}
                 className="gap-1.5"
               >
                 {geminiStatus === 'testing' ? (
@@ -331,9 +261,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 )}
                 Test Connection
               </Button>
-              {geminiStatus === 'connected' && (
-                <span className="text-xs text-emerald-600">API is working!</span>
-              )}
             </div>
 
             {/* Test Results */}
@@ -344,10 +271,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <div className="flex flex-wrap gap-1.5">
                 <Badge variant="outline" className="text-xs">Gemini 2.5 Flash</Badge>
                 <Badge variant="outline" className="text-xs">Gemini 2.0 Flash</Badge>
-                <Badge variant="outline" className="text-xs">Gemini 2.0 Flash Lite</Badge>
+                <Badge variant="outline" className="text-xs">Gemini 1.5 Flash</Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                Cloud models offer the best Bangla-English mixed transcription accuracy with native speaker diarization and timestamps.
+                Cloud models offer the best Bangla-English mixed transcription accuracy.
               </p>
             </div>
           </TabsContent>

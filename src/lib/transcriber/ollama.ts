@@ -4,39 +4,45 @@ import fs from 'fs';
 
 function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
   let jsonStr = text.trim();
-  
+
+  if (!jsonStr) return [];
+
+  // Remove markdown code fences
   const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonMatch) {
     jsonStr = jsonMatch[1].trim();
   }
-  
-  const arrayMatch = jsonStr.match(/\[[\s\S]*\]/);
-  if (arrayMatch) {
+
+  // Extract JSON array - be strict about it
+  const arrayMatch = jsonStr.match(/^\s*\[[\s\S]*\]\s*$/);
+  if (!arrayMatch) {
+    // Try to find array within text
+    const innerMatch = jsonStr.match(/\[[\s\S]*\]/);
+    if (innerMatch) {
+      jsonStr = innerMatch[0];
+    } else {
+      return [];
+    }
+  } else {
     jsonStr = arrayMatch[0];
   }
-  
+
   try {
     const parsed = JSON.parse(jsonStr);
-    if (Array.isArray(parsed)) {
-      return parsed.map((seg: Record<string, unknown>) => ({
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter(seg => seg && typeof seg === 'object')
+      .map((seg: Record<string, unknown>) => ({
         speaker: String(seg.speaker || 'Speaker Unknown'),
-        startTime: Number(seg.startTime || 0),
-        endTime: Number(seg.endTime || 0),
+        startTime: Number(seg.startTime) || 0,
+        endTime: Number(seg.endTime) || 0,
         text: String(seg.text || ''),
-      }));
-    }
+      }))
+      .filter(seg => seg.text.trim().length > 0);
   } catch {
-    if (text.trim()) {
-      return [{
-        speaker: 'Speaker Unknown',
-        startTime: 0,
-        endTime: 0,
-        text: text.trim(),
-      }];
-    }
+    return [];
   }
-  
-  return [];
 }
 
 export async function transcribeWithOllama(

@@ -48,6 +48,30 @@ function classifyGeminiError(err: unknown): { isLocationError: boolean; message:
   };
 }
 
+function classifyOllamaError(err: unknown): { isConnectionError: boolean; message: string; suggestion: string } {
+  const errMsg = err instanceof Error ? err.message : String(err);
+
+  const isConnectionError =
+    errMsg.includes('ECONNREFUSED') ||
+    errMsg.includes('ENOTFOUND') ||
+    errMsg.includes('fetch failed') ||
+    errMsg.includes('Ollama API error');
+
+  if (isConnectionError) {
+    return {
+      isConnectionError: true,
+      message: 'Cannot connect to Ollama. Make sure it is running.',
+      suggestion: 'Start Ollama or check the URL in Settings → Local.',
+    };
+  }
+
+  return {
+    isConnectionError: false,
+    message: errMsg,
+    suggestion: '',
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -206,15 +230,24 @@ export async function POST(request: NextRequest) {
             },
           });
         } catch (chunkErr) {
-          const classified = classifyGeminiError(chunkErr);
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
           console.error(`[transcribe] Error processing chunk ${chunk.index}:`, errMsg);
 
-          if (classified.isLocationError) {
-            hasLocationError = true;
-            chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
+          if (modelInfo.provider === 'gemini') {
+            const classified = classifyGeminiError(chunkErr);
+            if (classified.isLocationError) {
+              hasLocationError = true;
+              chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
+            } else {
+              chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
+            }
           } else {
-            chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
+            const classified = classifyOllamaError(chunkErr);
+            if (classified.isConnectionError) {
+              chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
+            } else {
+              chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
+            }
           }
           chunksDone++;
         }

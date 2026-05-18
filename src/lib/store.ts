@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { TranscriptionSegment, ModelInfo } from './transcriber/types';
 import { AVAILABLE_MODELS } from './transcriber/types';
 
-export type AppView = 'upload' | 'processing' | 'result' | 'history';
+export type AppView = 'upload' | 'processing' | 'result' | 'history' | 'batch';
 
 interface HistoryJob {
   id: string;
@@ -14,6 +14,17 @@ interface HistoryJob {
   createdAt: string;
   segmentsCount: number;
   speakersCount: number;
+}
+
+export interface BatchJob {
+  id: string; // local uuid
+  file: File;
+  status: 'queued' | 'processing' | 'done' | 'failed';
+  progress: number;
+  segments: import('./transcriber/types').TranscriptionSegment[];
+  fullText: string;
+  jobId: string | null; // server job id
+  error: string | null;
 }
 
 interface AppState {
@@ -89,6 +100,12 @@ interface AppState {
   historyJobs: HistoryJob[];
   setHistoryJobs: (jobs: HistoryJob[]) => void;
 
+  // Batch
+  batchJobs: BatchJob[];
+  setBatchJobs: (jobs: BatchJob[]) => void;
+  updateBatchJob: (id: string, update: Partial<BatchJob>) => void;
+  clearBatch: () => void;
+
   // Reset
   reset: () => void;
 }
@@ -121,6 +138,7 @@ const initialState = {
   overlapDuration: 10,
   ollamaModels: [] as string[],
   historyJobs: [] as HistoryJob[],
+  batchJobs: [] as BatchJob[],
 };
 
 export type { HistoryJob };
@@ -155,6 +173,12 @@ export const useAppStore = create<AppState>((set) => ({
   setOllamaModels: (models) => set({ ollamaModels: models }),
 
   setHistoryJobs: (jobs) => set({ historyJobs: jobs }),
+
+  setBatchJobs: (jobs) => set({ batchJobs: jobs }),
+  updateBatchJob: (id, update) => set((prev) => ({
+    batchJobs: prev.batchJobs.map(j => j.id === id ? { ...j, ...update } : j),
+  })),
+  clearBatch: () => set({ batchJobs: [] }),
 
   reset: () => set((prev) => {
     // Revoke old audio URL to prevent memory leak
