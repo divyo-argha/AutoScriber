@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileAudio, X, Play, AlertCircle, Mic, FolderOpen, Globe, Loader2, Files, Archive, Cloud } from 'lucide-react';
 import { AudioRecorder } from './audio-recorder';
+import { OllamaInstallModal } from './ollama-install-modal';
 
 const ACCEPTED_EXTENSIONS = '.mp3,.wav,.ogg,.flac,.m4a,.webm,.aac,.wma';
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
@@ -48,6 +49,9 @@ export function UploadArea() {
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveFiles, setDriveFiles] = useState<any[]>([]);
   const [driveSelected, setDriveSelected] = useState<Set<string>>(new Set());
+  const [ollamaInstallOpen, setOllamaInstallOpen] = useState(false);
+  const [ollamaModelToInstall, setOllamaModelToInstall] = useState<string | null>(null);
+  const [pendingBatchAfterInstall, setPendingBatchAfterInstall] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -202,7 +206,9 @@ export function UploadArea() {
         } else if (!data.connected) {
           setPreflightWarning(`Ollama is not running at ${state.ollamaUrl}. Start Ollama or change the URL in Settings → Local.`);
         } else {
-          setPreflightWarning(`Model "${selectedModel}" is not available in Ollama. Pull it first: ollama pull ${selectedModel}`);
+          setOllamaModelToInstall(selectedModel);
+          setPendingBatchAfterInstall(true);
+          setOllamaInstallOpen(true);
         }
       } catch {
         setPreflightChecking(false);
@@ -475,6 +481,24 @@ export function UploadArea() {
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Export Formats</p>
         </Card>
       </div>
+
+      <OllamaInstallModal
+        open={ollamaInstallOpen}
+        modelId={ollamaModelToInstall || ''}
+        onClose={() => {
+          setOllamaInstallOpen(false);
+          setOllamaModelToInstall(null);
+          setPendingBatchAfterInstall(false);
+        }}
+        onComplete={() => {
+          setOllamaInstallOpen(false);
+          setOllamaModelToInstall(null);
+          if (pendingBatchAfterInstall) {
+            setPendingBatchAfterInstall(false);
+            startPreflight(() => setCurrentView('processing'));
+          }
+        }}
+      />
     </div>
   );
 }
