@@ -299,7 +299,6 @@ export async function POST(request: NextRequest) {
         segments: mergedSegments,
         fullText,
         duration: duration ?? 0,
-        duration: duration ?? 0,
         language: 'bn',
         model: modelId,
       };

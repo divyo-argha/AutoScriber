@@ -34,9 +34,11 @@ export function ProcessingView() {
   const estimatedTime = useMemo(() => {
     if (!isProcessing || processingProgress <= 0 || processingProgress >= 100) return '';
     const elapsed = Date.now() - startTimeRef.current;
+    if (elapsed <= 0) return '';
     const rate = processingProgress / elapsed;
+    if (!isFinite(rate) || rate <= 0) return '';
     const remaining = (100 - processingProgress) / rate;
-    if (remaining > 0) {
+    if (remaining > 0 && isFinite(remaining)) {
       const mins = Math.floor(remaining / 60000);
       const secs = Math.floor((remaining % 60000) / 1000);
       return mins > 0 ? `~${mins}m ${secs}s remaining` : `~${secs}s remaining`;

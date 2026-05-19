@@ -16,6 +16,7 @@ const ACCEPTED_EXTENSIONS = '.mp3,.wav,.ogg,.flac,.m4a,.webm,.aac,.wma';
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
 
 function formatFileSize(bytes: number): string {
+  if (!bytes || !isFinite(bytes)) return '0 KB';
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

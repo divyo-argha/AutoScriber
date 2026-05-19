@@ -1,4 +1,5 @@
 export function formatTime(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return '00:00.000';
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
@@ -11,6 +12,7 @@ export function formatTime(seconds: number): string {
 }
 
 export function formatTimeSRT(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return '00:00:00,000';
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
@@ -20,6 +22,7 @@ export function formatTimeSRT(seconds: number): string {
 }
 
 export function formatTimeVTT(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return '00:00:00.000';
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);

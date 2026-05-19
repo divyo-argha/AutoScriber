@@ -102,8 +102,16 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
     });
 
     return () => {
-      audio.pause();
-      audio.src = '';
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current.removeEventListener('loadedmetadata', () => {});
+        audioRef.current.removeEventListener('timeupdate', () => {});
+        audioRef.current.removeEventListener('ended', () => {});
+        audioRef.current.removeEventListener('pause', () => {});
+        audioRef.current.removeEventListener('play', () => {});
+        audioRef.current.removeEventListener('error', () => {});
+      }
       audioRef.current = null;
     };
   }, [audioUrl, segments, setAudioPlayback]);
