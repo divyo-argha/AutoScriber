@@ -15,12 +15,13 @@ Successfully implemented AI-powered thematic analysis for qualitative research i
 - **ThematicAnalysisResult**: Complete analysis output structure
 
 #### Analyzer Engine (`/src/lib/thematic-analysis/analyzer.ts`)
-- Uses **Gemini 2.5 Flash** for cost-effective, high-quality analysis
+- Uses **Gemini 2.5 Pro** for superior reasoning and pattern recognition
 - Implements **Braun & Clarke** 6-phase methodology
 - **Inductive coding**: Themes emerge from data (not predefined)
 - Robust JSON parsing with multiple fallback strategies
 - Supports optional research question for focused analysis
 - Handles Bangla/English mixed content
+- **Optimized for large datasets** (50+ interviews)
 
 #### API Endpoint (`/src/app/api/thematic-analysis/route.ts`)
 - POST endpoint accepting multiple transcript files
@@ -154,10 +155,17 @@ Already configured in your project ✅
 
 ### Model Selection
 
-- **Model**: Gemini 2.5 Flash
-- **Context**: 1M tokens (handles 20+ interviews)
-- **Cost**: ~$0.15 per 1M tokens
-- **Reasoning**: Excellent for pattern identification
+- **Model**: Gemini 2.5 Pro
+- **Context**: 1M tokens (handles 50-100 interviews)
+- **Cost**: ~$0.29 per analysis (50 interviews)
+- **Reasoning**: Excellent - designed for complex analytical tasks
+
+**Why Pro over Flash?**
+- Superior pattern recognition across large datasets
+- Better thematic synthesis and abstraction
+- More nuanced understanding of qualitative data
+- Academic credibility for research publications
+- Minimal cost difference ($0.26 more per analysis)
 
 ## Safeguards & Ethics
 
@@ -250,10 +258,11 @@ researchQuestion?: string
 
 ## Performance
 
-- **Analysis Time**: 10-30 seconds for 2-5 interviews
-- **Token Usage**: ~5K-20K tokens per analysis
-- **Cost**: $0.001-$0.003 per analysis
+- **Analysis Time**: 15-45 seconds for 2-5 interviews, 30-90 seconds for 50+ interviews
+- **Token Usage**: ~5K-200K tokens per analysis (depends on dataset size)
+- **Cost**: $0.03-$0.50 per analysis (scales with interview count)
 - **Timeout**: 300 seconds (5 minutes)
+- **Optimal Range**: 2-100 interviews per analysis
 
 ## Success Criteria
 

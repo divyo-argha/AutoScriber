@@ -131,7 +131,6 @@ export async function POST(request: NextRequest) {
 
     // Get audio duration
     let duration: number | null = null;
-    let duration: number | null = null;
     try {
       const dur = await getAudioDuration(filePath);
       duration = (typeof dur === 'number' && isFinite(dur) && dur > 0) ? dur : null;
