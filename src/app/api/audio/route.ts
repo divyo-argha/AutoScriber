@@ -16,38 +16,50 @@ export async function GET(request: NextRequest) {
       where: { id: jobId },
     });
 
-    if (!job || !job.audioPath) {
-      return NextResponse.json({ error: 'Audio not found' }, { status: 404 });
+    if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
+    if (!job.audioPath) {
+      return NextResponse.json({ error: 'No audio path stored' }, { status: 404 });
+    }
+
+    // Check if file exists
     if (!fs.existsSync(job.audioPath)) {
-      return NextResponse.json({ error: 'Audio file missing from disk' }, { status: 404 });
+      console.warn(`[audio] Audio file not found at: ${job.audioPath}`);
+      return NextResponse.json({ error: 'Audio file not found on disk' }, { status: 404 });
     }
 
-    const audioBuffer = fs.readFileSync(job.audioPath);
+    try {
+      const audioBuffer = fs.readFileSync(job.audioPath);
 
-    // Determine content type from file extension
-    const ext = path.extname(job.audioPath).toLowerCase();
-    const mimeMap: Record<string, string> = {
-      '.mp3': 'audio/mp3',
-      '.wav': 'audio/wav',
-      '.m4a': 'audio/mp4',
-      '.ogg': 'audio/ogg',
-      '.flac': 'audio/flac',
-      '.webm': 'audio/webm',
-      '.aac': 'audio/aac',
-    };
-    const contentType = mimeMap[ext] || 'audio/mpeg';
+      // Determine content type from file extension
+      const ext = path.extname(job.audioPath).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav',
+        '.m4a': 'audio/mp4',
+        '.ogg': 'audio/ogg',
+        '.flac': 'audio/flac',
+        '.webm': 'audio/webm',
+        '.aac': 'audio/aac',
+      };
+      const contentType = mimeMap[ext] || 'audio/mpeg';
 
-    return new NextResponse(audioBuffer, {
-      headers: {
-        'Content-Type': contentType,
-        'Content-Length': String(audioBuffer.length),
-        'Accept-Ranges': 'bytes',
-      },
-    });
+      return new NextResponse(audioBuffer, {
+        headers: {
+          'Content-Type': contentType,
+          'Content-Length': String(audioBuffer.length),
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
+    } catch (readErr) {
+      console.error(`[audio] Failed to read file: ${job.audioPath}`, readErr);
+      return NextResponse.json({ error: 'Failed to read audio file' }, { status: 500 });
+    }
   } catch (err) {
-    console.error('Error serving audio:', err);
+    console.error('[audio] Error serving audio:', err);
     return NextResponse.json({ error: 'Failed to serve audio' }, { status: 500 });
   }
 }

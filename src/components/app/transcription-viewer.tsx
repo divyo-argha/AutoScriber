@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,10 +39,22 @@ const stagger = {
 };
 
 export function TranscriptionViewer() {
-  const { transcriptionSegments, transcriptionText, reset, setCurrentView, jobId } = useAppStore();
+  const { transcriptionSegments, transcriptionText, reset, setCurrentView, jobId, currentTime, activeSegmentIndex } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('player');
+  const activeSegmentRef = useRef<HTMLDivElement | null>(null);
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-scroll to active segment
+  useEffect(() => {
+    if (activeSegmentRef.current && listContainerRef.current && viewMode === 'list') {
+      activeSegmentRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [activeSegmentIndex, viewMode]);
   const speakerColors = useMemo(() => {
     const colors = [
       'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -164,15 +176,25 @@ export function TranscriptionViewer() {
 
   if (transcriptionSegments.length === 0) {
     return (
-      <div className="text-center py-12 space-y-4">
-        <FileText className="w-12 h-12 mx-auto text-muted-foreground" />
-        <p className="text-muted-foreground">No transcription results available.</p>
-        <p className="text-xs text-muted-foreground">The transcription may have produced empty results. Try uploading a different audio file.</p>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center py-12 space-y-4"
+      >
+        <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-muted">
+          <FileText className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <div className="space-y-2">
+          <p className="text-lg font-medium">No transcription results available</p>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            The transcription may have produced empty results. Try uploading a different audio file or check your audio quality.
+          </p>
+        </div>
         <Button variant="outline" onClick={handleNewTranscription} className="gap-1.5">
           <RotateCcw className="w-3.5 h-3.5" />
           Start New Transcription
         </Button>
-      </div>
+      </motion.div>
     );
   }
 
@@ -290,7 +312,7 @@ export function TranscriptionViewer() {
             transition={{ duration: 0.3 }}
           >
             <Card className="overflow-hidden">
-              <div className="max-h-[60vh] overflow-y-auto scroll-smooth">
+              <div ref={listContainerRef} className="max-h-[60vh] overflow-y-auto scroll-smooth">
                 <motion.div
                   variants={stagger}
                   initial="initial"
@@ -299,10 +321,15 @@ export function TranscriptionViewer() {
                 >
                   {transcriptionSegments.map((segment, idx) => (
                     <motion.div
+                      ref={idx === activeSegmentIndex ? activeSegmentRef : null}
                       key={idx}
                       variants={fadeUp}
                       transition={{ duration: 0.2 }}
-                      className="group flex gap-3 py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors"
+                      className={`group flex gap-3 py-2 px-3 rounded-lg transition-all ${
+                        idx === activeSegmentIndex
+                          ? 'bg-emerald-500/20 border-l-4 border-emerald-500'
+                          : 'hover:bg-muted/50'
+                      }`}
                     >
                       <div className="shrink-0 w-24 pt-0.5">
                         <span className="text-xs font-mono text-muted-foreground">
@@ -317,7 +344,11 @@ export function TranscriptionViewer() {
                         </Badge>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm leading-relaxed">{segment.text}</p>
+                        <p className={`text-sm leading-relaxed ${
+                          idx === activeSegmentIndex ? 'font-semibold text-foreground' : ''
+                        }`}>
+                          {segment.text}
+                        </p>
                       </div>
                     </motion.div>
                   ))}
@@ -333,14 +364,19 @@ export function TranscriptionViewer() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.15 }}
       >
-        <Card className="p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <Card className="p-4 sm:p-5">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Download className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Download as</span>
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+                <Download className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold">Export Transcription</h3>
+                <p className="text-xs text-muted-foreground">Download in your preferred format</p>
+              </div>
             </div>
-            <Separator orientation="vertical" className="hidden sm:block h-6" />
-            <div className="flex flex-wrap gap-2">
+            <Separator />
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {exportFormats.map(({ format, label, icon }) => (
                 <Button
                   key={format}
@@ -348,7 +384,7 @@ export function TranscriptionViewer() {
                   size="sm"
                   onClick={() => handleExport(format)}
                   disabled={exportingFormat !== null}
-                  className="gap-1.5 transition-all duration-200 hover:scale-105"
+                  className="gap-1.5 transition-all duration-200 hover:scale-105 hover:border-emerald-500/50"
                 >
                   {exportingFormat === format ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
