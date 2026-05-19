@@ -54,6 +54,9 @@ server.log
 
 # Persistent data (audio files, database)
 /data/audio/
+*.db
+*.db-shm
+*.db-wal
 
 # Skills directory
 /skills/
