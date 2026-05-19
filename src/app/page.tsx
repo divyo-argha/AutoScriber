@@ -8,6 +8,7 @@ import { ProcessingView } from '@/components/app/processing-view';
 import { TranscriptionViewer } from '@/components/app/transcription-viewer';
 import { HistoryView } from '@/components/app/history-view';
 import { BatchView } from '@/components/app/batch-view';
+import { ThematicAnalysisView } from '@/components/app/thematic-analysis-view';
 import { Footer } from '@/components/app/footer';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -156,6 +157,18 @@ export default function Home() {
               transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
             >
               <BatchView />
+            </motion.div>
+          )}
+
+          {currentView === 'thematic' && (
+            <motion.div
+              key="thematic"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+            >
+              <ThematicAnalysisView />
             </motion.div>
           )}
         </AnimatePresence>

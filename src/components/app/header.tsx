@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Settings, Mic, RotateCcw, History } from 'lucide-react';
+import { Settings, Mic, RotateCcw, History, Brain } from 'lucide-react';
 import { SettingsDialog } from './settings-dialog';
 import {
   Select,
@@ -104,7 +104,7 @@ export function Header() {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              {currentView !== 'upload' && currentView !== 'history' && !isProcessing && (
+              {currentView !== 'upload' && currentView !== 'history' && currentView !== 'thematic' && !isProcessing && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -115,6 +115,16 @@ export function Header() {
                   <span className="hidden sm:inline">New</span>
                 </Button>
               )}
+              <Button
+                variant={currentView === 'thematic' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentView(currentView === 'thematic' ? 'upload' : 'thematic')}
+                disabled={isProcessing}
+                className="gap-1.5"
+              >
+                <Brain className="w-4 h-4" />
+                <span className="hidden sm:inline">Analysis</span>
+              </Button>
               <Button
                 variant={currentView === 'history' ? 'secondary' : 'ghost'}
                 size="sm"
