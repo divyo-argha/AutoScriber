@@ -111,7 +111,6 @@ export default function Home() {
               </motion.div>
             </motion.div>
           )}
-
           {currentView === 'processing' && (
             <motion.div
               key="processing"
@@ -123,7 +122,6 @@ export default function Home() {
               <ProcessingView />
             </motion.div>
           )}
-
           {currentView === 'result' && (
             <motion.div
               key="result"

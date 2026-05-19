@@ -264,7 +264,6 @@ export function ProcessingView() {
               </motion.div>
             )}
           </AnimatePresence>
-
           {/* Error Actions */}
           {isFailed && (
             <div className="space-y-3">

@@ -43,7 +43,6 @@ export function TranscriptionViewer() {
   const [copied, setCopied] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('player');
-
   const speakerColors = useMemo(() => {
     const colors = [
       'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -80,7 +79,6 @@ export function TranscriptionViewer() {
       console.error('Failed to copy:', err);
     }
   };
-
   const exportClientFile = (format: 'txt' | 'md' | 'srt') => {
     let content = '';
     let filename = 'transcription';
@@ -120,7 +118,6 @@ export function TranscriptionViewer() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
   const exportServerFile = async (format: 'docx' | 'pdf') => {
     setExportingFormat(format);
     try {
@@ -238,7 +235,6 @@ export function TranscriptionViewer() {
             List
           </Button>
         </div>
-
         <Button variant="outline" size="sm" onClick={copyToClipboard} className="gap-1.5">
           {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           {copied ? 'Copied!' : 'Copy'}
@@ -248,7 +244,6 @@ export function TranscriptionViewer() {
           New
         </Button>
       </motion.div>
-
       {/* Speaker Legend */}
       <AnimatePresence>
         {uniqueSpeakers.length > 1 && (
@@ -274,7 +269,6 @@ export function TranscriptionViewer() {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Main Content Area */}
       <AnimatePresence mode="wait">
         {viewMode === 'player' ? (
@@ -333,7 +327,6 @@ export function TranscriptionViewer() {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Export Section */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}

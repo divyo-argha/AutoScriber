@@ -27,7 +27,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
     activeSegmentIndex,
     setAudioPlayback,
   } = useAppStore();
-
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
@@ -108,7 +107,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
       audioRef.current = null;
     };
   }, [audioUrl, segments, setAudioPlayback]);
-
   // Auto-scroll to active segment
   useEffect(() => {
     if (activeSegmentRef.current && subtitleContainerRef.current) {
@@ -118,7 +116,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
       });
     }
   }, [activeSegmentIndex]);
-
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
     if (isPlaying) {
@@ -127,7 +124,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
       audioRef.current.play();
     }
   }, [isPlaying]);
-
   const seek = useCallback((time: number) => {
     if (!audioRef.current) return;
     audioRef.current.currentTime = time;
@@ -142,18 +138,15 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
     if (!audioRef.current) return;
     seek(Math.min(audioRef.current.currentTime + 5, audioDuration));
   }, [audioDuration, seek]);
-
   const skipBackward = useCallback(() => {
     if (!audioRef.current) return;
     seek(Math.max(audioRef.current.currentTime - 5, 0));
   }, [seek]);
-
   const toggleMute = useCallback(() => {
     if (!audioRef.current) return;
     audioRef.current.muted = !isMuted;
     setIsMuted(!isMuted);
   }, [isMuted]);
-
   const handleVolumeChange = useCallback((value: number[]) => {
     if (!audioRef.current) return;
     const vol = value[0];
@@ -161,7 +154,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
     setVolume(vol);
     setIsMuted(vol === 0);
   }, []);
-
   const cyclePlaybackRate = useCallback(() => {
     if (!audioRef.current) return;
     const rates = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -170,7 +162,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
     audioRef.current.playbackRate = nextRate;
     setPlaybackRate(nextRate);
   }, [playbackRate]);
-
   const jumpToSegment = useCallback((index: number) => {
     if (segments[index]) {
       seek(segments[index].startTime);
@@ -187,7 +178,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
       <div className="relative bg-gradient-to-b from-card to-card/80 rounded-xl border border-border overflow-hidden">
         {/* Background gradient glow for active segment */}
         <div className="absolute inset-0 opacity-5 bg-emerald-500" />
-
         <div ref={subtitleContainerRef} className="relative p-4 sm:p-6 min-h-[120px] flex flex-col items-center justify-center text-center">
           <AnimatePresence mode="wait">
             {activeSegment ? (
@@ -223,7 +213,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
           </AnimatePresence>
         </div>
       </div>
-
       {/* Audio Controls */}
       <Card className="p-4">
         <div className="space-y-3">
@@ -244,7 +233,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
               {formatTime(audioDuration)}
             </span>
           </div>
-
           {/* Control Buttons */}
           <div className="flex items-center justify-center gap-2">
             <Button
@@ -255,7 +243,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
             >
               <SkipBack className="w-4 h-4" />
             </Button>
-
             <Button
               onClick={togglePlay}
               className="h-12 w-12 rounded-full bg-emerald-600 hover:bg-emerald-700"
@@ -267,7 +254,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
                 <Play className="w-5 h-5 ml-0.5" />
               )}
             </Button>
-
             <Button
               variant="ghost"
               size="icon"
@@ -276,7 +262,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
             >
               <SkipForward className="w-4 h-4" />
             </Button>
-
             {/* Volume */}
             <div className="hidden sm:flex items-center gap-1 ml-4">
               <Button
@@ -296,7 +281,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
                 className="w-20 cursor-pointer"
               />
             </div>
-
             {/* Playback Speed */}
             <Button
               variant="outline"
@@ -309,7 +293,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
           </div>
         </div>
       </Card>
-
       {/* Scrollable Transcript with Sync Highlighting */}
       <Card className="overflow-hidden">
         <div className="max-h-[40vh] overflow-y-auto scroll-smooth" ref={subtitleContainerRef}>
@@ -317,7 +300,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
             {segments.map((segment, idx) => {
               const isActive = idx === activeSegmentIndex;
               const isPast = currentTime > segment.endTime;
-
               return (
                 <div
                   key={idx}
@@ -337,7 +319,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
                       {formatTime(segment.startTime)}
                     </span>
                   </div>
-
                   {/* Speaker */}
                   <div className="shrink-0 w-20">
                     <Badge
@@ -348,7 +329,6 @@ export function AudioPlayer({ segments, speakerColors }: AudioPlayerProps) {
                       {segment.speaker}
                     </Badge>
                   </div>
-
                   {/* Text - highlighted when active */}
                   <div className="flex-1 min-w-0">
                     <motion.p
