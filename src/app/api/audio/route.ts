@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      const audioBuffer = fs.readFileSync(job.audioPath);
+      const stats = fs.statSync(job.audioPath);
+      const fileSize = stats.size;
+      const range = request.headers.get('range');
 
       // Determine content type from file extension
       const ext = path.extname(job.audioPath).toLowerCase();
@@ -46,16 +48,46 @@ export async function GET(request: NextRequest) {
       };
       const contentType = mimeMap[ext] || 'audio/mpeg';
 
-      return new NextResponse(audioBuffer, {
-        headers: {
-          'Content-Type': contentType,
-          'Content-Length': String(audioBuffer.length),
-          'Accept-Ranges': 'bytes',
-          'Cache-Control': 'public, max-age=3600',
-        },
-      });
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+        if (start >= fileSize || end >= fileSize) {
+          return new NextResponse(null, {
+            status: 416,
+            headers: {
+              'Content-Range': `bytes */${fileSize}`,
+            }
+          });
+        }
+
+        const chunksize = (end - start) + 1;
+        const fileStream = fs.createReadStream(job.audioPath, { start, end });
+
+        return new NextResponse(fileStream as any, {
+          status: 206,
+          headers: {
+            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': String(chunksize),
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=3600',
+          },
+        });
+      } else {
+        const fileStream = fs.createReadStream(job.audioPath);
+        return new NextResponse(fileStream as any, {
+          headers: {
+            'Content-Type': contentType,
+            'Content-Length': String(fileSize),
+            'Accept-Ranges': 'bytes',
+            'Cache-Control': 'public, max-age=3600',
+          },
+        });
+      }
     } catch (readErr) {
-      console.error(`[audio] Failed to read file: ${job.audioPath}`, readErr);
+      console.error(`[audio] Failed to stream file: ${job.audioPath}`, readErr);
       return NextResponse.json({ error: 'Failed to read audio file' }, { status: 500 });
     }
   } catch (err) {

@@ -8,7 +8,7 @@ import { signInWithGoogle, listDriveAudioFiles, downloadDriveFile } from '@/lib/
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileAudio, X, Play, AlertCircle, Mic, FolderOpen, Globe, Loader2, Files, Archive, Cloud } from 'lucide-react';
+import { Upload, FileAudio, X, Play, AlertCircle, Mic, FolderOpen, Globe, Loader2, Files, Archive, Cloud, Download } from 'lucide-react';
 import { AudioRecorder } from './audio-recorder';
 import { OllamaInstallModal } from './ollama-install-modal';
 
