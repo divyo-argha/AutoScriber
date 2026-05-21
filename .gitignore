@@ -60,3 +60,11 @@ server.log
 
 # Skills directory
 /skills/
+
+# Electron build artifacts
+electron/dist-electron/
+*.dmg
+*.zip
+*.blockmap
+builder-debug.yml
+builder-effective-config.yaml
