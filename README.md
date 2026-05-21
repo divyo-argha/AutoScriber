@@ -227,6 +227,45 @@ GEMINI_API_BASE_URL=https://your-proxy.example.com
 
 ---
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    USER INTERFACE                        │
+│   Upload · Record · Processing · Viewer · History        │
+│   Batch · Thematic Analysis · Focus Mode                 │
+└────────────────────────┬────────────────────────────────┘
+                         ↕
+┌─────────────────────────────────────────────────────────┐
+│              STATE MANAGEMENT  (Zustand)                 │
+│   View · File · Processing · Result · Audio · Settings   │
+└────────────────────────┬────────────────────────────────┘
+                         ↕
+┌─────────────────────────────────────────────────────────┐
+│                   API LAYER  (Next.js)                   │
+│   /transcribe · /jobs · /export · /models · /settings    │
+└────────────────────────┬────────────────────────────────┘
+                         ↕
+┌─────────────────────────────────────────────────────────┐
+│                  BUSINESS LOGIC                          │
+│   Chunker (FFmpeg) · Gemini · Ollama · Thematic Analyzer │
+└────────────────────────┬────────────────────────────────┘
+                         ↕
+┌─────────────────────────────────────────────────────────┐
+│               DATABASE  (Prisma + SQLite)                │
+│   TranscriptionJob · AppSettings                         │
+└────────────────────────┬────────────────────────────────┘
+                         ↕
+┌─────────────────────────────────────────────────────────┐
+│                  EXTERNAL SERVICES                       │
+│   Gemini API (cloud) · Ollama (local) · FFmpeg (binary)  │
+└─────────────────────────────────────────────────────────┘
+```
+
+> For the full architecture breakdown — component communication, data flow, and styling — see [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md).
+
+---
+
 ## How It Works
 
 ```
