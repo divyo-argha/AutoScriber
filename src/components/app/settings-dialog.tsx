@@ -29,12 +29,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     ollamaUrl,
     chunkDuration,
     overlapDuration,
+    userGeminiApiKey,
     setSettings,
     setOllamaModels,
     selectedModel,
     setSelectedModel,
   } = useAppStore();
 
+  const [localUserApiKey, setLocalUserApiKey] = useState(userGeminiApiKey);
   const [localOllamaUrl, setLocalOllamaUrl] = useState(ollamaUrl);
   const [localChunkDuration, setLocalChunkDuration] = useState(String(chunkDuration));
   const [localOverlapDuration, setLocalOverlapDuration] = useState(String(overlapDuration));
@@ -47,7 +49,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setLocalOllamaUrl(ollamaUrl);
     setLocalChunkDuration(String(chunkDuration));
     setLocalOverlapDuration(String(overlapDuration));
-  }, [ollamaUrl, chunkDuration, overlapDuration]);
+    setLocalUserApiKey(userGeminiApiKey);
+  }, [ollamaUrl, chunkDuration, overlapDuration, userGeminiApiKey]);
 
   const checkOllama = async () => {
     setOllamaStatus('checking');
@@ -67,20 +70,25 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setGeminiStatus('testing');
     setGeminiErrorMsg('');
     try {
-      const res = await fetch(`/api/gemini-test?model=gemini-2.5-flash`);
+      const params = new URLSearchParams({ model: 'gemini-2.5-flash' });
+      if (localUserApiKey) {
+        params.set('apiKey', localUserApiKey);
+      }
+
+      const res = await fetch(`/api/gemini-test?${params.toString()}`);
       const data = await res.json();
 
       if (data.connected) {
         setGeminiStatus('connected');
       } else if (data.errorType === 'no_key') {
         setGeminiStatus('error');
-        setGeminiErrorMsg('GEMINI_API_KEY is not set in .env.local.');
+        setGeminiErrorMsg('Gemini API key is not configured. Enter your BYOK key above.');
       } else if (data.errorType === 'location_blocked') {
         setGeminiStatus('location_blocked');
         setGeminiErrorMsg(data.suggestion || 'Gemini API is not available in your region.');
       } else if (data.errorType === 'auth_failed') {
         setGeminiStatus('auth_failed');
-        setGeminiErrorMsg(data.suggestion || 'API key is invalid.');
+        setGeminiErrorMsg(data.suggestion || 'Your BYOK key is invalid. Update it in the Gemini API Key field.');
       } else if (data.errorType === 'quota_exceeded') {
         setGeminiStatus('quota_exceeded');
         setGeminiErrorMsg(data.suggestion || 'API quota exceeded.');
@@ -101,6 +109,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         ollamaUrl: localOllamaUrl,
         chunkDuration: parseInt(localChunkDuration) || 300,
         overlapDuration: parseInt(localOverlapDuration) || 10,
+        userGeminiApiKey: localUserApiKey,
       };
       setSettings(settings);
       await fetch('/api/settings', {
@@ -125,6 +134,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           if (data.ollamaUrl) { setLocalOllamaUrl(data.ollamaUrl); setSettings({ ollamaUrl: data.ollamaUrl }); }
           if (data.chunkDuration) { setLocalChunkDuration(String(data.chunkDuration)); setSettings({ chunkDuration: data.chunkDuration }); }
           if (data.overlapDuration) { setLocalOverlapDuration(String(data.overlapDuration)); setSettings({ overlapDuration: data.overlapDuration }); }
+          if (data.userGeminiApiKey) { setLocalUserApiKey(data.userGeminiApiKey); setSettings({ userGeminiApiKey: data.userGeminiApiKey }); }
         })
         .catch(() => {});
       setGeminiStatus('idle');
@@ -235,13 +245,28 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </TabsList>
 
           <TabsContent value="cloud" className="space-y-4 mt-4">
-            <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
-              <p className="font-medium">API Key configured via environment</p>
+            <div className="space-y-2">
+              <Label htmlFor="user-api-key">Gemini API Key (BYOK)</Label>
+              <Input
+                id="user-api-key"
+                type="password"
+                placeholder="Enter your Gemini API key"
+                value={localUserApiKey}
+                onChange={(e) => setLocalUserApiKey(e.target.value)}
+              />
               <p className="text-xs text-muted-foreground">
-                Your <code className="bg-muted px-1 rounded">GEMINI_API_KEY</code> is set in <code className="bg-muted px-1 rounded">.env.local</code>.
-                {geminiApiKey === '***' ? ' ✓ Key detected.' : ' No key detected — add it to .env.local and restart.'}
+                Get your free API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>
               </p>
             </div>
+
+            {geminiApiKey === '***' && (
+              <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                <p className="font-medium">Environment API Key Detected</p>
+                <p className="text-xs text-muted-foreground">
+                  An environment API key is configured. Your BYOK key will override it when provided.
+                </p>
+              </div>
+            )}
 
             {/* Test Connection Button */}
             <div className="flex items-center gap-3">
@@ -249,7 +274,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 variant="outline"
                 size="sm"
                 onClick={testGemini}
-                disabled={geminiStatus === 'testing'}
+                disabled={geminiStatus === 'testing' || (!localUserApiKey && geminiApiKey !== '***')}
                 className="gap-1.5"
               >
                 {geminiStatus === 'testing' ? (

@@ -16,6 +16,7 @@ export async function GET() {
     return NextResponse.json({
       ...settings,
       geminiApiKey: process.env.GEMINI_API_KEY ? '***' : '',
+      userGeminiApiKey: settings.geminiApiKey || '',
       ollamaUrl: process.env.OLLAMA_URL || settings.ollamaUrl,
     });
   } catch (err) {
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
         defaultModel: body.defaultModel,
         chunkDuration: body.chunkDuration,
         overlapDuration: body.overlapDuration,
+        geminiApiKey: body.userGeminiApiKey || '',
       },
       create: {
         id: 'default',
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest) {
         defaultModel: body.defaultModel || 'gemini-2.5-flash',
         chunkDuration: body.chunkDuration || 300,
         overlapDuration: body.overlapDuration || 10,
+        geminiApiKey: body.userGeminiApiKey || '',
       },
     });
 

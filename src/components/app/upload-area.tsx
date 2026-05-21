@@ -178,17 +178,22 @@ export function UploadArea() {
     if (modelInfo?.provider === 'gemini') {
       setPreflightChecking(true);
       try {
-        const res = await fetch(`/api/gemini-test?model=${selectedModel}`);
+        const params = new URLSearchParams({ model: selectedModel });
+        if (state.userGeminiApiKey) {
+          params.set('apiKey', state.userGeminiApiKey);
+        }
+
+        const res = await fetch(`/api/gemini-test?${params.toString()}`);
         const data = await res.json();
         setPreflightChecking(false);
         if (data.connected) {
           onPass();
         } else if (data.errorType === 'no_key') {
-          setPreflightWarning('GEMINI_API_KEY is not set. Add it to .env.local and restart.');
+          setPreflightWarning('Gemini API key is not configured. Enter it in Settings → Cloud.');
         } else if (data.errorType === 'location_blocked') {
           setPreflightWarning('Gemini API is not available in your region. Switch to a local Ollama model.');
         } else if (data.errorType === 'auth_failed') {
-          setPreflightWarning('Gemini API key is invalid. Check GEMINI_API_KEY in .env.local.');
+          setPreflightWarning('Gemini API key is invalid. Check your BYOK key in Settings.');
         } else {
           onPass();
         }

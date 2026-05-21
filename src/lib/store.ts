@@ -86,10 +86,12 @@ interface AppState {
   ollamaUrl: string;
   chunkDuration: number;
   overlapDuration: number;
+  userGeminiApiKey: string;
   setSettings: (settings: Partial<{
     ollamaUrl: string;
     chunkDuration: number;
     overlapDuration: number;
+    userGeminiApiKey: string;
   }>) => void;
 
   // Ollama models
@@ -137,6 +139,7 @@ const initialState = {
   ollamaUrl: 'http://localhost:11434',
   chunkDuration: 300,
   overlapDuration: 10,
+  userGeminiApiKey: '',
   ollamaModels: [] as string[],
   historyJobs: [] as HistoryJob[],
   batchJobs: [] as BatchJob[],
@@ -193,6 +196,7 @@ export const useAppStore = create<AppState>((set) => ({
       ollamaUrl: prev.ollamaUrl,
       chunkDuration: prev.chunkDuration,
       overlapDuration: prev.overlapDuration,
+      userGeminiApiKey: prev.userGeminiApiKey,
       ollamaModels: prev.ollamaModels,
       historyJobs: prev.historyJobs,
       selectedModel: prev.selectedModel,

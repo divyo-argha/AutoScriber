@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Mic, MicOff, Pause, Play, Square, AlertCircle } from 'lucide-react';
+import { SoundWaveIndicator } from './sound-wave-indicator';
 
 type RecorderStatus = 'idle' | 'recording' | 'paused' | 'stopped';
 
@@ -317,14 +318,10 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
         
         {/* Audio Level Indicator */}
         {isActive && (
-          <div className="flex items-center gap-2 justify-center">
-            <Mic className="w-3.5 h-3.5 text-muted-foreground" />
-            <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-75 bg-emerald-500"
-                style={{ width: `${Math.max(2, audioLevel * 100)}%` }}
-              />
-            </div>
+          <div className="flex items-center gap-3 justify-center">
+            <Mic className="w-4 h-4 text-muted-foreground" />
+            <SoundWaveIndicator audioLevel={audioLevel} isActive={isActive} />
+            <span className="text-xs text-muted-foreground">{Math.round(audioLevel * 100)}%</span>
           </div>
         )}
         

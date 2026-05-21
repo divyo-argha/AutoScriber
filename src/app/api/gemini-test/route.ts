@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const modelId = searchParams.get('model') || 'gemini-2.5-flash';
-  const apiKey = process.env.GEMINI_API_KEY || '';
+  const apiKeyFromQuery = searchParams.get('apiKey')?.trim() || undefined;
+
+  const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
+  const apiKey = apiKeyFromQuery || settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
 
   if (!apiKey) {
     return NextResponse.json({
       connected: false,
-      error: 'GEMINI_API_KEY is not set in environment',
+      error: 'Gemini API key is not configured',
       errorType: 'no_key',
     });
   }
