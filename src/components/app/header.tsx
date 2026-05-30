@@ -36,6 +36,8 @@ export function Header() {
     return () => window.removeEventListener('open-settings', handler);
   }, []);
 
+  const installedLocalModels = new Set(ollamaModels);
+
   const allModels = [
     ...availableModels,
     ...ollamaModels
@@ -52,6 +54,9 @@ export function Header() {
   ];
 
   const currentModelInfo = allModels.find(m => m.id === selectedModel);
+  const currentModelInstalled = currentModelInfo?.provider === 'ollama'
+    ? installedLocalModels.has(currentModelInfo.id)
+    : true;
 
   return (
     <>
@@ -85,10 +90,10 @@ export function Header() {
                       <div className="flex items-center gap-2">
                         <span>{model.name}</span>
                         <Badge
-                          variant={model.provider === 'gemini' ? 'default' : 'secondary'}
+                          variant={model.provider === 'gemini' ? 'default' : installedLocalModels.has(model.id) ? 'secondary' : 'destructive'}
                           className="text-[10px] px-1.5 py-0"
                         >
-                          {model.provider === 'gemini' ? 'Cloud' : 'Local'}
+                          {model.provider === 'gemini' ? 'Cloud' : installedLocalModels.has(model.id) ? 'Local' : 'Missing'}
                         </Badge>
                       </div>
                     </SelectItem>
@@ -99,6 +104,9 @@ export function Header() {
                 <Badge variant="outline" className="text-xs">
                   {currentModelInfo.provider === 'gemini' ? '☁️' : '🖥️'} {currentModelInfo.provider === 'gemini' ? 'Cloud' : 'Local'}
                 </Badge>
+              )}
+              {currentModelInfo?.provider === 'ollama' && !currentModelInstalled && (
+                <span className="text-xs text-destructive">Local model not installed</span>
               )}
             </div>
 
@@ -157,8 +165,11 @@ export function Header() {
                   <SelectItem key={model.id} value={model.id}>
                     <div className="flex items-center gap-2">
                       <span>{model.name}</span>
-                      <Badge variant={model.provider === 'gemini' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
-                        {model.provider === 'gemini' ? 'Cloud' : 'Local'}
+                      <Badge
+                        variant={model.provider === 'gemini' ? 'default' : installedLocalModels.has(model.id) ? 'secondary' : 'destructive'}
+                        className="text-[10px] px-1.5 py-0"
+                      >
+                        {model.provider === 'gemini' ? 'Cloud' : installedLocalModels.has(model.id) ? 'Local' : 'Missing'}
                       </Badge>
                     </div>
                   </SelectItem>

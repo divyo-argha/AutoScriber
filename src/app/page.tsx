@@ -23,19 +23,22 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json();
           if (data) {
+            const ollamaUrl = data.ollamaUrl || 'http://localhost:11434';
             setSettings({
-              ollamaUrl: data.ollamaUrl || 'http://localhost:11434',
+              ollamaUrl,
               chunkDuration: data.chunkDuration || 300,
               overlapDuration: data.overlapDuration || 10,
             });
+            return ollamaUrl;
           }
         }
       } catch {}
+      return 'http://localhost:11434';
     };
 
-    const loadOllamaModels = async () => {
+    const loadOllamaModels = async (ollamaUrl: string) => {
       try {
-        const res = await fetch('/api/models?ollamaUrl=http://localhost:11434');
+        const res = await fetch(`/api/models?ollamaUrl=${encodeURIComponent(ollamaUrl)}`);
         if (res.ok) {
           const data = await res.json();
           if (data.ollamaModels) {
@@ -67,8 +70,7 @@ export default function Home() {
       } catch {}
     };
 
-    loadSettings();
-    loadOllamaModels();
+    loadSettings().then(loadOllamaModels);
     loadHistory();
   }, [setSettings, setOllamaModels, setHistoryJobs]);
 

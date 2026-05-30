@@ -39,7 +39,10 @@ const ACCEPTED_TYPES = [
 ];
 
 export function UploadArea() {
-  const { uploadedFile, setUploadedFile, setCurrentView, selectedModel, setBatchJobs, clearBatch } = useAppStore();
+  const { uploadedFile, setUploadedFile, setCurrentView, selectedModel, setBatchJobs, clearBatch, ollamaModels, availableModels } = useAppStore();
+
+  const selectedModelInfo = availableModels.find(m => m.id === selectedModel);
+  const selectedLocalMissing = selectedModelInfo?.provider === 'ollama' && !ollamaModels.includes(selectedModel);
 
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -253,6 +256,15 @@ export function UploadArea() {
             </div>
           </div>
         </Card>
+        {selectedLocalMissing && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">Local model not installed</p>
+              <p className="text-xs opacity-80">The selected local model is not available on this machine. Start transcription to download it automatically.</p>
+            </div>
+          </div>
+        )}
         {preflightWarning && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
             <Globe className="w-4 h-4 mt-0.5 shrink-0" />
@@ -410,6 +422,7 @@ export function UploadArea() {
               <Button variant="outline" onClick={() => folderInputRef.current?.click()} className="gap-2">
                 <FolderOpen className="w-4 h-4" /> Choose Folder
               </Button>
+              {/* @ts-ignore: webkitdirectory is a browser-only folder selection attribute */}
               <input ref={folderInputRef} type="file" webkitdirectory="" onChange={handleFolderUpload} className="hidden" />
             </div>
           </Card>

@@ -101,6 +101,15 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     supportsDiarization: false,
     supportsTimestamps: true,
   },
+  {
+    id: 'gemma4:e4b',
+    name: 'Gemma 4 e4b (Local)',
+    provider: 'ollama',
+    description: 'Local Gemma 4 e4b via Ollama. Better performance for Bangla transcription on M-series Macs.',
+    maxAudioLength: 300,
+    supportsDiarization: false,
+    supportsTimestamps: true,
+  },
 ];
 
 export const GEMINI_TRANSCRIPTION_PROMPT = `You are a Bangla-English audio transcription system. Your ONLY job is to output valid JSON.

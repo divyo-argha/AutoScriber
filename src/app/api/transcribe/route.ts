@@ -77,11 +77,10 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const modelId = (formData.get('model') as string) || 'gemini-2.5-flash';
-    
-    // Get user's API key from database, fallback to env
+
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
-    const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+    const ollamaUrl = settings?.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434';
     const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300;
     const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 10;
 
@@ -104,13 +103,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key is required for cloud transcription' }, { status: 400 });
     }
 
-    // Save uploaded file to temp location
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'autoscriber-upload-'));
     const filePath = path.join(tempDir, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
     fs.writeFileSync(filePath, buffer);
 
-    // Validate the saved file isn't empty
     const savedStats = fs.statSync(filePath);
     if (savedStats.size === 0) {
       try { fs.unlinkSync(filePath); } catch {}
@@ -122,7 +119,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`[transcribe] File saved: ${file.name}, size: ${savedStats.size} bytes`);
 
-    // Also save to persistent storage for history playback
     ensureAudioStorageDir();
     const persistentAudioPath = path.join(AUDIO_STORAGE_DIR, `${Date.now()}_${file.name}`);
     try {
@@ -132,17 +128,15 @@ export async function POST(request: NextRequest) {
       console.error('[transcribe] Failed to save audio to persistent storage:', err);
     }
 
-    // Get audio duration
     let duration: number | null = null;
     try {
       const dur = await getAudioDuration(filePath);
-      duration = (typeof dur === 'number' && isFinite(dur) && dur > 0) ? dur : null;
+      duration = typeof dur === 'number' && isFinite(dur) && dur > 0 ? dur : null;
       console.log(`[transcribe] Audio duration from ffprobe: ${duration}`);
     } catch (err) {
       console.error('[transcribe] Failed to get audio duration:', err);
     }
 
-    // Create job in database
     const job = await db.transcriptionJob.create({
       data: {
         fileName: file.name,
@@ -157,213 +151,204 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    void processTranscriptionJob({
+      jobId: job.id,
+      filePath,
+      tempDir,
+      modelInfo,
+      modelId,
+      geminiApiKey,
+      ollamaUrl,
+      chunkDuration,
+      overlapDuration,
+      duration,
+    });
+
+    return NextResponse.json({ jobId: job.id, status: 'started' });
+  } catch (err) {
+    console.error('[transcribe] Top-level error:', err);
+    return NextResponse.json({
+      error: err instanceof Error ? err.message : 'Internal server error',
+    }, { status: 500 });
+  }
+}
+
+interface TranscriptionJobParams {
+  jobId: string;
+  filePath: string;
+  tempDir: string;
+  modelInfo: typeof AVAILABLE_MODELS[number];
+  modelId: string;
+  geminiApiKey: string;
+  ollamaUrl: string;
+  chunkDuration: number;
+  overlapDuration: number;
+  duration: number | null;
+}
+
+async function processTranscriptionJob(params: TranscriptionJobParams) {
+  const {
+    jobId,
+    filePath,
+    tempDir,
+    modelInfo,
+    modelId,
+    geminiApiKey,
+    ollamaUrl,
+    chunkDuration,
+    overlapDuration,
+    duration,
+  } = params;
+
+  try {
+    const effectiveChunkDuration = modelInfo.provider === 'ollama'
+      ? Math.min(chunkDuration, modelInfo.maxAudioLength)
+      : chunkDuration;
+
+    let chunks;
     try {
-      // Split into chunks
-      const effectiveChunkDuration = modelInfo.provider === 'ollama'
-        ? Math.min(chunkDuration, modelInfo.maxAudioLength)
-        : chunkDuration;
+      chunks = await splitAudioIntoChunks(filePath, effectiveChunkDuration, overlapDuration);
+    } catch (chunkErr) {
+      console.error('[transcribe] Chunking failed, using whole file as fallback:', chunkErr);
+      chunks = [{ index: 0, filePath, startTime: 0, duration: duration ?? 0 }];
+    }
 
-      let chunks;
+    console.log(`[transcribe] Split into ${chunks.length} chunk(s)`);
+
+    await db.transcriptionJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'processing',
+        chunksTotal: chunks.length,
+      },
+    });
+
+    const allSegments: TranscriptionSegment[] = [];
+    const chunkErrors: string[] = [];
+    let chunksDone = 0;
+    let hasLocationError = false;
+
+    for (const chunk of chunks) {
       try {
-        chunks = await splitAudioIntoChunks(
-          filePath,
-          effectiveChunkDuration,
-          overlapDuration
-        );
-      } catch (chunkErr) {
-        console.error('[transcribe] Chunking failed, using whole file as fallback:', chunkErr);
-        chunks = [{
-          index: 0,
-          filePath,
-          startTime: 0,
-          duration: duration ?? 0,
-        }];
-      }
+        let result;
 
-      console.log(`[transcribe] Split into ${chunks.length} chunk(s)`);
-
-      await db.transcriptionJob.update({
-        where: { id: job.id },
-        data: {
-          status: 'processing',
-          chunksTotal: chunks.length,
-        },
-      });
-
-      // Process each chunk
-      const allSegments: TranscriptionSegment[] = [];
-      const chunkErrors: string[] = [];
-      let chunksDone = 0;
-      let hasLocationError = false;
-
-      for (const chunk of chunks) {
-        try {
-          let result;
-
-          if (modelInfo.provider === 'gemini') {
-            result = await transcribeChunkWithGemini(
-              chunk.filePath,
-              geminiApiKey,
-              modelId,
-              chunk.index,
-              chunk.startTime
-            );
-          } else {
-            result = await transcribeChunkWithOllama(
-              chunk.filePath,
-              modelId,
-              ollamaUrl,
-              chunk.index,
-              chunk.startTime
-            );
-          }
-
-          const segCount = result.segments.length;
-          console.log(`[transcribe] Chunk ${chunk.index}: ${segCount} segments, rawText length: ${result.rawText?.length ?? 0}`);
-
-          allSegments.push(...result.segments);
-          chunksDone++;
-
-          const progress = Math.round((chunksDone / chunks.length) * 100);
-          await db.transcriptionJob.update({
-            where: { id: job.id },
-            data: {
-              chunksDone,
-              progress,
-            },
-          });
-        } catch (chunkErr) {
-          const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
-          console.error(`[transcribe] Error processing chunk ${chunk.index}:`, errMsg);
-
-          if (modelInfo.provider === 'gemini') {
-            const classified = classifyGeminiError(chunkErr);
-            if (classified.isLocationError) {
-              hasLocationError = true;
-              chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
-            } else {
-              chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
-            }
-          } else {
-            const classified = classifyOllamaError(chunkErr);
-            if (classified.isConnectionError) {
-              chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
-            } else {
-              chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
-            }
-          }
-          chunksDone++;
-        }
-      }
-
-      console.log(`[transcribe] Total segments collected: ${allSegments.length}`);
-
-      if (allSegments.length === 0) {
-        // Build a helpful error message
-        let errorDetail: string;
-        let errorType: string = 'generic';
-
-        if (hasLocationError) {
-          errorDetail = `Gemini API is not available in your region. ${chunkErrors.map(e => e.replace(/^Chunk \d+:\s*/, '')).join(' ')}`;
-          errorType = 'location_blocked';
-        } else if (chunkErrors.length > 0) {
-          errorDetail = `Transcription produced no results. Errors: ${chunkErrors.join('; ')}`;
+        if (modelInfo.provider === 'gemini') {
+          result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime);
         } else {
-          errorDetail = 'Transcription produced no results. The audio may be empty, too quiet, or in an unsupported format.';
+          result = await transcribeChunkWithOllama(chunk.filePath, modelId, ollamaUrl, chunk.index, chunk.startTime);
         }
+
+        console.log(`[transcribe] Chunk ${chunk.index}: ${result.segments.length} segments`);
+        allSegments.push(...result.segments);
+        chunksDone++;
 
         await db.transcriptionJob.update({
-          where: { id: job.id },
+          where: { id: jobId },
           data: {
-            status: 'failed',
-            errorMessage: errorDetail,
+            chunksDone,
+            progress: Math.round((chunksDone / chunks.length) * 100),
           },
         });
+      } catch (chunkErr) {
+        const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
+        console.error(`[transcribe] Error processing chunk ${chunk.index}:`, errMsg);
 
-        cleanupChunks(chunks);
-        try { fs.unlinkSync(filePath); } catch {}
-        try { fs.rmdirSync(tempDir); } catch {}
+        if (modelInfo.provider === 'gemini') {
+          const classified = classifyGeminiError(chunkErr);
+          if (classified.isLocationError) {
+            hasLocationError = true;
+            chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
+          } else {
+            chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
+          }
+        } else {
+          const classified = classifyOllamaError(chunkErr);
+          if (classified.isConnectionError) {
+            chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
+          } else {
+            chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
+          }
+        }
 
-        return NextResponse.json({
-          jobId: job.id,
-          status: 'failed',
-          error: errorDetail,
-          errorType,
-        }, { status: 422 });
+        chunksDone++;
+        await db.transcriptionJob.update({
+          where: { id: jobId },
+          data: { chunksDone },
+        });
+      }
+    }
+
+    if (allSegments.length === 0) {
+      let errorDetail: string;
+      let errorType = 'generic';
+
+      if (hasLocationError) {
+        errorDetail = `Gemini API is not available in your region. ${chunkErrors.map(e => e.replace(/^Chunk \d+:\s*/, '')).join(' ')}`;
+        errorType = 'location_blocked';
+      } else if (chunkErrors.length > 0) {
+        errorDetail = `Transcription produced no results. Errors: ${chunkErrors.join('; ')}`;
+      } else {
+        errorDetail = 'Transcription produced no results. The audio may be empty, too quiet, or in an unsupported format.';
       }
 
-      const mergedSegments = mergeSegments(allSegments);
-
-      const fullText = mergedSegments
-        .map(seg => `[${formatTime(seg.startTime)} - ${formatTime(seg.endTime)}] ${seg.speaker}: ${seg.text}`)
-        .join('\n');
-
-      const result: TranscriptionResult = {
-        segments: mergedSegments,
-        fullText,
-        duration: duration ?? 0,
-        language: 'bn',
-        model: modelId,
-      };
-
       await db.transcriptionJob.update({
-        where: { id: job.id },
+        where: { id: jobId },
         data: {
-          status: 'completed',
-          progress: 100,
-          chunksDone: chunks.length,
-          result: JSON.stringify(result),
+          status: 'failed',
+          errorMessage: errorDetail,
         },
       });
 
       cleanupChunks(chunks);
       try { fs.unlinkSync(filePath); } catch {}
       try { fs.rmdirSync(tempDir); } catch {}
-
-      return NextResponse.json({
-        jobId: job.id,
-        status: 'completed',
-        result,
-      });
-
-    } catch (processErr) {
-      const classified = classifyGeminiError(processErr);
-      let errorMessage: string;
-      let errorType: string | undefined;
-
-      if (classified.isLocationError) {
-        errorMessage = classified.message + ' ' + classified.suggestion;
-        errorType = 'location_blocked';
-      } else {
-        errorMessage = processErr instanceof Error ? processErr.message : 'Unknown error';
-      }
-
-      console.error('[transcribe] Processing error:', errorMessage);
-
-      await db.transcriptionJob.update({
-        where: { id: job.id },
-        data: {
-          status: 'failed',
-          errorMessage,
-        },
-      });
-
-      try { fs.unlinkSync(filePath); } catch {}
-      try { fs.rmdirSync(tempDir); } catch {}
-
-      return NextResponse.json({
-        jobId: job.id,
-        status: 'failed',
-        error: errorMessage,
-        ...(errorType ? { errorType } : {}),
-      }, { status: 500 });
+      return;
     }
 
-  } catch (err) {
-    console.error('[transcribe] Top-level error:', err);
-    return NextResponse.json({
-      error: err instanceof Error ? err.message : 'Internal server error',
-    }, { status: 500 });
+    const mergedSegments = mergeSegments(allSegments);
+    const fullText = mergedSegments
+      .map(seg => `[${formatTime(seg.startTime)} - ${formatTime(seg.endTime)}] ${seg.speaker}: ${seg.text}`)
+      .join('\n');
+
+    const result: TranscriptionResult = {
+      segments: mergedSegments,
+      fullText,
+      duration: duration ?? 0,
+      language: 'bn',
+      model: modelId,
+    };
+
+    await db.transcriptionJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'completed',
+        progress: 100,
+        chunksDone: chunks.length,
+        result: JSON.stringify(result),
+      },
+    });
+
+    cleanupChunks(chunks);
+    try { fs.unlinkSync(filePath); } catch {}
+    try { fs.rmdirSync(tempDir); } catch {}
+  } catch (processErr) {
+    const classified = classifyGeminiError(processErr);
+    const errorMessage = classified.isLocationError
+      ? `${classified.message} ${classified.suggestion}`
+      : processErr instanceof Error ? processErr.message : 'Unknown error';
+
+    console.error('[transcribe] Processing error:', errorMessage);
+
+    await db.transcriptionJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'failed',
+        errorMessage,
+      },
+    });
+
+    try { fs.unlinkSync(filePath); } catch {}
+    try { fs.rmdirSync(tempDir); } catch {}
   }
 }
 

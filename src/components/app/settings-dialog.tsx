@@ -137,6 +137,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           if (data.userGeminiApiKey) { setLocalUserApiKey(data.userGeminiApiKey); setSettings({ userGeminiApiKey: data.userGeminiApiKey }); }
         })
         .catch(() => {});
+      checkOllama();
       setGeminiStatus('idle');
       setGeminiErrorMsg('');
     }
@@ -351,7 +352,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <li>The model will appear in the model selector automatically</li>
               </ol>
               <p className="text-xs text-muted-foreground mt-2">
-                Recommended for MacBook Air M5 16GB: <strong>gemma3:12b</strong> or <strong>gemma3:4b</strong>
+                Recommended for MacBook Air M5 16GB: <strong>gemma4:e4b</strong>, <strong>gemma3:12b</strong>, or <strong>gemma3:4b</strong>
               </p>
             </div>
 

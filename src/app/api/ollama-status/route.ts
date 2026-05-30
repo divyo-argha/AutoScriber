@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const ollamaUrl = searchParams.get('ollamaUrl') || 'http://localhost:11434';
+  const ollamaUrl = searchParams.get('ollamaUrl') || process.env.OLLAMA_URL || 'http://localhost:11434';
   
   try {
     const response = await fetch(`${ollamaUrl}/api/tags`, {

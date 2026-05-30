@@ -27,6 +27,31 @@ export interface BatchJob {
   error: string | null;
 }
 
+type ProcessingState = {
+  isProcessing: boolean;
+  processingProgress: number;
+  processingStatus: string;
+  chunksTotal: number;
+  chunksDone: number;
+  currentChunkIndex: number;
+  jobId: string | null;
+};
+
+type PlaybackState = {
+  audioUrl: string | null;
+  isPlaying: boolean;
+  currentTime: number;
+  audioDuration: number;
+  activeSegmentIndex: number;
+};
+
+type SettingsState = {
+  ollamaUrl: string;
+  chunkDuration: number;
+  overlapDuration: number;
+  userGeminiApiKey: string;
+};
+
 interface AppState {
   // Current view
   currentView: AppView;
@@ -52,14 +77,7 @@ interface AppState {
   chunksTotal: number;
   chunksDone: number;
   currentChunkIndex: number;
-  setProcessingState: (state: Partial<{
-    isProcessing: boolean;
-    processingProgress: number;
-    processingStatus: string;
-    chunksTotal: number;
-    chunksDone: number;
-    currentChunkIndex: number;
-  }>) => void;
+  setProcessingState: (state: Partial<ProcessingState>) => void;
 
   // Results
   transcriptionSegments: TranscriptionSegment[];
@@ -73,13 +91,7 @@ interface AppState {
   currentTime: number;
   audioDuration: number;
   activeSegmentIndex: number;
-  setAudioPlayback: (state: Partial<{
-    audioUrl: string | null;
-    isPlaying: boolean;
-    currentTime: number;
-    audioDuration: number;
-    activeSegmentIndex: number;
-  }>) => void;
+  setAudioPlayback: (state: Partial<PlaybackState>) => void;
 
   // Settings
   geminiApiKey: string;
@@ -87,12 +99,7 @@ interface AppState {
   chunkDuration: number;
   overlapDuration: number;
   userGeminiApiKey: string;
-  setSettings: (settings: Partial<{
-    ollamaUrl: string;
-    chunkDuration: number;
-    overlapDuration: number;
-    userGeminiApiKey: string;
-  }>) => void;
+  setSettings: (settings: Partial<SettingsState>) => void;
 
   // Ollama models
   ollamaModels: string[];
@@ -129,7 +136,6 @@ const initialState = {
   transcriptionSegments: [] as TranscriptionSegment[],
   transcriptionText: '',
   jobId: null as string | null,
-  audioUrl: null as string | null,
   audioUrl: null as string | null,
   isPlaying: false,
   currentTime: 0,

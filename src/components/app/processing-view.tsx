@@ -22,6 +22,7 @@ export function ProcessingView() {
     processingStatus,
     chunksTotal,
     chunksDone,
+    jobId,
     setProcessingState,
     setTranscriptionResult,
     setCurrentView,
@@ -30,6 +31,7 @@ export function ProcessingView() {
 
   const hasStarted = useRef(false);
   const startTimeRef = useRef<number>(0);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const estimatedTime = useMemo(() => {
     if (!isProcessing || processingProgress <= 0 || processingProgress >= 100) return '';
@@ -67,6 +69,7 @@ export function ProcessingView() {
       chunksTotal: 0,
       chunksDone: 0,
       currentChunkIndex: 0,
+      jobId: null,
     });
 
     try {
@@ -78,7 +81,7 @@ export function ProcessingView() {
       formData.append('overlapDuration', String(overlapDuration));
 
       setProcessingState({
-        processingStatus: 'Splitting audio into chunks...',
+        processingStatus: 'Starting transcription...',
       });
 
       const response = await fetch('/api/transcribe', {
@@ -89,7 +92,6 @@ export function ProcessingView() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Server returned an error status
         const errorMsg = data.error || `Server error (${response.status})`;
         const errorType = data.errorType || '';
         setProcessingState({
@@ -99,42 +101,18 @@ export function ProcessingView() {
         return;
       }
 
-      if (data.status === 'completed' && data.result) {
-        const result: TranscriptionResult = data.result;
-
-        // Validate that segments actually exist
-        if (!result.segments || result.segments.length === 0) {
-          setProcessingState({
-            isProcessing: false,
-            processingStatus: 'Failed: Transcription produced no results. The audio may be empty or too quiet to transcribe.',
-          });
-          return;
-        }
-
+      if (!data.jobId) {
         setProcessingState({
           isProcessing: false,
-          processingProgress: 100,
-          processingStatus: 'Transcription complete!',
+          processingStatus: 'Failed: transcription job could not be started.',
         });
-
-        setTranscriptionResult(result.segments, result.fullText, data.jobId);
-
-        setTimeout(() => {
-          setCurrentView('result');
-        }, 800);
-      } else if (data.status === 'failed') {
-        const errorMsg = data.error || 'Transcription failed';
-        const errorType = data.errorType || '';
-        setProcessingState({
-          isProcessing: false,
-          processingStatus: `Failed: ${errorMsg}${errorType ? ` [${errorType}]` : ''}`,
-        });
-      } else {
-        setProcessingState({
-          isProcessing: false,
-          processingStatus: `Failed: ${data.error || 'Unexpected response from server'}`,
-        });
+        return;
       }
+
+      setProcessingState({
+        processingStatus: 'Waiting for the model to start...',
+        jobId: data.jobId,
+      });
     } catch (err) {
       console.error('Transcription error:', err);
       setProcessingState({
@@ -142,13 +120,78 @@ export function ProcessingView() {
         processingStatus: `Error: ${err instanceof Error ? err.message : 'Network error. Please check your connection and try again.'}`,
       });
     }
-  }, [uploadedFile, selectedModel, ollamaUrl, chunkDuration, overlapDuration, setProcessingState, setTranscriptionResult, setCurrentView]);
+  }, [uploadedFile, selectedModel, ollamaUrl, chunkDuration, overlapDuration, setProcessingState]);
+
+  const pollJobStatus = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/jobs?id=${encodeURIComponent(id)}`);
+      if (!res.ok) return;
+      const job = await res.json();
+
+      if (!job || !job.status) return;
+
+      setProcessingState({
+        processingProgress: job.progress ?? 0,
+        chunksTotal: job.chunksTotal ?? 0,
+        chunksDone: job.chunksDone ?? 0,
+        processingStatus: job.status === 'processing'
+          ? `Transcribing chunks: ${job.chunksDone}/${job.chunksTotal}`
+          : job.status === 'chunking'
+            ? 'Preparing audio chunks...'
+            : job.status === 'completed'
+              ? 'Finalizing transcription...'
+              : job.status === 'failed'
+                ? job.errorMessage || 'Transcription failed'
+                : job.status,
+      });
+
+      if (job.status === 'completed' && job.result) {
+        const result: TranscriptionResult = typeof job.result === 'string' ? JSON.parse(job.result) : job.result;
+
+        setProcessingState({
+          isProcessing: false,
+          processingProgress: 100,
+          processingStatus: 'Transcription complete!',
+        });
+
+        setTranscriptionResult(result.segments, result.fullText, job.id);
+        setCurrentView('result');
+      }
+
+      if (job.status === 'failed') {
+        setProcessingState({
+          isProcessing: false,
+          processingStatus: `Failed: ${job.errorMessage || 'Transcription failed'}`,
+        });
+      }
+    } catch (err) {
+      console.error('Job polling error:', err);
+    }
+  }, [setProcessingState, setTranscriptionResult, setCurrentView]);
 
   useEffect(() => {
     if (uploadedFile && !hasStarted.current) {
       startTranscription();
     }
   }, [uploadedFile, startTranscription]);
+
+  useEffect(() => {
+    if (!isProcessing || !jobId) return;
+
+    const tick = async () => {
+      await pollJobStatus(jobId);
+    };
+
+    tick();
+    pollingRef.current = setInterval(tick, 1200);
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [isProcessing, jobId, pollJobStatus]);
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
