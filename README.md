@@ -231,34 +231,34 @@ GEMINI_API_BASE_URL=https://your-proxy.example.com
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    USER INTERFACE                        │
-│   Upload · Record · Processing · Viewer · History        │
-│   Batch · Thematic Analysis · Focus Mode                 │
+│                    USER INTERFACE                       │
+│   Upload · Record · Processing · Viewer · History       │
+│   Batch · Thematic Analysis · Focus Mode                │
 └────────────────────────┬────────────────────────────────┘
                          ↕
 ┌─────────────────────────────────────────────────────────┐
-│              STATE MANAGEMENT  (Zustand)                 │
-│   View · File · Processing · Result · Audio · Settings   │
+│              STATE MANAGEMENT  (Zustand)                │
+│   View · File · Processing · Result · Audio · Settings  │
 └────────────────────────┬────────────────────────────────┘
                          ↕
 ┌─────────────────────────────────────────────────────────┐
-│                   API LAYER  (Next.js)                   │
-│   /transcribe · /jobs · /export · /models · /settings    │
+│                   API LAYER  (Next.js)                  │
+│   /transcribe · /jobs · /export · /models · /settings   │
 └────────────────────────┬────────────────────────────────┘
                          ↕
 ┌─────────────────────────────────────────────────────────┐
-│                  BUSINESS LOGIC                          │
-│   Chunker (FFmpeg) · Gemini · Ollama · Thematic Analyzer │
+│                  BUSINESS LOGIC                         │
+│   Chunker (FFmpeg) · Gemini · Ollama · Thematic Analyzer│
 └────────────────────────┬────────────────────────────────┘
                          ↕
 ┌─────────────────────────────────────────────────────────┐
-│               DATABASE  (Prisma + SQLite)                │
-│   TranscriptionJob · AppSettings                         │
+│               DATABASE  (Prisma + SQLite)               │
+│   TranscriptionJob · AppSettings                        │
 └────────────────────────┬────────────────────────────────┘
                          ↕
 ┌─────────────────────────────────────────────────────────┐
-│                  EXTERNAL SERVICES                       │
-│   Gemini API (cloud) · Ollama (local) · FFmpeg (binary)  │
+│                  EXTERNAL SERVICES                      │
+│   Gemini API (cloud) · Ollama (local) · FFmpeg (binary) │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -274,31 +274,31 @@ GEMINI_API_BASE_URL=https://your-proxy.example.com
 │   Audio File (any length, any format)                                │
 │        │                                                             │
 │        ▼                                                             │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │  1. CHUNKING  ·  fluent-ffmpeg                              │   │
-│   │     Split into N-second segments with configurable overlap  │   │
-│   │     Default: 5 min chunks, 10 sec overlap                   │   │
-│   └──────────────────────────┬──────────────────────────────────┘   │
+│   ┌─────────────────────────────────────────────────────────────┐    │
+│   │  1. CHUNKING  ·  fluent-ffmpeg                              │    │
+│   │     Split into N-second segments with configurable overlap  │    │
+│   │     Default: 5 min chunks, 10 sec overlap                   │    │
+│   └──────────────────────────┬──────────────────────────────────┘    │
 │                              │                                       │
 │                              ▼                                       │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │  2. TRANSCRIPTION  ·  Gemini API / Ollama                   │   │
-│   │     Each chunk → AI model → structured JSON                 │   │
-│   │     { speaker, text, start, end, words[] }                  │   │
-│   └──────────────────────────┬──────────────────────────────────┘   │
+│   ┌─────────────────────────────────────────────────────────────┐    │
+│   │  2. TRANSCRIPTION  ·  Gemini API / Ollama                   │    │
+│   │     Each chunk → AI model → structured JSON                 │    │
+│   │     { speaker, text, start, end, words[] }                  │    │
+│   └──────────────────────────┬──────────────────────────────────┘    │
 │                              │                                       │
 │                              ▼                                       │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │  3. MERGE & DEDUPLICATE                                     │   │
-│   │     Overlap regions removed, timestamps adjusted            │   │
-│   │     Speaker labels normalized across all chunks             │   │
-│   └──────────────────────────┬──────────────────────────────────┘   │
+│   ┌─────────────────────────────────────────────────────────────┐    │
+│   │  3. MERGE & DEDUPLICATE                                     │    │
+│   │     Overlap regions removed, timestamps adjusted            │    │
+│   │     Speaker labels normalized across all chunks             │    │
+│   └──────────────────────────┬──────────────────────────────────┘    │
 │                              │                                       │
 │                              ▼                                       │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │  4. PERSIST  ·  Prisma + SQLite                             │   │
-│   │     Job record + full JSON result stored on disk            │   │
-│   └──────────────────────────┬──────────────────────────────────┘   │
+│   ┌─────────────────────────────────────────────────────────────┐    │
+│   │  4. PERSIST  ·  Prisma + SQLite                             │    │
+│   │     Job record + full JSON result stored on disk            │    │
+│   └──────────────────────────┬──────────────────────────────────┘    │
 │                              │                                       │
 │                              ▼                                       │
 │              Interactive Viewer  +  Export  +  Analysis              │
