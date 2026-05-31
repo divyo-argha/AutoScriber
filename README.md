@@ -48,6 +48,35 @@ Built for **researchers, journalists, and linguists** working with Bangla-Englis
 
 ---
 
+## 📥 Download Desktop App
+
+<div align="center">
+
+### macOS
+
+| Intel (x64) | Apple Silicon (M1/M2/M3) |
+|-------------|--------------------------|
+| [Download DMG](download/releases/AutoScribe-1.0.0.dmg) (94 MB) | [Download DMG](download/releases/AutoScribe-1.0.0-arm64.dmg) (89 MB) |
+| [Download ZIP](download/releases/AutoScribe-1.0.0-mac.zip) (91 MB) | [Download ZIP](download/releases/AutoScribe-1.0.0-arm64-mac.zip) (86 MB) |
+
+### Windows
+
+| 64-bit (x64) | 32-bit (ia32) | Universal Installer |
+|--------------|---------------|---------------------|
+| [Download Installer](download/releases/AutoScribe-1.0.0-x64.exe) (72 MB) | [Download Installer](download/releases/AutoScribe-1.0.0-ia32.exe) (64 MB) | [Download Installer](download/releases/AutoScribe-1.0.0.exe) (136 MB) |
+
+### Linux (Ubuntu)
+
+| Format | Download |
+|--------|----------|
+| **AppImage** (Recommended) | [Download AppImage](download/releases/AutoScribe-1.0.0.AppImage) (99 MB) |
+
+<sub>AppImage works on most Linux distributions. Make it executable: `chmod +x AutoScribe-1.0.0.AppImage`</sub>
+
+</div>
+
+---
+
 ## Privacy — Your Data Stays on Your Machine
 
 > ![Local](https://img.shields.io/badge/Storage-100%25_Local-22c55e?style=flat-square&logo=hard-drive&logoColor=white)
