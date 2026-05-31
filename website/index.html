@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>autoScriber — AI-Powered Bangla Transcription</title>
+  <meta name="description" content="autoScriber transcribes Bangla audio with speaker diarization, word-level timestamps, and thematic analysis. Free desktop app for macOS, Windows, and Linux." />
+  <link rel="icon" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <img src="assets/logo.png" alt="autoScriber logo" />
+        <span>auto<strong>Scriber</strong></span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#download">Download</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="https://github.com/divyo-argha/AutoScriber" target="_blank" class="nav-github">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          GitHub
+        </a></li>
+      </ul>
+      <button class="nav-cta" onclick="scrollToDownload()">Download Free</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-bg">
+      <div class="hero-orb orb-1"></div>
+      <div class="hero-orb orb-2"></div>
+      <div class="hero-orb orb-3"></div>
+      <div class="hero-grid"></div>
+    </div>
+    <div class="hero-inner">
+      <div class="hero-badge reveal">
+        <span class="badge-dot"></span>
+        v1.0.0 — Now Available
+      </div>
+      <h1 class="hero-title reveal">
+        <span class="hero-brand">auto<strong>Scriber</strong></span>
+        <span class="hero-subtitle-bn">স্বয়ংলিপি</span>
+        <span class="hero-tagline">AI-Powered Bangla<br/>Audio Transcription</span>
+      </h1>
+      <p class="hero-desc reveal">
+        Speaker diarization · Word-level timestamps · Thematic analysis<br/>
+        Works offline · 100% local storage · 6 export formats
+      </p>
+      <div class="hero-actions reveal">
+        <button class="btn-primary" id="hero-download-btn" onclick="scrollToDownload()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span id="hero-dl-label">Download for macOS</span>
+        </button>
+        <a href="#features" class="btn-ghost">See Features →</a>
+      </div>
+      <div class="hero-platforms reveal">
+        <span>Available for</span>
+        <span class="platform-tag">🍎 macOS</span>
+        <span class="platform-tag">🪟 Windows</span>
+        <span class="platform-tag">🐧 Linux</span>
+      </div>
+    </div>
+    <div class="hero-visual reveal">
+      <div class="app-mockup">
+        <div class="mockup-bar">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-waveform">
+            <div class="wave-bars">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <div class="mockup-transcript">
+            <div class="transcript-line">
+              <span class="speaker speaker-1">Speaker 1</span>
+              <span class="transcript-text">আমাদের আজকের আলোচনার বিষয় হলো...</span>
+            </div>
+            <div class="transcript-line">
+              <span class="speaker speaker-2">Speaker 2</span>
+              <span class="transcript-text">হ্যাঁ, এটি একটি গুরুত্বপূর্ণ বিষয়।</span>
+            </div>
+            <div class="transcript-line">
+              <span class="speaker speaker-1">Speaker 1</span>
+              <span class="transcript-text typing">বাংলা ভাষায় AI ট্রান্সক্রিপশন...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="section-inner">
+      <div class="section-header reveal">
+        <span class="section-label">Features</span>
+        <h2>Everything you need to transcribe</h2>
+        <p>Built specifically for Bangla language researchers, journalists, and practitioners.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">🎙️</div>
+          <h3>Bangla & English</h3>
+          <p>Full support for Bangla transcription with seamless code-switching between Bangla and English in the same audio.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">👥</div>
+          <h3>Speaker Diarization</h3>
+          <p>Automatically identifies and labels different speakers throughout the recording. Know who said what, when.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">⏱️</div>
+          <h3>Word-Level Timestamps</h3>
+          <p>Every word is timestamped. Click any word in the transcript to jump to that exact moment in the audio.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🎨</div>
+          <h3>Thematic Analysis</h3>
+          <p>AI-powered theme extraction surfaces the key topics and themes discussed across your entire recording.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">📤</div>
+          <h3>6 Export Formats</h3>
+          <p>Export your transcripts as TXT, SRT, JSON, DOCX, PDF, or ZIP. Use them anywhere, in any workflow.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🔒</div>
+          <h3>100% Local & Private</h3>
+          <p>Your audio and transcripts never leave your machine. No cloud storage, no telemetry, no tracking. Ever.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🌐</div>
+          <h3>Offline Support</h3>
+          <p>Use local Ollama models to transcribe completely offline — no internet connection required after setup.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">⚡</div>
+          <h3>Multiple AI Models</h3>
+          <p>Choose from Gemini 2.5 Flash, 2.0 Flash, 1.5 Pro, or local Ollama models based on your needs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <section class="download" id="download">
+    <div class="section-inner">
+      <div class="section-header reveal">
+        <span class="section-label">Download</span>
+        <h2>Get autoScriber</h2>
+        <p>Free desktop app. No account required. Works on all major platforms.</p>
+      </div>
+
+      <div class="download-tabs reveal">
+        <button class="tab-btn active" data-os="mac">🍎 macOS</button>
+        <button class="tab-btn" data-os="windows">🪟 Windows</button>
+        <button class="tab-btn" data-os="linux">🐧 Linux</button>
+      </div>
+
+      <!-- macOS -->
+      <div class="download-panel active" id="panel-mac">
+        <div class="download-cards">
+          <div class="download-card recommended">
+            <div class="dl-badge">Recommended</div>
+            <div class="dl-icon">🍎</div>
+            <h3>Apple Silicon</h3>
+            <p>M1, M2, M3, M4 chips</p>
+            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0-arm64.dmg" class="btn-download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download DMG <span class="dl-size">89 MB</span>
+            </a>
+          </div>
+          <div class="download-card">
+            <div class="dl-icon">🍎</div>
+            <h3>Intel Mac</h3>
+            <p>Intel Core processors</p>
+            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0.dmg" class="btn-download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download DMG <span class="dl-size">94 MB</span>
+            </a>
+          </div>
+        </div>
+        <div class="install-cmd reveal">
+          <span class="cmd-label">Install via Homebrew</span>
+          <div class="cmd-block">
+            <code>brew install --cask autoscriber</code>
+            <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <span class="cmd-note">After install: Open DMG → Drag to Applications → Right-click → Open</span>
+        </div>
+      </div>
+
+      <!-- Windows -->
+      <div class="download-panel" id="panel-windows">
+        <div class="download-cards">
+          <div class="download-card recommended">
+            <div class="dl-badge">Recommended</div>
+            <div class="dl-icon">🪟</div>
+            <h3>Windows Universal</h3>
+            <p>Works on all Windows 10/11</p>
+            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0.exe" class="btn-download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download EXE <span class="dl-size">136 MB</span>
+            </a>
+          </div>
+          <div class="download-card">
+            <div class="dl-icon">🪟</div>
+            <h3>Windows 64-bit</h3>
+            <p>x64 architecture only</p>
+            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0-x64.exe" class="btn-download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download EXE <span class="dl-size">72 MB</span>
+            </a>
+          </div>
+          <div class="download-card">
+            <div class="dl-icon">🪟</div>
+            <h3>Windows 32-bit</h3>
+            <p>ia32 architecture</p>
+            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0-ia32.exe" class="btn-download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download EXE <span class="dl-size">64 MB</span>
+            </a>
+          </div>
+        </div>
+        <div class="install-cmd reveal">
+          <span class="cmd-label">Install via winget</span>
+          <div class="cmd-block">
+            <code>winget install autoScriber</code>
+            <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <span class="cmd-note">After install: Run .exe → Follow wizard → Launch from Start Menu</span>
+        </div>
+      </div>
+
+      <!-- Linux -->
+      <div class="download-panel" id="panel-linux">
+        <div class="download-cards">
+          <div class="download-card recommended">
+            <div class="dl-badge">Recommended</div>
+            <div class="dl-icon">🐧</div>
+            <h3>Linux AppImage</h3>
+            <p>Works on all distributions</p>
+            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0.AppImage" class="btn-download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download AppImage <span class="dl-size">99 MB</span>
+            </a>
+          </div>
+        </div>
+        <div class="install-cmd reveal">
+          <span class="cmd-label">Run from terminal</span>
+          <div class="cmd-block">
+            <code>chmod +x AutoScribe-1.0.0.AppImage && ./AutoScribe-1.0.0.AppImage</code>
+            <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <span class="cmd-note">No installation needed — AppImage runs directly on any Linux distro.</span>
+        </div>
+      </div>
+
+      <div class="download-footer reveal">
+        <a href="https://github.com/divyo-argha/AutoScriber/releases/tag/v1.0.0" target="_blank" class="btn-ghost">
+          View all releases on GitHub →
+        </a>
+        <span class="version-info">Version 1.0.0 · May 2026 · MIT License</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about" id="about">
+    <div class="section-inner">
+      <div class="about-grid">
+        <div class="about-content reveal">
+          <span class="section-label">About</span>
+          <h2>Built for Bangla.<br/>Powered by AI.</h2>
+          <p>
+            autoScriber (স্বয়ংলিপি — "self-writing") was built to solve a real problem: 
+            there were no good tools for transcribing Bangla audio with the accuracy and 
+            features that researchers and journalists actually need.
+          </p>
+          <p>
+            It uses Google's Gemini AI models (or local Ollama models for full offline use) 
+            to deliver accurate Bangla transcription with automatic speaker identification, 
+            word-level synchronization, and thematic analysis — all running as a native 
+            desktop app with your data staying entirely on your machine.
+          </p>
+          <p>
+            Built with care for Bangla language researchers, oral historians, journalists, 
+            and anyone working with spoken Bangla content.
+          </p>
+          <div class="about-tags">
+            <span>Bangla NLP</span>
+            <span>Speaker Diarization</span>
+            <span>Offline-first</span>
+            <span>Open Source</span>
+            <span>Privacy-first</span>
+          </div>
+        </div>
+        <div class="about-stats reveal">
+          <div class="stat-card">
+            <div class="stat-num">6</div>
+            <div class="stat-label">Export Formats</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">4</div>
+            <div class="stat-label">AI Models</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">3</div>
+            <div class="stat-label">Platforms</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">0</div>
+            <div class="stat-label">Data Sent to Cloud</div>
+          </div>
+          <div class="about-stack">
+            <span class="stack-label">Built with</span>
+            <div class="stack-tags">
+              <span>Electron</span>
+              <span>Next.js</span>
+              <span>TypeScript</span>
+              <span>Gemini AI</span>
+              <span>Prisma</span>
+              <span>Ollama</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="assets/logo.png" alt="autoScriber" />
+        <div>
+          <span class="footer-name">auto<strong>Scriber</strong></span>
+          <span class="footer-bn">স্বয়ংলিপি</span>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/divyo-argha/AutoScriber" target="_blank">GitHub</a>
+        <a href="https://github.com/divyo-argha/AutoScriber/releases" target="_blank">Releases</a>
+        <a href="https://github.com/divyo-argha/AutoScriber/blob/main/LICENSE" target="_blank">MIT License</a>
+        <a href="https://github.com/divyo-argha/AutoScriber/blob/main/README.md" target="_blank">Docs</a>
+      </div>
+      <p class="footer-copy">© 2026 autoScriber. Built with care for Bangla language researchers.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

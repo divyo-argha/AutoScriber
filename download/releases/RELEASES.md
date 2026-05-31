@@ -11,8 +11,8 @@ Built on: May 31, 2026
 - **AutoScribe-1.0.0-mac.zip** (91 MB) - ZIP archive for Intel Macs
 
 #### Apple Silicon (arm64)
-- **AutoScribe-1.0.0-arm64.dmg** (89 MB) - DMG installer for M1/M2/M3 Macs
-- **AutoScribe-1.0.0-arm64-mac.zip** (86 MB) - ZIP archive for M1/M2/M3 Macs
+- **AutoScribe-1.0.0-arm64.dmg** (89 MB) - DMG installer for M series Macs
+- **AutoScribe-1.0.0-arm64-mac.zip** (86 MB) - ZIP archive for M series Macs
 
 **Installation:**
 1. Download the appropriate DMG or ZIP for your Mac
