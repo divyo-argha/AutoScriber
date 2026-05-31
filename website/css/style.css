@@ -214,7 +214,7 @@ body {
   border-color: rgba(0,201,167,.3);
   box-shadow: 0 12px 40px rgba(0,201,167,.08);
 }
-.feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+.feature-icon { font-size: 2rem; margin-bottom: 1rem; color: var(--teal); display: flex; }
 .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: .5rem; }
 .feature-card p { color: var(--muted); font-size: .875rem; line-height: 1.6; }
 
@@ -249,7 +249,7 @@ body {
   background: var(--grad); color: #fff; font-size: .7rem; font-weight: 700;
   padding: .25rem .75rem; border-radius: 100px; white-space: nowrap;
 }
-.dl-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.dl-icon { font-size: 2.5rem; margin-bottom: 1rem; display: flex; justify-content: center; color: var(--teal); }
 .download-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: .4rem; }
 .download-card p { color: var(--muted); font-size: .8rem; margin-bottom: 1.25rem; }
 .btn-download {

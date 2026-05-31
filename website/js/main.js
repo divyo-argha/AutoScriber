@@ -11,31 +11,51 @@ const observer = new IntersectionObserver(
 );
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// OS detection → set hero download button
+// Detect Linux distro from userAgent
+function detectLinuxDistro() {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('ubuntu')) return 'ubuntu';
+  if (ua.includes('fedora')) return 'fedora';
+  if (ua.includes('debian')) return 'debian';
+  if (ua.includes('arch')) return 'arch';
+  return 'linux';
+}
+
+// OS detection
 function detectOS() {
   const ua = navigator.userAgent;
-  if (/Mac/.test(ua) && /arm/.test(navigator.platform || '')) return 'mac-arm';
-  if (/Mac/.test(ua)) return 'mac-intel';
+  const platform = navigator.platform || '';
+  if (/Mac/.test(ua)) {
+    // Detect Apple Silicon via canvas/hardwareConcurrency heuristic
+    // Most reliable: check for arm in platform or use media query
+    const isArm = /arm/i.test(platform) || (navigator.hardwareConcurrency >= 8 && /Mac/.test(ua));
+    return isArm ? 'mac-arm' : 'mac-intel';
+  }
   if (/Win/.test(ua)) return 'windows';
-  if (/Linux/.test(ua)) return 'linux';
+  if (/Linux/.test(ua)) return detectLinuxDistro();
   return 'mac-arm';
 }
 
 const dlMap = {
-  'mac-arm':   { label: 'Download for Apple Silicon', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0-arm64.dmg' },
-  'mac-intel': { label: 'Download for Intel Mac',     url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0.dmg' },
-  'windows':   { label: 'Download for Windows',       url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0.exe' },
-  'linux':     { label: 'Download for Linux',         url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v1.0.0/AutoScribe-1.0.0.AppImage' },
+  'mac-arm':   { label: 'Download for Apple Silicon', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-arm64.dmg' },
+  'mac-intel': { label: 'Download for Intel Mac',     url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.dmg' },
+  'windows':   { label: 'Download for Windows',       url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.exe' },
+  'linux':     { label: 'Download for Linux',         url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
+  'ubuntu':    { label: 'Download for Ubuntu',        url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
+  'fedora':    { label: 'Download for Fedora',        url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
+  'debian':    { label: 'Download for Debian',        url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
+  'arch':      { label: 'Download for Arch Linux',    url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
 };
 
 const os = detectOS();
 const heroBtn = document.getElementById('hero-download-btn');
 const heroLabel = document.getElementById('hero-dl-label');
-heroLabel.textContent = dlMap[os].label;
-heroBtn.onclick = () => window.location.href = dlMap[os].url;
+const entry = dlMap[os] || dlMap['mac-arm'];
+heroLabel.textContent = entry.label;
+heroBtn.onclick = () => window.location.href = entry.url;
 
-// Auto-select matching tab in download section
-const osToTab = { 'mac-arm': 'mac', 'mac-intel': 'mac', 'windows': 'windows', 'linux': 'linux' };
+// Auto-select matching tab
+const osToTab = { 'mac-arm': 'mac', 'mac-intel': 'mac', 'windows': 'windows', 'linux': 'linux', 'ubuntu': 'linux', 'fedora': 'linux', 'debian': 'linux', 'arch': 'linux' };
 function activateTab(os) {
   const tab = osToTab[os] || 'mac';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.os === tab));
