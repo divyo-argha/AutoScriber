@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Settings, Mic, RotateCcw, History, Brain } from 'lucide-react';
+import { Settings, Mic, RotateCcw, History, Brain, AlertTriangle } from 'lucide-react';
 import { SettingsDialog } from './settings-dialog';
 import {
   Select,
@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
 
 export function Header() {
@@ -22,48 +21,46 @@ export function Header() {
     currentView,
     setCurrentView,
     reset,
-    ollamaModels,
-    availableModels,
     isProcessing,
+    userGeminiApiKey,
+    userSonioxApiKey,
+    geminiApiKey,
   } = useAppStore();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Listen for custom event to open settings (from error recovery)
   useEffect(() => {
     const handler = () => setSettingsOpen(true);
     window.addEventListener('open-settings', handler);
     return () => window.removeEventListener('open-settings', handler);
   }, []);
 
-  const installedLocalModels = new Set(ollamaModels);
+  const hasGeminiKey = !!(userGeminiApiKey || geminiApiKey === '***');
+  const hasSonioxKey = !!userSonioxApiKey;
 
-  const allModels = [
-    ...availableModels,
-    ...ollamaModels
-      .filter(m => !availableModels.some(am => am.id === m))
-      .map(m => ({
-        id: m,
-        name: `${m} (Local)`,
-        provider: 'ollama' as const,
-        description: 'Local Ollama model',
-        maxAudioLength: 300,
-        supportsDiarization: false,
-        supportsTimestamps: true,
-      })),
-  ];
+  function isModelAvailable(model: typeof AVAILABLE_MODELS[number]) {
+    if (model.provider === 'gemini') return hasGeminiKey;
+    if (model.provider === 'soniox') return hasSonioxKey;
+    return false;
+  }
 
-  const currentModelInfo = allModels.find(m => m.id === selectedModel);
-  const currentModelInstalled = currentModelInfo?.provider === 'ollama'
-    ? installedLocalModels.has(currentModelInfo.id)
-    : true;
+  const ModelOption = ({ model }: { model: typeof AVAILABLE_MODELS[number] }) => {
+    const available = isModelAvailable(model);
+    return (
+      <div className="flex items-center gap-2 w-full">
+        <span className={available ? '' : 'text-muted-foreground'}>{model.name}</span>
+        {!available && (
+          <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0 ml-auto" title="API key not set — configure in Settings" />
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo & Title */}
             <div
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => { if (!isProcessing) { reset(); setCurrentView('upload'); } }}
@@ -77,48 +74,30 @@ export function Header() {
               </div>
             </div>
 
-            {/* Model Selector - Center */}
             <div className="hidden sm:flex items-center gap-3">
               <span className="text-sm text-muted-foreground">Model:</span>
               <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isProcessing}>
                 <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="Select model" />
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="truncate">{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
+                    {!isModelAvailable(AVAILABLE_MODELS.find(m => m.id === selectedModel)!) && (
+                      <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                    )}
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  {allModels.map((model) => (
+                  {AVAILABLE_MODELS.map(model => (
                     <SelectItem key={model.id} value={model.id}>
-                      <div className="flex items-center gap-2">
-                        <span>{model.name}</span>
-                        <Badge
-                          variant={model.provider === 'gemini' ? 'default' : installedLocalModels.has(model.id) ? 'secondary' : 'destructive'}
-                          className="text-[10px] px-1.5 py-0"
-                        >
-                          {model.provider === 'gemini' ? 'Cloud' : installedLocalModels.has(model.id) ? 'Local' : 'Missing'}
-                        </Badge>
-                      </div>
+                      <ModelOption model={model} />
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {currentModelInfo && (
-                <Badge variant="outline" className="text-xs">
-                  {currentModelInfo.provider === 'gemini' ? '☁️' : '🖥️'} {currentModelInfo.provider === 'gemini' ? 'Cloud' : 'Local'}
-                </Badge>
-              )}
-              {currentModelInfo?.provider === 'ollama' && !currentModelInstalled && (
-                <span className="text-xs text-destructive">Local model not installed</span>
-              )}
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-2">
               {currentView !== 'upload' && currentView !== 'history' && currentView !== 'thematic' && !isProcessing && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => { reset(); setCurrentView('upload'); }}
-                  className="gap-1.5"
-                >
+                <Button variant="outline" size="sm" onClick={() => { reset(); setCurrentView('upload'); }} className="gap-1.5">
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">New</span>
                 </Button>
@@ -143,35 +122,27 @@ export function Header() {
                 <History className="w-4 h-4" />
                 <span className="hidden sm:inline">History</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSettingsOpen(true)}
-                disabled={isProcessing}
-              >
+              <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} disabled={isProcessing}>
                 <Settings className="w-4.5 h-4.5" />
               </Button>
             </div>
           </div>
 
-          {/* Mobile Model Selector */}
+          {/* Mobile model selector */}
           <div className="sm:hidden pb-3">
             <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isProcessing}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select model" />
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="truncate">{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
+                  {!isModelAvailable(AVAILABLE_MODELS.find(m => m.id === selectedModel)!) && (
+                    <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                  )}
+                </div>
               </SelectTrigger>
               <SelectContent>
-                {allModels.map((model) => (
+                {AVAILABLE_MODELS.map(model => (
                   <SelectItem key={model.id} value={model.id}>
-                    <div className="flex items-center gap-2">
-                      <span>{model.name}</span>
-                      <Badge
-                        variant={model.provider === 'gemini' ? 'default' : installedLocalModels.has(model.id) ? 'secondary' : 'destructive'}
-                        className="text-[10px] px-1.5 py-0"
-                      >
-                        {model.provider === 'gemini' ? 'Cloud' : installedLocalModels.has(model.id) ? 'Local' : 'Missing'}
-                      </Badge>
-                    </div>
+                    <ModelOption model={model} />
                   </SelectItem>
                 ))}
               </SelectContent>

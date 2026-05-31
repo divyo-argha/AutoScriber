@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { splitAudioIntoChunks, getAudioDuration, cleanupChunks, formatTime } from '@/lib/transcriber/chunker';
 import { transcribeChunkWithGemini } from '@/lib/transcriber/gemini';
-import { transcribeChunkWithOllama } from '@/lib/transcriber/ollama';
+import { transcribeChunkWithSoniox } from '@/lib/transcriber/soniox';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
 import type { TranscriptionSegment, TranscriptionResult } from '@/lib/transcriber/types';
 import fs from 'fs';
@@ -37,36 +37,12 @@ function classifyGeminiError(err: unknown): { isLocationError: boolean; message:
     return {
       isLocationError: true,
       message: 'Gemini API is not available in your region.',
-      suggestion: 'You can fix this by: (1) Setting up a proxy URL in Settings → Cloud → API Base URL, or (2) Switching to a local Ollama model. Go to Settings → Local to set up Ollama with a Gemma model.',
+      suggestion: 'Set up a proxy URL in Settings if needed.',
     };
   }
 
   return {
     isLocationError: false,
-    message: errMsg,
-    suggestion: '',
-  };
-}
-
-function classifyOllamaError(err: unknown): { isConnectionError: boolean; message: string; suggestion: string } {
-  const errMsg = err instanceof Error ? err.message : String(err);
-
-  const isConnectionError =
-    errMsg.includes('ECONNREFUSED') ||
-    errMsg.includes('ENOTFOUND') ||
-    errMsg.includes('fetch failed') ||
-    errMsg.includes('Ollama API error');
-
-  if (isConnectionError) {
-    return {
-      isConnectionError: true,
-      message: 'Cannot connect to Ollama. Make sure it is running.',
-      suggestion: 'Start Ollama or check the URL in Settings → Local.',
-    };
-  }
-
-  return {
-    isConnectionError: false,
     message: errMsg,
     suggestion: '',
   };
@@ -80,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
-    const ollamaUrl = settings?.ollamaUrl || process.env.OLLAMA_URL || 'http://localhost:11434';
+    const sonioxApiKey = (settings as any)?.sonioxApiKey || process.env.SONIOX_API_KEY || '';
     const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300;
     const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 10;
 
@@ -101,6 +77,9 @@ export async function POST(request: NextRequest) {
 
     if (modelInfo.provider === 'gemini' && !geminiApiKey) {
       return NextResponse.json({ error: 'Gemini API key is required for cloud transcription' }, { status: 400 });
+    }
+    if (modelInfo.provider === 'soniox' && !sonioxApiKey) {
+      return NextResponse.json({ error: 'Soniox API key is required. Add it in Settings.' }, { status: 400 });
     }
 
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'autoscriber-upload-'));
@@ -158,7 +137,7 @@ export async function POST(request: NextRequest) {
       modelInfo,
       modelId,
       geminiApiKey,
-      ollamaUrl,
+      sonioxApiKey,
       chunkDuration,
       overlapDuration,
       duration,
@@ -180,30 +159,17 @@ interface TranscriptionJobParams {
   modelInfo: typeof AVAILABLE_MODELS[number];
   modelId: string;
   geminiApiKey: string;
-  ollamaUrl: string;
+  sonioxApiKey: string;
   chunkDuration: number;
   overlapDuration: number;
   duration: number | null;
 }
 
 async function processTranscriptionJob(params: TranscriptionJobParams) {
-  const {
-    jobId,
-    filePath,
-    tempDir,
-    modelInfo,
-    modelId,
-    geminiApiKey,
-    ollamaUrl,
-    chunkDuration,
-    overlapDuration,
-    duration,
-  } = params;
+  const { jobId, filePath, tempDir, modelInfo, modelId, geminiApiKey, sonioxApiKey, chunkDuration, overlapDuration, duration } = params;
 
   try {
-    const effectiveChunkDuration = modelInfo.provider === 'ollama'
-      ? Math.min(chunkDuration, modelInfo.maxAudioLength)
-      : chunkDuration;
+    const effectiveChunkDuration = chunkDuration;
 
     let chunks;
     try {
@@ -230,13 +196,9 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
 
     for (const chunk of chunks) {
       try {
-        let result;
-
-        if (modelInfo.provider === 'gemini') {
-          result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime);
-        } else {
-          result = await transcribeChunkWithOllama(chunk.filePath, modelId, ollamaUrl, chunk.index, chunk.startTime);
-        }
+        const result = modelInfo.provider === 'soniox'
+          ? await transcribeChunkWithSoniox(chunk.filePath, sonioxApiKey, modelId, chunk.index, chunk.startTime)
+          : await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime);
 
         console.log(`[transcribe] Chunk ${chunk.index}: ${result.segments.length} segments`);
         allSegments.push(...result.segments);
@@ -262,12 +224,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
             chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
           }
         } else {
-          const classified = classifyOllamaError(chunkErr);
-          if (classified.isConnectionError) {
-            chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
-          } else {
-            chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
-          }
+          chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
         }
 
         chunksDone++;

@@ -22,9 +22,9 @@ export interface ChunkResult {
 export interface ModelInfo {
   id: string;
   name: string;
-  provider: 'gemini' | 'ollama';
+  provider: 'gemini' | 'soniox';
   description: string;
-  maxAudioLength: number; // in seconds
+  maxAudioLength: number;
   supportsDiarization: boolean;
   supportsTimestamps: boolean;
 }
@@ -84,30 +84,12 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     supportsTimestamps: true,
   },
   {
-    id: 'gemma3:12b',
-    name: 'Gemma 3 12B (Local)',
-    provider: 'ollama',
-    description: 'Local Gemma 3 12B via Ollama. Requires Ollama installed. Good Bangla support with multimodal capabilities.',
-    maxAudioLength: 300,
-    supportsDiarization: false,
-    supportsTimestamps: true,
-  },
-  {
-    id: 'gemma3:4b',
-    name: 'Gemma 3 4B (Local)',
-    provider: 'ollama',
-    description: 'Lightweight local Gemma 3 4B via Ollama. Runs on 16GB RAM. Decent Bangla transcription.',
-    maxAudioLength: 180,
-    supportsDiarization: false,
-    supportsTimestamps: true,
-  },
-  {
-    id: 'gemma4:e4b',
-    name: 'Gemma 4 e4b (Local)',
-    provider: 'ollama',
-    description: 'Local Gemma 4 e4b via Ollama. Better performance for Bangla transcription on M-series Macs.',
-    maxAudioLength: 300,
-    supportsDiarization: false,
+    id: 'stt-async-preview',
+    name: 'Soniox Async',
+    provider: 'soniox',
+    description: 'Soniox async transcription. Native Bangla support with speaker diarization and word-level timestamps.',
+    maxAudioLength: 14400,
+    supportsDiarization: true,
     supportsTimestamps: true,
   },
 ];
@@ -134,21 +116,6 @@ RULES:
 1. Transcribe audio in the language spoken (Bangla or English)
 2. Identify speakers as Speaker 1, Speaker 2, etc
 3. Provide accurate timestamps in seconds (relative to chunk start)
-4. Output ONLY a valid JSON array - nothing else, no markdown, no explanation
-
-OUTPUT FORMAT (REQUIRED):
-[
-  {"speaker": "Speaker 1", "startTime": 0.0, "endTime": 5.2, "text": "আমি মনে করি this is very important"}
-]
-
-CRITICAL: Output ONLY the JSON array. No markdown. No code blocks. No text before or after.`;
-
-export const OLLAMA_TRANSCRIPTION_PROMPT = `You are a Bangla-English audio transcription system. Your ONLY job is to output valid JSON.
-
-RULES:
-1. Transcribe audio in the language spoken (Bangla or English)
-2. Identify speakers as Speaker 1, Speaker 2, etc
-3. Provide accurate timestamps in seconds
 4. Output ONLY a valid JSON array - nothing else, no markdown, no explanation
 
 OUTPUT FORMAT (REQUIRED):

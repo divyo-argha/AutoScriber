@@ -9,7 +9,7 @@ export function Footer() {
             autoScriber — Bangla Audio Transcription for Researchers
           </p>
           <p className="text-xs text-muted-foreground">
-            Cloud: Gemini Flash API · Local: Gemma via Ollama
+            Powered by Gemini &amp; Soniox
           </p>
         </div>
       </div>

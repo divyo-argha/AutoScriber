@@ -3,21 +3,15 @@ import { db } from '@/lib/db';
 
 export async function GET() {
   try {
-    let settings = await db.appSettings.findUnique({
-      where: { id: 'default' },
-    });
-
+    let settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     if (!settings) {
-      settings = await db.appSettings.create({
-        data: { id: 'default' },
-      });
+      settings = await db.appSettings.create({ data: { id: 'default' } });
     }
-
     return NextResponse.json({
       ...settings,
       geminiApiKey: process.env.GEMINI_API_KEY ? '***' : '',
       userGeminiApiKey: settings.geminiApiKey || '',
-      ollamaUrl: process.env.OLLAMA_URL || settings.ollamaUrl,
+      userSonioxApiKey: (settings as any).sonioxApiKey || '',
     });
   } catch (err) {
     console.error('Error fetching settings:', err);
@@ -28,26 +22,24 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-
     const settings = await db.appSettings.upsert({
       where: { id: 'default' },
       update: {
-        ollamaUrl: body.ollamaUrl,
         defaultModel: body.defaultModel,
         chunkDuration: body.chunkDuration,
         overlapDuration: body.overlapDuration,
         geminiApiKey: body.userGeminiApiKey || '',
-      },
+        ...(body.userSonioxApiKey !== undefined && { sonioxApiKey: body.userSonioxApiKey }),
+      } as any,
       create: {
         id: 'default',
-        ollamaUrl: body.ollamaUrl || 'http://localhost:11434',
         defaultModel: body.defaultModel || 'gemini-2.5-flash',
         chunkDuration: body.chunkDuration || 300,
         overlapDuration: body.overlapDuration || 10,
         geminiApiKey: body.userGeminiApiKey || '',
-      },
+        sonioxApiKey: body.userSonioxApiKey || '',
+      } as any,
     });
-
     return NextResponse.json(settings);
   } catch (err) {
     console.error('Error saving settings:', err);

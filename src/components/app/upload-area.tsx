@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileAudio, X, Play, AlertCircle, Mic, FolderOpen, Globe, Loader2, Files, Archive, Cloud, Download } from 'lucide-react';
 import { AudioRecorder } from './audio-recorder';
-import { OllamaInstallModal } from './ollama-install-modal';
 
 const ACCEPTED_EXTENSIONS = '.mp3,.wav,.ogg,.flac,.m4a,.webm,.aac,.wma';
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
@@ -39,10 +38,9 @@ const ACCEPTED_TYPES = [
 ];
 
 export function UploadArea() {
-  const { uploadedFile, setUploadedFile, setCurrentView, selectedModel, setBatchJobs, clearBatch, ollamaModels, availableModels } = useAppStore();
+  const { uploadedFile, setUploadedFile, setCurrentView, selectedModel, setBatchJobs, clearBatch, availableModels } = useAppStore();
 
   const selectedModelInfo = availableModels.find(m => m.id === selectedModel);
-  const selectedLocalMissing = selectedModelInfo?.provider === 'ollama' && !ollamaModels.includes(selectedModel);
 
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,9 +51,6 @@ export function UploadArea() {
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveFiles, setDriveFiles] = useState<any[]>([]);
   const [driveSelected, setDriveSelected] = useState<Set<string>>(new Set());
-  const [ollamaInstallOpen, setOllamaInstallOpen] = useState(false);
-  const [ollamaModelToInstall, setOllamaModelToInstall] = useState<string | null>(null);
-  const [pendingBatchAfterInstall, setPendingBatchAfterInstall] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -182,46 +177,21 @@ export function UploadArea() {
       setPreflightChecking(true);
       try {
         const params = new URLSearchParams({ model: selectedModel });
-        if (state.userGeminiApiKey) {
-          params.set('apiKey', state.userGeminiApiKey);
-        }
-
+        if (state.userGeminiApiKey) params.set('apiKey', state.userGeminiApiKey);
         const res = await fetch(`/api/gemini-test?${params.toString()}`);
         const data = await res.json();
         setPreflightChecking(false);
-        if (data.connected) {
-          onPass();
-        } else if (data.errorType === 'no_key') {
-          setPreflightWarning('Gemini API key is not configured. Enter it in Settings → Cloud.');
-        } else if (data.errorType === 'location_blocked') {
-          setPreflightWarning('Gemini API is not available in your region. Switch to a local Ollama model.');
-        } else if (data.errorType === 'auth_failed') {
-          setPreflightWarning('Gemini API key is invalid. Check your BYOK key in Settings.');
-        } else {
-          onPass();
-        }
-      } catch {
-        setPreflightChecking(false);
+        if (data.connected) { onPass(); }
+        else if (data.errorType === 'no_key') { setPreflightWarning('Gemini API key is not configured. Enter it in Settings.'); }
+        else if (data.errorType === 'location_blocked') { setPreflightWarning('Gemini API is not available in your region.'); }
+        else if (data.errorType === 'auth_failed') { setPreflightWarning('Gemini API key is invalid. Check your key in Settings.'); }
+        else { onPass(); }
+      } catch { setPreflightChecking(false); onPass(); }
+    } else if (modelInfo?.provider === 'soniox') {
+      if (!state.userSonioxApiKey) {
+        setPreflightWarning('Soniox API key is not configured. Enter it in Settings.');
+      } else {
         onPass();
-      }
-    } else if (modelInfo?.provider === 'ollama') {
-      setPreflightChecking(true);
-      try {
-        const res = await fetch(`/api/ollama-status?ollamaUrl=${encodeURIComponent(state.ollamaUrl)}`);
-        const data = await res.json();
-        setPreflightChecking(false);
-        if (data.connected && data.models.includes(selectedModel)) {
-          onPass();
-        } else if (!data.connected) {
-          setPreflightWarning(`Ollama is not running at ${state.ollamaUrl}. Start Ollama or change the URL in Settings → Local.`);
-        } else {
-          setOllamaModelToInstall(selectedModel);
-          setPendingBatchAfterInstall(true);
-          setOllamaInstallOpen(true);
-        }
-      } catch {
-        setPreflightChecking(false);
-        setPreflightWarning(`Cannot connect to Ollama at ${state.ollamaUrl}. Make sure it's running.`);
       }
     } else {
       onPass();
@@ -256,15 +226,6 @@ export function UploadArea() {
             </div>
           </div>
         </Card>
-        {selectedLocalMissing && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium">Local model not installed</p>
-              <p className="text-xs opacity-80">The selected local model is not available on this machine. Start transcription to download it automatically.</p>
-            </div>
-          </div>
-        )}
         {preflightWarning && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
             <Globe className="w-4 h-4 mt-0.5 shrink-0" />
@@ -500,24 +461,6 @@ export function UploadArea() {
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Export Formats</p>
         </Card>
       </div>
-
-      <OllamaInstallModal
-        open={ollamaInstallOpen}
-        modelId={ollamaModelToInstall || ''}
-        onClose={() => {
-          setOllamaInstallOpen(false);
-          setOllamaModelToInstall(null);
-          setPendingBatchAfterInstall(false);
-        }}
-        onComplete={() => {
-          setOllamaInstallOpen(false);
-          setOllamaModelToInstall(null);
-          if (pendingBatchAfterInstall) {
-            setPendingBatchAfterInstall(false);
-            startPreflight(() => setCurrentView('processing'));
-          }
-        }}
-      />
     </div>
   );
 }

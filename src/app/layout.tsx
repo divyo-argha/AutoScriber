@@ -15,12 +15,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "autoScriber — Bangla Audio Transcription",
-  description: "Transcribe Bangla-English mixed audio with timestamps and speaker diarization. Powered by Gemini Flash and local Gemma models.",
-  keywords: ["transcription", "Bangla", "Bengali", "audio", "diarization", "Gemini", "Gemma", "Ollama"],
+  description: "Transcribe Bangla-English mixed audio with timestamps and speaker diarization. Powered by Gemini and Soniox.",
+  keywords: ["transcription", "Bangla", "Bengali", "audio", "diarization", "Gemini", "Soniox"],
   authors: [{ name: "autoScriber" }],
-  icons: {
-    icon: "/icon.png",
-  },
+  icons: { icon: "/icon.png" },
 };
 
 export default function RootLayout({

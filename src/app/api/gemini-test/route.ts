@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     if (isLocationError) {
       errorType = 'location_blocked';
-      suggestion = 'Gemini API is not available in your region. You can: (1) Set up a proxy URL in Settings → Cloud → API Base URL, or (2) Switch to a local Ollama model instead.';
+      suggestion = 'Gemini API is not available in your region. Set up a proxy URL in Settings if needed.';
     } else if (isAuthError) {
       errorType = 'auth_failed';
       suggestion = 'Your API key appears to be invalid. Please check your Gemini API key in Settings.';

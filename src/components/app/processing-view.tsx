@@ -14,7 +14,6 @@ export function ProcessingView() {
     uploadedFile,
     uploadedFileName,
     selectedModel,
-    ollamaUrl,
     chunkDuration,
     overlapDuration,
     isProcessing,
@@ -76,7 +75,6 @@ export function ProcessingView() {
       const formData = new FormData();
       formData.append('file', uploadedFile);
       formData.append('model', selectedModel);
-      formData.append('ollamaUrl', ollamaUrl);
       formData.append('chunkDuration', String(chunkDuration));
       formData.append('overlapDuration', String(overlapDuration));
 
@@ -120,7 +118,7 @@ export function ProcessingView() {
         processingStatus: `Error: ${err instanceof Error ? err.message : 'Network error. Please check your connection and try again.'}`,
       });
     }
-  }, [uploadedFile, selectedModel, ollamaUrl, chunkDuration, overlapDuration, setProcessingState]);
+  }, [uploadedFile, selectedModel, chunkDuration, overlapDuration, setProcessingState]);
 
   const pollJobStatus = useCallback(async (id: string) => {
     try {
@@ -334,7 +332,7 @@ export function ProcessingView() {
                           <Cpu className="w-4 h-4 mt-0.5 shrink-0" />
                           <div>
                             <p className="text-xs font-medium">Option 2: Use Local Model</p>
-                            <p className="text-xs opacity-70">Switch to a local Ollama model (e.g., gemma3:4b). Go to Settings → Local to set up Ollama.</p>
+                            <p className="text-xs opacity-70">Check your API key in Settings.</p>
                           </div>
                         </div>
                       </div>

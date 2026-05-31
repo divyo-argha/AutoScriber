@@ -13,7 +13,7 @@ import { Footer } from '@/components/app/footer';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
-  const { currentView, setSettings, setOllamaModels, setHistoryJobs } = useAppStore();
+  const { currentView, setSettings, setHistoryJobs } = useAppStore();
 
   // Load settings on mount
   useEffect(() => {
@@ -23,26 +23,12 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json();
           if (data) {
-            const ollamaUrl = data.ollamaUrl || 'http://localhost:11434';
             setSettings({
-              ollamaUrl,
               chunkDuration: data.chunkDuration || 300,
               overlapDuration: data.overlapDuration || 10,
+              userGeminiApiKey: data.userGeminiApiKey || '',
+              userSonioxApiKey: data.userSonioxApiKey || '',
             });
-            return ollamaUrl;
-          }
-        }
-      } catch {}
-      return 'http://localhost:11434';
-    };
-
-    const loadOllamaModels = async (ollamaUrl: string) => {
-      try {
-        const res = await fetch(`/api/models?ollamaUrl=${encodeURIComponent(ollamaUrl)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.ollamaModels) {
-            setOllamaModels(data.ollamaModels);
           }
         }
       } catch {}
@@ -70,9 +56,9 @@ export default function Home() {
       } catch {}
     };
 
-    loadSettings().then(loadOllamaModels);
+    loadSettings();
     loadHistory();
-  }, [setSettings, setOllamaModels, setHistoryJobs]);
+  }, [setSettings, setHistoryJobs]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

@@ -65,6 +65,11 @@
         "from": "../public",
         "to": "app/public",
         "filter": ["**/*"]
+      },
+      {
+        "from": "../prisma",
+        "to": "app/prisma",
+        "filter": ["**/*"]
       }
     ]
   },

@@ -9,7 +9,27 @@ function startServer() {
   const serverDir = path.dirname(serverPath);
 
   process.env.PORT = process.env.PORT || '3000';
+
+  // Set DATABASE_URL to user data directory so it persists across app updates
+  const fs = require('fs');
+  const dbDir = app.getPath('userData');
+  if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+  process.env.DATABASE_URL = `file:${path.join(dbDir, 'dev.db')}`;
+
   process.chdir(serverDir);
+
+  // Initialize database tables using raw SQL via bundled Prisma client
+  try {
+    const { PrismaClient } = require(path.join(serverDir, 'node_modules', '@prisma', 'client'));
+    const prisma = new PrismaClient();
+    Promise.all([
+      prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "TranscriptionJob" ("id" TEXT NOT NULL PRIMARY KEY, "fileName" TEXT NOT NULL, "fileSize" INTEGER NOT NULL, "duration" REAL, "status" TEXT NOT NULL DEFAULT 'pending', "progress" INTEGER NOT NULL DEFAULT 0, "model" TEXT NOT NULL DEFAULT 'gemini-2.5-flash', "language" TEXT NOT NULL DEFAULT 'bn', "chunksTotal" INTEGER NOT NULL DEFAULT 0, "chunksDone" INTEGER NOT NULL DEFAULT 0, "errorMessage" TEXT, "result" TEXT, "audioPath" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`),
+      prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "AppSettings" ("id" TEXT NOT NULL PRIMARY KEY DEFAULT 'default', "geminiApiKey" TEXT NOT NULL DEFAULT '', "geminiApiBaseUrl" TEXT NOT NULL DEFAULT '', "ollamaUrl" TEXT NOT NULL DEFAULT 'http://localhost:11434', "defaultModel" TEXT NOT NULL DEFAULT 'gemini-2.5-flash', "chunkDuration" INTEGER NOT NULL DEFAULT 300, "overlapDuration" INTEGER NOT NULL DEFAULT 10)`),
+    ]).then(() => { console.log('DB tables ready.'); prisma.$disconnect(); })
+      .catch(e => console.error('DB init error:', e.message));
+  } catch (e) {
+    console.error('DB init failed:', e.message);
+  }
 
   try {
     require(serverPath);
