@@ -68,3 +68,9 @@ electron/dist-electron/
 *.blockmap
 builder-debug.yml
 builder-effective-config.yaml
+
+# Release binaries (hosted on GitHub Releases)
+download/releases/*.exe
+download/releases/*.AppImage
+download/releases/*.dmg
+download/releases/*.zip
