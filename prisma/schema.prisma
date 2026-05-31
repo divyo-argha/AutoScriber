@@ -28,9 +28,9 @@ model TranscriptionJob {
 model AppSettings {
   id              String @id @default("default")
   geminiApiKey    String @default("")
-  geminiApiBaseUrl String @default("") // Custom base URL for proxy support (e.g., https://your-proxy.example.com)
-  ollamaUrl       String @default("http://localhost:11434")
+  geminiApiBaseUrl String @default("")
+  sonioxApiKey    String @default("")
   defaultModel    String @default("gemini-2.5-flash")
-  chunkDuration   Int    @default(300) // seconds per chunk
-  overlapDuration Int    @default(10)  // overlap between chunks in seconds
+  chunkDuration   Int    @default(300)
+  overlapDuration Int    @default(10)
 }

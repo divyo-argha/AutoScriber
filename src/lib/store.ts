@@ -46,10 +46,10 @@ type PlaybackState = {
 };
 
 type SettingsState = {
-  ollamaUrl: string;
   chunkDuration: number;
   overlapDuration: number;
   userGeminiApiKey: string;
+  userSonioxApiKey: string;
 };
 
 interface AppState {
@@ -95,15 +95,11 @@ interface AppState {
 
   // Settings
   geminiApiKey: string;
-  ollamaUrl: string;
   chunkDuration: number;
   overlapDuration: number;
   userGeminiApiKey: string;
+  userSonioxApiKey: string;
   setSettings: (settings: Partial<SettingsState>) => void;
-
-  // Ollama models
-  ollamaModels: string[];
-  setOllamaModels: (models: string[]) => void;
 
   // History
   historyJobs: HistoryJob[];
@@ -142,11 +138,10 @@ const initialState = {
   audioDuration: 0,
   activeSegmentIndex: -1,
   geminiApiKey: '',
-  ollamaUrl: 'http://localhost:11434',
   chunkDuration: 300,
   overlapDuration: 10,
   userGeminiApiKey: '',
-  ollamaModels: [] as string[],
+  userSonioxApiKey: '',
   historyJobs: [] as HistoryJob[],
   batchJobs: [] as BatchJob[],
 };
@@ -180,8 +175,6 @@ export const useAppStore = create<AppState>((set) => ({
 
   setSettings: (settings) => set((prev) => ({ ...prev, ...settings })),
 
-  setOllamaModels: (models) => set({ ollamaModels: models }),
-
   setHistoryJobs: (jobs) => set({ historyJobs: jobs }),
 
   setBatchJobs: (jobs) => set({ batchJobs: jobs }),
@@ -199,11 +192,10 @@ export const useAppStore = create<AppState>((set) => ({
       ...initialState,
       // Preserve settings
       geminiApiKey: prev.geminiApiKey,
-      ollamaUrl: prev.ollamaUrl,
       chunkDuration: prev.chunkDuration,
       overlapDuration: prev.overlapDuration,
       userGeminiApiKey: prev.userGeminiApiKey,
-      ollamaModels: prev.ollamaModels,
+      userSonioxApiKey: prev.userSonioxApiKey,
       historyJobs: prev.historyJobs,
       selectedModel: prev.selectedModel,
     };
