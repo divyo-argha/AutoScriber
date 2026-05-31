@@ -1,6 +1,6 @@
 {
   "name": "autoscriber-desktop",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "autoScriber - Bangla Audio Transcription Desktop App",
   "main": "main.js",
   "scripts": {

@@ -19,11 +19,11 @@
 1. Download the AppImage file
 2. Make it executable:
    ```bash
-   chmod +x AutoScribe-1.0.0.AppImage
+   chmod +x autoScriber-2.0.1.AppImage
    ```
 3. Run the app:
    ```bash
-   ./AutoScribe-1.0.0.AppImage
+   ./autoScriber-2.0.1.AppImage
    ```
 4. (Optional) Move to `/usr/local/bin` for system-wide access
 
@@ -84,7 +84,7 @@ When you first open AutoScribe:
 **Solution:** Click "More info" → "Run anyway"
 
 ### Linux: "Permission denied"
-**Solution:** Make the AppImage executable: `chmod +x AutoScribe-1.0.0.AppImage`
+**Solution:** Make the AppImage executable: `chmod +x autoScriber-2.0.1.AppImage`
 
 ### App won't start
 1. Check if you have an active internet connection (required for first load)

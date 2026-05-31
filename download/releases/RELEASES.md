@@ -1,18 +1,18 @@
 # AutoScribe Desktop App Releases
 
-## Version 1.0.0
+## Version 2.0.1
 
 Built on: May 31, 2026
 
 ### macOS
 
 #### Intel (x64)
-- **AutoScribe-1.0.0.dmg** (94 MB) - DMG installer for Intel Macs
-- **AutoScribe-1.0.0-mac.zip** (91 MB) - ZIP archive for Intel Macs
+- **autoScriber-2.0.1.dmg** (94 MB) - DMG installer for Intel Macs
+- **autoScriber-2.0.1-mac.zip** (91 MB) - ZIP archive for Intel Macs
 
 #### Apple Silicon (arm64)
-- **AutoScribe-1.0.0-arm64.dmg** (89 MB) - DMG installer for M series Macs
-- **AutoScribe-1.0.0-arm64-mac.zip** (86 MB) - ZIP archive for M series Macs
+- **autoScriber-2.0.1-arm64.dmg** (89 MB) - DMG installer for M series Macs
+- **autoScriber-2.0.1-arm64-mac.zip** (86 MB) - ZIP archive for M series Macs
 
 **Installation:**
 1. Download the appropriate DMG or ZIP for your Mac
@@ -26,9 +26,9 @@ Built on: May 31, 2026
 ### Windows
 
 #### Installers
-- **AutoScribe-1.0.0.exe** (136 MB) - Universal installer (includes both x64 and ia32)
-- **AutoScribe-1.0.0-x64.exe** (72 MB) - 64-bit installer
-- **AutoScribe-1.0.0-ia32.exe** (64 MB) - 32-bit installer
+- **autoScriber-2.0.1.exe** (136 MB) - Universal installer (includes both x64 and ia32)
+- **autoScriber-2.0.1-x64.exe** (72 MB) - 64-bit installer
+- **autoScriber-2.0.1-ia32.exe** (64 MB) - 32-bit installer
 
 **Installation:**
 1. Download the appropriate installer
@@ -43,12 +43,12 @@ Built on: May 31, 2026
 ### Linux (Ubuntu)
 
 #### AppImage
-- **AutoScribe-1.0.0.AppImage** (99 MB) - Universal Linux application
+- **autoScriber-2.0.1.AppImage** (99 MB) - Universal Linux application
 
 **Installation:**
 1. Download the AppImage
-2. Make it executable: `chmod +x AutoScribe-1.0.0.AppImage`
-3. Run: `./AutoScribe-1.0.0.AppImage`
+2. Make it executable: `chmod +x autoScriber-2.0.1.AppImage`
+3. Run: `./autoScriber-2.0.1.AppImage`
 
 **System Requirements:** Ubuntu 18.04 or later (works on most modern Linux distributions)
 
@@ -69,10 +69,10 @@ To verify the integrity of your download, you can generate checksums:
 
 ```bash
 # macOS/Linux
-shasum -a 256 AutoScribe-1.0.0.dmg
+shasum -a 256 autoScriber-2.0.1.dmg
 
 # Windows (PowerShell)
-Get-FileHash AutoScribe-1.0.0.exe -Algorithm SHA256
+Get-FileHash autoScriber-2.0.1.exe -Algorithm SHA256
 ```
 
 ## Known Issues

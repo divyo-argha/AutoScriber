@@ -5,16 +5,16 @@ Welcome to the AutoScribe download center!
 ## 📥 Quick Downloads
 
 ### macOS
-- [Intel Mac (DMG)](releases/AutoScribe-1.0.0.dmg) - 94 MB
-- [Apple Silicon (DMG)](releases/AutoScribe-1.0.0-arm64.dmg) - 89 MB
+- [Intel Mac (DMG)](releases/autoScriber-2.0.1.dmg) - 94 MB
+- [Apple Silicon (DMG)](releases/autoScriber-2.0.1-arm64.dmg) - 89 MB
 
 ### Windows
-- [Universal Installer](releases/AutoScribe-1.0.0.exe) - 136 MB (Recommended)
-- [64-bit Installer](releases/AutoScribe-1.0.0-x64.exe) - 72 MB
-- [32-bit Installer](releases/AutoScribe-1.0.0-ia32.exe) - 64 MB
+- [Universal Installer](releases/autoScriber-2.0.1.exe) - 136 MB (Recommended)
+- [64-bit Installer](releases/autoScriber-2.0.1-x64.exe) - 72 MB
+- [32-bit Installer](releases/autoScriber-2.0.1-ia32.exe) - 64 MB
 
 ### Linux
-- [AppImage](releases/AutoScribe-1.0.0.AppImage) - 99 MB (Universal)
+- [AppImage](releases/autoScriber-2.0.1.AppImage) - 99 MB (Universal)
 
 ## 📚 Documentation
 
