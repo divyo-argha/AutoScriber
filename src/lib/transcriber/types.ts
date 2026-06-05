@@ -75,7 +75,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     supportsTimestamps: true,
   },
   {
-    id: 'gemini-1.5-flash',
+    id: 'gemini-1.5-flash-latest',
     name: 'Gemini 1.5 Flash',
     provider: 'gemini',
     description: 'Previous generation Gemini Flash. Slightly cheaper, good Bangla accuracy.',

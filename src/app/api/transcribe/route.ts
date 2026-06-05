@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { splitAudioIntoChunks, getAudioDuration, cleanupChunks, formatTime } from '@/lib/transcriber/chunker';
+import { splitAudioIntoChunks, getAudioDuration, formatTime } from '@/lib/transcriber/chunker';
 import { transcribeChunkWithGemini } from '@/lib/transcriber/gemini';
 import { transcribeChunkWithSoniox } from '@/lib/transcriber/soniox';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
@@ -190,9 +190,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
     });
 
     const allSegments: TranscriptionSegment[] = [];
-    const chunkErrors: string[] = [];
     let chunksDone = 0;
-    let hasLocationError = false;
 
     for (const chunk of chunks) {
       try {
@@ -202,8 +200,8 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
 
         console.log(`[transcribe] Chunk ${chunk.index}: ${result.segments.length} segments`);
         allSegments.push(...result.segments);
-        chunksDone++;
 
+        chunksDone++;
         await db.transcriptionJob.update({
           where: { id: jobId },
           data: {
@@ -214,63 +212,20 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       } catch (chunkErr) {
         const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
         console.error(`[transcribe] Error processing chunk ${chunk.index}:`, errMsg);
-
-        if (modelInfo.provider === 'gemini') {
-          const classified = classifyGeminiError(chunkErr);
-          if (classified.isLocationError) {
-            hasLocationError = true;
-            chunkErrors.push(`Chunk ${chunk.index}: ${classified.message} ${classified.suggestion}`);
-          } else {
-            chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
-          }
-        } else {
-          chunkErrors.push(`Chunk ${chunk.index}: ${errMsg}`);
-        }
-
-        chunksDone++;
-        await db.transcriptionJob.update({
-          where: { id: jobId },
-          data: { chunksDone },
-        });
+        // Rethrow so the outer catch handles job failure
+        throw chunkErr;
       }
     }
 
-    if (allSegments.length === 0) {
-      let errorDetail: string;
-      let errorType = 'generic';
-
-      if (hasLocationError) {
-        errorDetail = `Gemini API is not available in your region. ${chunkErrors.map(e => e.replace(/^Chunk \d+:\s*/, '')).join(' ')}`;
-        errorType = 'location_blocked';
-      } else if (chunkErrors.length > 0) {
-        errorDetail = `Transcription produced no results. Errors: ${chunkErrors.join('; ')}`;
-      } else {
-        errorDetail = 'Transcription produced no results. The audio may be empty, too quiet, or in an unsupported format.';
-      }
-
-      await db.transcriptionJob.update({
-        where: { id: jobId },
-        data: {
-          status: 'failed',
-          errorMessage: errorDetail,
-        },
-      });
-
-      cleanupChunks(chunks);
-      try { fs.unlinkSync(filePath); } catch {}
-      try { fs.rmdirSync(tempDir); } catch {}
-      return;
-    }
-
-    const mergedSegments = mergeSegments(allSegments);
-    const fullText = mergedSegments
-      .map(seg => `[${formatTime(seg.startTime)} - ${formatTime(seg.endTime)}] ${seg.speaker}: ${seg.text}`)
-      .join('\n');
+    // Merge, deduplicate overlap regions, and sort all segments
+    const merged = mergeAndDeduplicateSegments(allSegments, overlapDuration);
+    const fullText = merged.map(s => `[${formatTime(s.startTime)}] ${s.speaker}: ${s.text}`).join('\n');
+    const totalDuration = merged.length > 0 ? Math.max(...merged.map(s => s.endTime)) : (duration ?? 0);
 
     const result: TranscriptionResult = {
-      segments: mergedSegments,
+      segments: merged,
       fullText,
-      duration: duration ?? 0,
+      duration: totalDuration,
       language: 'bn',
       model: modelId,
     };
@@ -281,13 +236,13 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
         status: 'completed',
         progress: 100,
         chunksDone: chunks.length,
+        chunksTotal: chunks.length,
         result: JSON.stringify(result),
+        duration: totalDuration,
       },
     });
 
-    cleanupChunks(chunks);
-    try { fs.unlinkSync(filePath); } catch {}
-    try { fs.rmdirSync(tempDir); } catch {}
+    console.log(`[transcribe] Job ${jobId} completed. ${merged.length} segments total.`);
   } catch (processErr) {
     const classified = classifyGeminiError(processErr);
     const errorMessage = classified.isLocationError
@@ -303,23 +258,45 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
         errorMessage,
       },
     });
-
+  } finally {
     try { fs.unlinkSync(filePath); } catch {}
     try { fs.rmdirSync(tempDir); } catch {}
   }
 }
 
-function mergeSegments(segments: TranscriptionSegment[]): TranscriptionSegment[] {
+/**
+ * Sort, remove duplicate segments from chunk overlap boundaries,
+ * and merge adjacent same-speaker segments.
+ */
+function mergeAndDeduplicateSegments(
+  segments: TranscriptionSegment[],
+  overlapDuration: number
+): TranscriptionSegment[] {
   if (segments.length === 0) return [];
 
+  // Sort by start time
   const sorted = [...segments].sort((a, b) => a.startTime - b.startTime);
 
+  // Deduplicate segments that are near-identical (within overlap window)
+  // Keep the segment with the more accurate (earlier) startTime
+  const deduped: TranscriptionSegment[] = [];
+  for (const seg of sorted) {
+    const isDuplicate = deduped.some(existing => {
+      const timeDiff = Math.abs(existing.startTime - seg.startTime);
+      const textMatch = existing.text.trim().toLowerCase() === seg.text.trim().toLowerCase();
+      return timeDiff < Math.max(overlapDuration, 3) && textMatch;
+    });
+    if (!isDuplicate) {
+      deduped.push(seg);
+    }
+  }
+
+  // Merge consecutive same-speaker segments with small gaps (< 2s)
   const merged: TranscriptionSegment[] = [];
-  let current = { ...sorted[0] };
+  let current = { ...deduped[0] };
 
-  for (let i = 1; i < sorted.length; i++) {
-    const seg = sorted[i];
-
+  for (let i = 1; i < deduped.length; i++) {
+    const seg = deduped[i];
     if (
       current.speaker === seg.speaker &&
       seg.startTime - current.endTime < 2
@@ -331,7 +308,6 @@ function mergeSegments(segments: TranscriptionSegment[]): TranscriptionSegment[]
       current = { ...seg };
     }
   }
-
   merged.push(current);
   return merged;
 }

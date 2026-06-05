@@ -1,9 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { GEMINI_TRANSCRIPTION_PROMPT, GEMINI_CHUNK_PROMPT } from './types';
 import type { TranscriptionSegment, ChunkResult } from './types';
 import fs from 'fs';
 import path from 'path';
 
+const FILE_SIZE_THRESHOLD = 5 * 1024 * 1024; // 5MB
 function getMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
   const mimeMap: Record<string, string> = {
@@ -75,6 +77,46 @@ function createGenAIClient(apiKey: string): GoogleGenerativeAI {
   return new GoogleGenerativeAI(apiKey);
 }
 
+/**
+ * Call generateContent with exponential backoff on rate limits (429) or transient errors (5xx).
+ */
+async function generateContentWithRetry(
+  model: any,
+  contents: any[],
+  maxRetries: number = 5,
+  initialDelayMs: number = 2000
+): Promise<any> {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await model.generateContent(contents);
+    } catch (err: any) {
+      attempt++;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const isRateLimit = errMsg.includes('429') || errMsg.includes('Too Many Requests') || errMsg.includes('quota');
+      const isTransient = errMsg.includes('500') || errMsg.includes('503') || errMsg.includes('internal error') || errMsg.includes('bad gateway') || errMsg.includes('service unavailable');
+      
+      if ((isRateLimit || isTransient) && attempt <= maxRetries) {
+        let delayMs = initialDelayMs * Math.pow(2, attempt - 1);
+        
+        // Try to extract dynamic retry delay from error message if available
+        const retryDelayMatch = errMsg.match(/retryDelay["\s:]+(\d+)s/i) || errMsg.match(/retry in ([\d.]+)\s*s/i);
+        if (retryDelayMatch && retryDelayMatch[1]) {
+          const seconds = parseFloat(retryDelayMatch[1]);
+          if (!isNaN(seconds) && seconds > 0) {
+            delayMs = (seconds + 1) * 1000; // adding 1s safety buffer
+          }
+        }
+        
+        console.warn(`[gemini] API error hit (${isRateLimit ? '429' : '5xx'}). Retrying attempt ${attempt}/${maxRetries} after ${Math.round(delayMs / 1000)}s. Error: ${errMsg}`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 export async function transcribeWithGemini(
   filePath: string,
   apiKey: string,
@@ -92,41 +134,86 @@ export async function transcribeWithGemini(
     throw new Error(`Audio file is empty (0 bytes): ${filePath}`);
   }
 
-  const audioData = fs.readFileSync(filePath);
   const mimeType = getMimeType(filePath);
-
-  console.log(`[gemini] Transcribing file: ${path.basename(filePath)}, size: ${audioData.length} bytes, mime: ${mimeType}`);
-
-  const audioPart = {
-    inlineData: {
-      data: audioData.toString('base64'),
-      mimeType,
-    },
-  };
-
   const prompt = timeOffset > 0 ? GEMINI_CHUNK_PROMPT : GEMINI_TRANSCRIPTION_PROMPT;
 
-  const result = await model.generateContent([prompt, audioPart]);
-  const response = result.response;
-  const text = response.text();
+  let result;
+  let fileToCleanup: string | null = null;
 
-  console.log(`[gemini] API response length: ${text.length} chars`);
+  try {
+    if (fileStats.size >= FILE_SIZE_THRESHOLD) {
+      console.log(`[gemini] File size ${fileStats.size} bytes is >= 15MB. Uploading via Files API...`);
+      const fileManager = new GoogleAIFileManager(apiKey);
+      const uploadResult = await fileManager.uploadFile(filePath, {
+        mimeType,
+        displayName: path.basename(filePath),
+      });
+      
+      let file = uploadResult.file;
+      fileToCleanup = file.name;
+      
+      console.log(`[gemini] File uploaded as ${file.uri}. Waiting for ACTIVE...`);
+      while (file.state === 'PROCESSING') {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        file = await fileManager.getFile(file.name);
+      }
+      
+      if (file.state === 'FAILED') {
+        throw new Error('Gemini Files API failed to process the uploaded audio.');
+      }
+      
+      const filePart = {
+        fileData: {
+          fileUri: file.uri,
+          mimeType: file.mimeType,
+        },
+      };
 
-  let segments = parseTranscriptionResponse(text);
+      result = await generateContentWithRetry(model, [prompt, filePart]);
+    } else {
+      console.log(`[gemini] File size ${fileStats.size} bytes is < 15MB. Transcribing inline...`);
+      const audioData = fs.readFileSync(filePath);
+      const audioPart = {
+        inlineData: {
+          data: audioData.toString('base64'),
+          mimeType,
+        },
+      };
 
-  if (timeOffset > 0) {
-    segments = segments.map(seg => ({
-      ...seg,
-      startTime: seg.startTime + timeOffset,
-      endTime: seg.endTime + timeOffset,
-    }));
+      result = await generateContentWithRetry(model, [prompt, audioPart]);
+    }
+
+    const response = result.response;
+    const text = response.text();
+
+    console.log(`[gemini] API response length: ${text.length} chars`);
+
+    let segments = parseTranscriptionResponse(text);
+
+    if (timeOffset > 0) {
+      segments = segments.map(seg => ({
+        ...seg,
+        startTime: seg.startTime + timeOffset,
+        endTime: seg.endTime + timeOffset,
+      }));
+    }
+
+    return {
+      chunkIndex: 0,
+      segments,
+      rawText: text,
+    };
+  } finally {
+    if (fileToCleanup) {
+      try {
+        console.log(`[gemini] Cleaning up file from Gemini Files API: ${fileToCleanup}`);
+        const fileManager = new GoogleAIFileManager(apiKey);
+        await fileManager.deleteFile(fileToCleanup);
+      } catch (cleanupErr) {
+        console.error(`[gemini] Failed to delete file ${fileToCleanup}:`, cleanupErr);
+      }
+    }
   }
-
-  return {
-    chunkIndex: 0,
-    segments,
-    rawText: text,
-  };
 }
 
 export async function transcribeChunkWithGemini(
@@ -147,39 +234,84 @@ export async function transcribeChunkWithGemini(
     throw new Error(`Chunk file is empty (0 bytes): ${filePath}`);
   }
 
-  const audioData = fs.readFileSync(filePath);
   const mimeType = getMimeType(filePath);
+  let result;
+  let fileToCleanup: string | null = null;
 
-  console.log(`[gemini] Transcribing chunk ${chunkIndex}: ${path.basename(filePath)}, size: ${audioData.length} bytes, mime: ${mimeType}`);
+  try {
+    if (fileStats.size >= FILE_SIZE_THRESHOLD) {
+      console.log(`[gemini] Chunk ${chunkIndex} size ${fileStats.size} bytes is >= 15MB. Uploading via Files API...`);
+      const fileManager = new GoogleAIFileManager(apiKey);
+      const uploadResult = await fileManager.uploadFile(filePath, {
+        mimeType,
+        displayName: `chunk_${chunkIndex}_${path.basename(filePath)}`,
+      });
+      
+      let file = uploadResult.file;
+      fileToCleanup = file.name;
+      
+      console.log(`[gemini] Chunk ${chunkIndex} uploaded as ${file.uri}. Waiting for ACTIVE...`);
+      while (file.state === 'PROCESSING') {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        file = await fileManager.getFile(file.name);
+      }
+      
+      if (file.state === 'FAILED') {
+        throw new Error(`Gemini Files API failed to process uploaded chunk ${chunkIndex}.`);
+      }
+      
+      const filePart = {
+        fileData: {
+          fileUri: file.uri,
+          mimeType: file.mimeType,
+        },
+      };
 
-  const audioPart = {
-    inlineData: {
-      data: audioData.toString('base64'),
-      mimeType,
-    },
-  };
+      result = await generateContentWithRetry(model, [GEMINI_CHUNK_PROMPT, filePart]);
+    } else {
+      console.log(`[gemini] Chunk ${chunkIndex} size ${fileStats.size} bytes is < 15MB. Transcribing inline...`);
+      const audioData = fs.readFileSync(filePath);
+      const audioPart = {
+        inlineData: {
+          data: audioData.toString('base64'),
+          mimeType,
+        },
+      };
 
-  const result = await model.generateContent([GEMINI_CHUNK_PROMPT, audioPart]);
-  const response = result.response;
-  const text = response.text();
+      result = await generateContentWithRetry(model, [GEMINI_CHUNK_PROMPT, audioPart]);
+    }
 
-  console.log(`[gemini] Chunk ${chunkIndex} response length: ${text.length} chars`);
+    const response = result.response;
+    const text = response.text();
 
-  let segments = parseTranscriptionResponse(text);
+    console.log(`[gemini] Chunk ${chunkIndex} response length: ${text.length} chars`);
 
-  if (timeOffset > 0) {
-    segments = segments.map(seg => ({
-      ...seg,
-      startTime: seg.startTime + timeOffset,
-      endTime: seg.endTime + timeOffset,
-    }));
+    let segments = parseTranscriptionResponse(text);
+
+    if (timeOffset > 0) {
+      segments = segments.map(seg => ({
+        ...seg,
+        startTime: seg.startTime + timeOffset,
+        endTime: seg.endTime + timeOffset,
+      }));
+    }
+
+    return {
+      chunkIndex,
+      segments,
+      rawText: text,
+    };
+  } finally {
+    if (fileToCleanup) {
+      try {
+        console.log(`[gemini] Cleaning up chunk file from Gemini Files API: ${fileToCleanup}`);
+        const fileManager = new GoogleAIFileManager(apiKey);
+        await fileManager.deleteFile(fileToCleanup);
+      } catch (cleanupErr) {
+        console.error(`[gemini] Failed to delete chunk file ${fileToCleanup}:`, cleanupErr);
+      }
+    }
   }
-
-  return {
-    chunkIndex,
-    segments,
-    rawText: text,
-  };
 }
 
 export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.5-flash'): Promise<boolean> {

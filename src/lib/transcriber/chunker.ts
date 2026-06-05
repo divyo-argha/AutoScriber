@@ -4,6 +4,19 @@ import path from 'path';
 import os from 'os';
 import { formatTime } from '@/lib/format-utils';
 
+// On macOS, Next.js background workers might run without /opt/homebrew/bin in PATH.
+// Explicitly configure fluent-ffmpeg paths if standard Homebrew binaries are found.
+if (process.platform === 'darwin') {
+  const brewFfmpeg = '/opt/homebrew/bin/ffmpeg';
+  const brewFfprobe = '/opt/homebrew/bin/ffprobe';
+  if (fs.existsSync(brewFfmpeg)) {
+    ffmpeg.setFfmpegPath(brewFfmpeg);
+  }
+  if (fs.existsSync(brewFfprobe)) {
+    ffmpeg.setFfprobePath(brewFfprobe);
+  }
+}
+
 export interface ChunkInfo {
   index: number;
   filePath: string;
