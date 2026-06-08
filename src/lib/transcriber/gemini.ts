@@ -2,6 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { GEMINI_TRANSCRIPTION_PROMPT, GEMINI_CHUNK_PROMPT } from './types';
 import type { TranscriptionSegment, ChunkResult } from './types';
+import { isQuotaError } from './error-utils';
+import { transcribeChunkWithSoniox } from './soniox';
 import fs from 'fs';
 import path from 'path';
 
@@ -93,18 +95,23 @@ async function generateContentWithRetry(
     } catch (err: any) {
       attempt++;
       const errMsg = err instanceof Error ? err.message : String(err);
-      const isRateLimit = errMsg.includes('429') || errMsg.includes('Too Many Requests') || errMsg.includes('quota');
+      const isRateLimit = isQuotaError(err) || errMsg.includes('Too Many Requests') || errMsg.includes('quota');
       const isTransient = errMsg.includes('500') || errMsg.includes('503') || errMsg.includes('internal error') || errMsg.includes('bad gateway') || errMsg.includes('service unavailable');
       
       if ((isRateLimit || isTransient) && attempt <= maxRetries) {
         let delayMs = initialDelayMs * Math.pow(2, attempt - 1);
         
-        // Try to extract dynamic retry delay from error message if available
+        // Try to extract dynamic retry delay from error message or response headers if available
         const retryDelayMatch = errMsg.match(/retryDelay["\s:]+(\d+)s/i) || errMsg.match(/retry in ([\d.]+)\s*s/i);
         if (retryDelayMatch && retryDelayMatch[1]) {
           const seconds = parseFloat(retryDelayMatch[1]);
           if (!isNaN(seconds) && seconds > 0) {
             delayMs = (seconds + 1) * 1000; // adding 1s safety buffer
+          }
+        } else if (err.status === 429 && err.headers?.get?.('retry-after')) {
+          const retryAfter = parseInt(err.headers.get('retry-after'), 10);
+          if (!isNaN(retryAfter) && retryAfter > 0) {
+            delayMs = (retryAfter + 1) * 1000;
           }
         }
         
@@ -117,7 +124,67 @@ async function generateContentWithRetry(
   }
 }
 
+const GEMINI_FALLBACK_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-2.0-flash-lite',
+];
+
 export async function transcribeWithGemini(
+  filePath: string,
+  apiKey: string,
+  modelId: string = 'gemini-2.5-flash',
+  timeOffset: number = 0,
+  sonioxApiKey?: string
+): Promise<ChunkResult> {
+  const modelsToTry = [
+    modelId,
+    ...GEMINI_FALLBACK_MODELS.filter(m => m !== modelId),
+  ];
+
+  let lastError: any = null;
+
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const currentModel = modelsToTry[i];
+    try {
+      if (i > 0) {
+        console.warn(`[gemini] Attempting fallback to Gemini model: ${currentModel}`);
+      }
+      const result = await transcribeWithGeminiInternal(filePath, apiKey, currentModel, timeOffset);
+      return {
+        ...result,
+        fallbackUsed: i > 0 || result.fallbackUsed,
+      };
+    } catch (err: any) {
+      lastError = err;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error(`[gemini] Full transcription failed with model ${currentModel}: ${errMsg}`);
+      
+      // If it's a file error, don't try other models
+      if (errMsg.includes('not found') || errMsg.includes('empty') || errMsg.includes('0 bytes')) {
+        break;
+      }
+    }
+  }
+
+  if (sonioxApiKey) {
+    console.warn('[gemini] All Gemini models failed during full transcription. Attempting fallback to Soniox...');
+    try {
+      const result = await transcribeChunkWithSoniox(filePath, sonioxApiKey, 'stt-async-preview', 0, timeOffset);
+      return {
+        ...result,
+        fallbackUsed: true
+      };
+    } catch (sonioxErr) {
+      console.error('[gemini] Fallback to Soniox also failed:', sonioxErr);
+    }
+  }
+
+  throw lastError || new Error('Transcription failed with all models.');
+}
+
+async function transcribeWithGeminiInternal(
   filePath: string,
   apiKey: string,
   modelId: string = 'gemini-2.5-flash',
@@ -142,7 +209,7 @@ export async function transcribeWithGemini(
 
   try {
     if (fileStats.size >= FILE_SIZE_THRESHOLD) {
-      console.log(`[gemini] File size ${fileStats.size} bytes is >= 15MB. Uploading via Files API...`);
+      console.log(`[gemini] File size ${fileStats.size} bytes is >= 5MB. Uploading via Files API...`);
       const fileManager = new GoogleAIFileManager(apiKey);
       const uploadResult = await fileManager.uploadFile(filePath, {
         mimeType,
@@ -171,7 +238,7 @@ export async function transcribeWithGemini(
 
       result = await generateContentWithRetry(model, [prompt, filePart]);
     } else {
-      console.log(`[gemini] File size ${fileStats.size} bytes is < 15MB. Transcribing inline...`);
+      console.log(`[gemini] File size ${fileStats.size} bytes is < 5MB. Transcribing inline...`);
       const audioData = fs.readFileSync(filePath);
       const audioPart = {
         inlineData: {
@@ -221,6 +288,60 @@ export async function transcribeChunkWithGemini(
   apiKey: string,
   modelId: string,
   chunkIndex: number,
+  timeOffset: number,
+  sonioxApiKey?: string
+): Promise<ChunkResult> {
+  const modelsToTry = [
+    modelId,
+    ...GEMINI_FALLBACK_MODELS.filter(m => m !== modelId),
+  ];
+
+  let lastError: any = null;
+
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const currentModel = modelsToTry[i];
+    try {
+      if (i > 0) {
+        console.warn(`[gemini] Chunk ${chunkIndex}: Attempting fallback to Gemini model: ${currentModel}`);
+      }
+      const result = await transcribeChunkWithGeminiInternal(filePath, apiKey, currentModel, chunkIndex, timeOffset);
+      return {
+        ...result,
+        fallbackUsed: i > 0 || result.fallbackUsed,
+      };
+    } catch (err: any) {
+      lastError = err;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error(`[gemini] Chunk ${chunkIndex} failed with model ${currentModel}: ${errMsg}`);
+      
+      // If it's a file error, don't try other models
+      if (errMsg.includes('not found') || errMsg.includes('empty') || errMsg.includes('0 bytes')) {
+        break;
+      }
+    }
+  }
+
+  if (sonioxApiKey) {
+    console.warn(`[gemini] All Gemini models failed for chunk ${chunkIndex}. Attempting fallback to Soniox...`);
+    try {
+      const result = await transcribeChunkWithSoniox(filePath, sonioxApiKey, 'stt-async-preview', chunkIndex, timeOffset);
+      return {
+        ...result,
+        fallbackUsed: true
+      };
+    } catch (sonioxErr) {
+      console.error(`[gemini] Fallback to Soniox for chunk ${chunkIndex} also failed:`, sonioxErr);
+    }
+  }
+
+  throw lastError || new Error(`Transcription failed for chunk ${chunkIndex} with all models.`);
+}
+
+async function transcribeChunkWithGeminiInternal(
+  filePath: string,
+  apiKey: string,
+  modelId: string,
+  chunkIndex: number,
   timeOffset: number
 ): Promise<ChunkResult> {
   const genAI = createGenAIClient(apiKey);
@@ -240,7 +361,7 @@ export async function transcribeChunkWithGemini(
 
   try {
     if (fileStats.size >= FILE_SIZE_THRESHOLD) {
-      console.log(`[gemini] Chunk ${chunkIndex} size ${fileStats.size} bytes is >= 15MB. Uploading via Files API...`);
+      console.log(`[gemini] Chunk ${chunkIndex} size ${fileStats.size} bytes is >= 5MB. Uploading via Files API...`);
       const fileManager = new GoogleAIFileManager(apiKey);
       const uploadResult = await fileManager.uploadFile(filePath, {
         mimeType,
@@ -269,7 +390,7 @@ export async function transcribeChunkWithGemini(
 
       result = await generateContentWithRetry(model, [GEMINI_CHUNK_PROMPT, filePart]);
     } else {
-      console.log(`[gemini] Chunk ${chunkIndex} size ${fileStats.size} bytes is < 15MB. Transcribing inline...`);
+      console.log(`[gemini] Chunk ${chunkIndex} size ${fileStats.size} bytes is < 5MB. Transcribing inline...`);
       const audioData = fs.readFileSync(filePath);
       const audioPart = {
         inlineData: {

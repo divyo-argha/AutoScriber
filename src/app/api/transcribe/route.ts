@@ -5,6 +5,7 @@ import { transcribeChunkWithGemini } from '@/lib/transcriber/gemini';
 import { transcribeChunkWithSoniox } from '@/lib/transcriber/soniox';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
 import type { TranscriptionSegment, TranscriptionResult } from '@/lib/transcriber/types';
+import { classifyGeminiError } from '@/lib/transcriber/error-utils';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -18,34 +19,6 @@ function ensureAudioStorageDir() {
   if (!fs.existsSync(AUDIO_STORAGE_DIR)) {
     fs.mkdirSync(AUDIO_STORAGE_DIR, { recursive: true });
   }
-}
-
-/**
- * Detect if an error is a Gemini "location not supported" error
- * and return a user-friendly error with actionable suggestions.
- */
-function classifyGeminiError(err: unknown): { isLocationError: boolean; message: string; suggestion: string } {
-  const errMsg = err instanceof Error ? err.message : String(err);
-
-  const isLocationError =
-    errMsg.includes('User location is not supported') ||
-    errMsg.includes('location is not supported for the API use') ||
-    errMsg.includes('not available in your country') ||
-    errMsg.includes('REGION') && errMsg.includes('not supported');
-
-  if (isLocationError) {
-    return {
-      isLocationError: true,
-      message: 'Gemini API is not available in your region.',
-      suggestion: 'Set up a proxy URL in Settings if needed.',
-    };
-  }
-
-  return {
-    isLocationError: false,
-    message: errMsg,
-    suggestion: '',
-  };
 }
 
 export async function POST(request: NextRequest) {
@@ -191,15 +164,19 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
 
     const allSegments: TranscriptionSegment[] = [];
     let chunksDone = 0;
+    let fallbackUsed = false;
 
     for (const chunk of chunks) {
       try {
         const result = modelInfo.provider === 'soniox'
           ? await transcribeChunkWithSoniox(chunk.filePath, sonioxApiKey, modelId, chunk.index, chunk.startTime)
-          : await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime);
+          : await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime, sonioxApiKey);
 
         console.log(`[transcribe] Chunk ${chunk.index}: ${result.segments.length} segments`);
         allSegments.push(...result.segments);
+        if (result.fallbackUsed) {
+          fallbackUsed = true;
+        }
 
         chunksDone++;
         await db.transcriptionJob.update({
@@ -228,6 +205,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       duration: totalDuration,
       language: 'bn',
       model: modelId,
+      fallbackUsed,
     };
 
     await db.transcriptionJob.update({
@@ -242,7 +220,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       },
     });
 
-    console.log(`[transcribe] Job ${jobId} completed. ${merged.length} segments total.`);
+    console.log(`[transcribe] Job ${jobId} completed. ${merged.length} segments total. Fallback used: ${fallbackUsed}`);
   } catch (processErr) {
     const classified = classifyGeminiError(processErr);
     const errorMessage = classified.isLocationError

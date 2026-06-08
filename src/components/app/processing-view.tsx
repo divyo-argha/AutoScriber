@@ -236,12 +236,33 @@ export function ProcessingView() {
           </div>
 
           {/* Progress Bar */}
-          <div className="space-y-2">
-            <Progress value={processingProgress} className="h-2.5" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-medium text-foreground">
+                <span>Overall Progress</span>
+                <span>{processingProgress}%</span>
+              </div>
+              <Progress value={processingProgress} className="h-2.5" />
+            </div>
+
+            {isProcessing && chunksTotal > 0 && (
+              <div className="space-y-2 p-3 rounded-lg bg-muted/40 border border-muted-foreground/10">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">
+                    Chunks Completed
+                  </span>
+                  <span className="text-muted-foreground">
+                    {chunksDone} / {chunksTotal} ({Math.round((chunksDone / chunksTotal) * 100)}%)
+                  </span>
+                </div>
+                <Progress value={(chunksDone / chunksTotal) * 100} className="h-1.5 bg-secondary" />
+              </div>
+            )}
+
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{processingProgress}%</span>
+              <span>Status: {processingStatus}</span>
               <span>
-                {chunksTotal > 0 ? `Chunk ${chunksDone}/${chunksTotal}` : 'Preparing...'}
+                {chunksTotal > 0 ? `Chunks: ${chunksDone}/${chunksTotal}` : 'Preparing...'}
               </span>
             </div>
           </div>

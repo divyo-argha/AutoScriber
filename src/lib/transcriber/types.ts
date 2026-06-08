@@ -11,12 +11,14 @@ export interface TranscriptionResult {
   duration: number;
   language: string;
   model: string;
+  fallbackUsed?: boolean;
 }
 
 export interface ChunkResult {
   chunkIndex: number;
   segments: TranscriptionSegment[];
   rawText: string;
+  fallbackUsed?: boolean;
 }
 
 export interface ModelInfo {
@@ -75,7 +77,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     supportsTimestamps: true,
   },
   {
-    id: 'gemini-1.5-flash-latest',
+    id: 'gemini-1.5-flash',
     name: 'Gemini 1.5 Flash',
     provider: 'gemini',
     description: 'Previous generation Gemini Flash. Slightly cheaper, good Bangla accuracy.',
