@@ -44,9 +44,31 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       if (localGeminiKey) params.set('apiKey', localGeminiKey);
       const res = await fetch(`/api/gemini-test?${params}`);
       const data = await res.json();
-      if (data.connected) setGeminiStatus('connected');
-      else { setGeminiStatus('error'); setGeminiError(data.error || data.suggestion || 'Connection failed'); }
-    } catch { setGeminiStatus('error'); setGeminiError('Network error'); }
+      if (data.connected) {
+        setGeminiStatus('connected');
+        toast({
+          title: 'Connection Successful',
+          description: 'Gemini API connection test passed!',
+        });
+      } else {
+        const errMsg = data.error || data.suggestion || 'Connection failed';
+        setGeminiStatus('error');
+        setGeminiError(errMsg);
+        toast({
+          variant: 'destructive',
+          title: 'Connection Failed',
+          description: errMsg,
+        });
+      }
+    } catch {
+      setGeminiStatus('error');
+      setGeminiError('Network error');
+      toast({
+        variant: 'destructive',
+        title: 'Connection Failed',
+        description: 'Network error',
+      });
+    }
   };
 
   const saveSettings = async () => {

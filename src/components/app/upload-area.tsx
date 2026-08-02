@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileAudio, X, Play, AlertCircle, Mic, FolderOpen, Globe, Loader2, Files, Archive, Cloud, Download } from 'lucide-react';
 import { AudioRecorder } from './audio-recorder';
+import { useToast } from '@/hooks/use-toast';
 
 const ACCEPTED_EXTENSIONS = '.mp3,.wav,.ogg,.flac,.m4a,.webm,.aac,.wma';
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
@@ -54,6 +55,16 @@ export function UploadArea() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const showError = useCallback((msg: string) => {
+    setError(msg);
+    toast({
+      variant: 'destructive',
+      title: 'File Upload/Processing Error',
+      description: msg,
+    });
+  }, [toast]);
 
   const addFiles = useCallback((incoming: FileList | File[]) => {
     const arr = Array.from(incoming);
@@ -64,7 +75,7 @@ export function UploadArea() {
       if (err) errors.push(err);
       else valid.push(f);
     }
-    if (errors.length) setError(errors.join('; '));
+    if (errors.length) showError(errors.join('; '));
     else setError(null);
 
     if (valid.length === 1 && pendingFiles.length === 0) {
@@ -76,7 +87,7 @@ export function UploadArea() {
       });
       setUploadedFile(null);
     }
-  }, [pendingFiles.length, setUploadedFile]);
+  }, [pendingFiles.length, setUploadedFile, showError]);
 
   const handleZipUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,16 +97,16 @@ export function UploadArea() {
     try {
       const audioFiles = await extractAudioFilesFromZip(file);
       if (audioFiles.length === 0) {
-        setError('No audio files found in ZIP');
+        showError('No audio files found in ZIP');
         return;
       }
       addFiles(audioFiles);
       setActiveTab('upload');
     } catch (err) {
-      setError(`Failed to extract ZIP: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      showError(`Failed to extract ZIP: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
     e.target.value = '';
-  }, [addFiles]);
+  }, [addFiles, showError]);
 
   const handleFolderUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const items = e.currentTarget.webkitdirectory ? e.target.files : null;
@@ -108,38 +119,38 @@ export function UploadArea() {
         return ext && ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'webm', 'aac', 'wma'].includes(ext);
       });
       if (audioFiles.length === 0) {
-        setError('No audio files found in folder');
+        showError('No audio files found in folder');
         return;
       }
       addFiles(audioFiles);
       setActiveTab('upload');
     } catch (err) {
-      setError(`Failed to read folder: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      showError(`Failed to read folder: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
     e.target.value = '';
-  }, [addFiles]);
+  }, [addFiles, showError]);
 
   const handleGoogleDriveConnect = useCallback(async () => {
     setDriveLoading(true);
     try {
       const user = await signInWithGoogle();
       if (!user) {
-        setError('Failed to sign in with Google');
+        showError('Failed to sign in with Google');
         setDriveLoading(false);
         return;
       }
       const files = await listDriveAudioFiles();
       setDriveFiles(files);
     } catch (err) {
-      setError(`Google Drive error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      showError(`Google Drive error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setDriveLoading(false);
     }
-  }, []);
+  }, [showError]);
 
   const handleDriveDownload = useCallback(async () => {
     if (driveSelected.size === 0) {
-      setError('Select at least one file');
+      showError('Select at least one file');
       return;
     }
 
@@ -154,7 +165,7 @@ export function UploadArea() {
         }
       }
       if (downloaded.length === 0) {
-        setError('Failed to download files');
+        showError('Failed to download files');
         return;
       }
       addFiles(downloaded);
@@ -162,11 +173,11 @@ export function UploadArea() {
       setDriveSelected(new Set());
       setActiveTab('upload');
     } catch (err) {
-      setError(`Download error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      showError(`Download error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setDriveLoading(false);
     }
-  }, [driveSelected, driveFiles, addFiles]);
+  }, [driveSelected, driveFiles, addFiles, showError]);
 
   const startPreflight = useCallback(async (onPass: () => void) => {
     setPreflightWarning(null);

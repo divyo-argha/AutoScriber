@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Mic, MicOff, Pause, Play, Square, AlertCircle } from 'lucide-react';
 import { SoundWaveIndicator } from './sound-wave-indicator';
+import { useToast } from '@/hooks/use-toast';
 
 type RecorderStatus = 'idle' | 'recording' | 'paused' | 'stopped';
 
@@ -29,6 +30,16 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
   const [error, setError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [waveform, setWaveform] = useState<number[]>(new Array(60).fill(0));
+  const { toast } = useToast();
+
+  const showError = useCallback((msg: string) => {
+    setError(msg);
+    toast({
+      variant: 'destructive',
+      title: 'Audio Recorder Error',
+      description: msg,
+    });
+  }, [toast]);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -162,11 +173,11 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
     } catch (err) {
       console.error('Failed to start recording:', err);
       if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        setError('Microphone access denied. Please allow microphone access in your browser settings.');
+        showError('Microphone access denied. Please allow microphone access in your browser settings.');
       } else if (err instanceof DOMException && err.name === 'NotFoundError') {
-        setError('No microphone found. Please connect a microphone and try again.');
+        showError('No microphone found. Please connect a microphone and try again.');
       } else {
-        setError(`Failed to start recording: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        showError(`Failed to start recording: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
   }, [startAudioMonitoring]);
@@ -211,7 +222,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
     recorder.onstop = () => {
       const collectedChunks = chunksRef.current;
       if (collectedChunks.length === 0) {
-        setError('No audio data was recorded. Please check your microphone and try again.');
+        showError('No audio data was recorded. Please check your microphone and try again.');
         return;
       }
 

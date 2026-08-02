@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Upload, FileText, X, Play, Loader2, Download, ChevronDown, ChevronRight, AlertCircle, Edit2, Trash2, Check } from 'lucide-react';
 import type { ThematicAnalysisResult, Code, Theme } from '@/lib/thematic-analysis/types';
+import { useToast } from '@/hooks/use-toast';
 
 export function ThematicAnalysisView() {
   const [files, setFiles] = useState<File[]>([]);
@@ -20,6 +21,16 @@ export function ThematicAnalysisView() {
   const [editingCodeId, setEditingCodeId] = useState<string | null>(null);
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const showError = (msg: string) => {
+    setError(msg);
+    toast({
+      variant: 'destructive',
+      title: 'Thematic Analysis Error',
+      description: msg,
+    });
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -34,7 +45,7 @@ export function ThematicAnalysisView() {
 
   const startAnalysis = async () => {
     if (files.length === 0) {
-      setError('Please upload at least one transcript file');
+      showError('Please upload at least one transcript file');
       return;
     }
 
@@ -66,7 +77,7 @@ export function ThematicAnalysisView() {
       setResult(data.result);
       setAnalysisStatus('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Analysis failed');
+      showError(err instanceof Error ? err.message : 'Analysis failed');
       setAnalysisStatus('');
     } finally {
       setAnalyzing(false);
