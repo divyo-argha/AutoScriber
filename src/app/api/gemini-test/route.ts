@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const modelId = searchParams.get('model') || 'gemini-2.5-flash';
+  const modelId = searchParams.get('model') || 'gemini-2.0-flash';
   const apiKeyFromQuery = searchParams.get('apiKey')?.trim() || undefined;
 
   const settings = await db.appSettings.findUnique({ where: { id: 'default' } });

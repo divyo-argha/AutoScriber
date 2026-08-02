@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const modelId = (formData.get('model') as string) || 'gemini-2.5-flash';
+    const modelId = (formData.get('model') as string) || 'gemini-2.0-flash';
 
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';

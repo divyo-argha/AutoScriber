@@ -171,7 +171,6 @@ async function generateContentWithRetry(
 }
 
 const GEMINI_FALLBACK_MODELS = [
-  'gemini-2.5-flash',
   'gemini-2.0-flash',
   'gemini-2.0-flash-lite',
   'gemini-1.5-flash',
@@ -196,7 +195,7 @@ async function enforceRateLimitPacing(minDelayMs: number = 6000): Promise<void> 
 export async function transcribeWithGemini(
   filePath: string,
   apiKey: string,
-  modelId: string = 'gemini-2.5-flash',
+  modelId: string = 'gemini-2.0-flash',
   timeOffset: number = 0
 ): Promise<ChunkResult> {
   const modelsToTry = [
@@ -235,7 +234,7 @@ export async function transcribeWithGemini(
 async function transcribeWithGeminiInternal(
   filePath: string,
   apiKey: string,
-  modelId: string = 'gemini-2.5-flash',
+  modelId: string = 'gemini-2.0-flash',
   timeOffset: number = 0
 ): Promise<ChunkResult> {
   const genAI = createGenAIClient(apiKey);
@@ -469,7 +468,7 @@ async function transcribeChunkWithGeminiInternal(
   }
 }
 
-export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.5-flash'): Promise<boolean> {
+export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.0-flash'): Promise<boolean> {
   try {
     const genAI = createGenAIClient(apiKey);
     const model = genAI.getGenerativeModel({ model: modelId });

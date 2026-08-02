@@ -18,7 +18,7 @@ interface SettingsDialogProps {
 type TestStatus = 'idle' | 'testing' | 'connected' | 'error';
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const { chunkDuration, overlapDuration, userGeminiApiKey, setSettings } = useAppStore();
+  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSettings } = useAppStore();
 
   const [localGeminiKey, setLocalGeminiKey] = useState(userGeminiApiKey);
   const [localChunkDuration, setLocalChunkDuration] = useState(String(chunkDuration));
@@ -40,7 +40,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const testGemini = async () => {
     setGeminiStatus('testing'); setGeminiError('');
     try {
-      const params = new URLSearchParams({ model: 'gemini-2.5-flash' });
+      const params = new URLSearchParams({ model: selectedModel || 'gemini-2.0-flash' });
       if (localGeminiKey) params.set('apiKey', localGeminiKey);
       const res = await fetch(`/api/gemini-test?${params}`);
       const data = await res.json();
@@ -86,7 +86,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <Badge variant="outline" className="text-xs">☁️ Google</Badge>
               </div>
               <div className="flex gap-2 items-center">
-                <Input type="password" placeholder="AIza..." value={localGeminiKey} onChange={e => setLocalGeminiKey(e.target.value)} className="flex-1" />
+                <Input type="password" placeholder="AIza... or AQ..." value={localGeminiKey} onChange={e => setLocalGeminiKey(e.target.value)} className="flex-1" />
                 <Button variant="outline" size="icon" onClick={testGemini} disabled={geminiStatus === 'testing'}>
                   {geminiStatus === 'testing' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
                 </Button>

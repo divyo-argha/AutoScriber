@@ -53,25 +53,15 @@ export interface TranscriptionJob {
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
   {
-    id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
-    provider: 'gemini',
-    description: 'Recommended AI Studio Free Tier flagship model. Best quality, fast audio understanding, diarization, and mixed Bangla-English transcription.',
-    maxAudioLength: 7200,
-    supportsDiarization: true,
-    supportsTimestamps: true,
-    tierInfo: 'Free Tier (10 RPM / 250 RPD)',
-    recommended: true,
-  },
-  {
     id: 'gemini-2.0-flash',
     name: 'Gemini 2.0 Flash',
     provider: 'gemini',
-    description: 'High-volume Free Tier model. Fast execution with 1,500 RPD daily quota.',
-    maxAudioLength: 3600,
+    description: 'Recommended AI Studio Free Tier flagship model. Fast execution, best quality, audio understanding, diarization, and mixed Bangla-English transcription.',
+    maxAudioLength: 7200,
     supportsDiarization: true,
     supportsTimestamps: true,
     tierInfo: 'Free Tier (15 RPM / 1,500 RPD)',
+    recommended: true,
   },
   {
     id: 'gemini-2.0-flash-lite',
