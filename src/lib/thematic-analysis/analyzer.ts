@@ -57,7 +57,7 @@ export async function analyzeThemes(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ 
-    model: 'gemini-2.5-pro' // Using Pro for superior reasoning on large datasets
+    model: 'gemini-1.5-pro' // Using Pro for superior reasoning on large datasets
   });
 
   const context = researchQuestion 
