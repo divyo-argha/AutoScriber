@@ -161,11 +161,11 @@ function extractAudioChunkFast(
     const processFastEncode = () => {
       ffmpeg()
         .input(inputPath)
-        .inputOptions([`-ss ${startTime}`])
+        .inputOptions([`-ss ${startTime}`, '-threads 0'])
         .outputOptions([
           `-t ${duration}`,
           '-c:a libmp3lame',
-          '-q:a 4', // Fast variable bitrate MP3 encoding
+          '-q:a 5', // Fast low-complexity variable bitrate MP3 encoding
           '-y',
         ])
         .output(outputPath)

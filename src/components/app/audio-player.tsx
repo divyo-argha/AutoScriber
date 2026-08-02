@@ -102,7 +102,9 @@ export function AudioPlayer() {
           seg => time >= seg.startTime && time <= seg.endTime
         );
         if (activeIdx !== -1) {
-          setAudioPlayback({ activeSegmentIndex: activeIdx });
+          if (activeIdx !== useAppStore.getState().activeSegmentIndex) {
+            setAudioPlayback({ activeSegmentIndex: activeIdx });
+          }
           
           // Update loop segment reference if in segment loop mode
           if (loopMode === 'segment') {

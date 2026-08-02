@@ -1,6 +1,98 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, memo } from 'react';
+
+// Memoized individual segment row for 60fps audio playback
+const TranscriptRowItem = memo(function TranscriptRowItem({
+  segment,
+  idx,
+  speakerColor,
+  onClick,
+  activeSegmentRef,
+}: {
+  segment: TranscriptionSegment;
+  idx: number;
+  speakerColor: string;
+  onClick: (time: number) => void;
+  activeSegmentRef?: React.Ref<HTMLDivElement>;
+}) {
+  const activeSegmentIndex = useAppStore(s => s.activeSegmentIndex);
+  const currentTime = useAppStore(s => s.currentTime);
+
+  const isActive = idx === activeSegmentIndex;
+  const isPast = currentTime > segment.endTime;
+  const segmentWordTimings = useMemo(() => {
+    return isActive ? calculateWordTimings(segment.text, segment.startTime, segment.endTime) : [];
+  }, [isActive, segment.text, segment.startTime, segment.endTime]);
+
+  return (
+    <motion.div
+      ref={isActive ? activeSegmentRef : null}
+      variants={fadeUp}
+      transition={{ duration: 0.2 }}
+      onClick={() => onClick(segment.startTime)}
+      className={`group flex items-start gap-4 py-3 px-3.5 rounded-xl transition-all duration-300 cursor-pointer ${
+        isActive
+          ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-l-4 border-emerald-500 shadow-sm rounded-r-xl'
+          : isPast
+          ? 'opacity-65 hover:opacity-100 hover:bg-muted/40'
+          : 'hover:bg-muted/50'
+      }`}
+    >
+      <div className="shrink-0 w-14 pt-1 select-none">
+        <span className={`text-xs font-mono font-medium leading-none ${
+          isActive ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-muted-foreground/60'
+        }`}>
+          {formatTime(segment.startTime).split('.')[0]}
+        </span>
+      </div>
+
+      <div className="shrink-0 w-20 sm:w-24 pt-0.5 select-none">
+        <Badge
+          className={`${speakerColor || 'bg-muted'} border-0 text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-full`}
+        >
+          {segment.speaker}
+        </Badge>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        {isActive && segmentWordTimings.length > 0 ? (
+          <p className="text-[13.5px] sm:text-[14.5px] leading-relaxed text-foreground select-none">
+            {segmentWordTimings.map((wordTiming, wordIdx) => {
+              const isCurrentWord = currentTime >= wordTiming.startTime && currentTime <= wordTiming.endTime;
+              const isWordPast = currentTime > wordTiming.endTime;
+
+              return (
+                <span
+                  key={wordIdx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClick(wordTiming.startTime);
+                  }}
+                  className={`inline-block mr-1 rounded px-1 transition-all duration-100 cursor-pointer ${
+                    isCurrentWord
+                      ? 'font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-500/30 scale-[1.03]'
+                      : isWordPast
+                      ? 'text-foreground font-semibold opacity-90'
+                      : 'text-muted-foreground/50 font-normal'
+                  }`}
+                >
+                  {wordTiming.word}
+                </span>
+              );
+            })}
+          </p>
+        ) : (
+          <p className={`text-[13.5px] sm:text-[14.5px] leading-relaxed transition-all duration-200 ${
+            isActive ? 'font-semibold text-foreground' : isPast ? 'text-muted-foreground/80' : 'text-foreground/95'
+          }`}>
+            {segment.text}
+          </p>
+        )}
+      </div>
+    </motion.div>
+  );
+});
 import { useAppStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -350,87 +442,16 @@ export function TranscriptionViewer() {
                     animate="animate"
                     className="p-3 sm:p-5 space-y-1.5"
                   >
-                    {transcriptionSegments.map((segment, idx) => {
-                      const isActive = idx === activeSegmentIndex;
-                      const isPast = currentTime > segment.endTime;
-                      
-                      // Calculate word timings only for the active segment for high performance
-                      const segmentWordTimings = isActive 
-                        ? calculateWordTimings(segment.text, segment.startTime, segment.endTime)
-                        : [];
-
-                      return (
-                        <motion.div
-                          ref={isActive ? activeSegmentRef : null}
-                          key={idx}
-                          variants={fadeUp}
-                          transition={{ duration: 0.2 }}
-                          onClick={() => handleSegmentClick(segment.startTime)}
-                          className={`group flex items-start gap-4 py-3 px-3.5 rounded-xl transition-all duration-350 cursor-pointer ${
-                            isActive
-                              ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-l-4 border-emerald-500 shadow-sm rounded-r-xl'
-                              : isPast
-                              ? 'opacity-60 hover:opacity-100 hover:bg-muted/40'
-                              : 'hover:bg-muted/50'
-                          }`}
-                        >
-                          {/* 1. Time Column - Stable 56px */}
-                          <div className="shrink-0 w-14 pt-1 select-none">
-                            <span className={`text-xs font-mono font-medium leading-none ${
-                              isActive ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-muted-foreground/60'
-                            }`}>
-                              {formatTime(segment.startTime).split('.')[0]}
-                            </span>
-                          </div>
-
-                          {/* 2. Speaker Column - Stable 84px */}
-                          <div className="shrink-0 w-20 sm:w-24 pt-0.5 select-none">
-                            <Badge
-                              className={`${speakerColors[segment.speaker] || 'bg-muted'} border-0 text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-full`}
-                            >
-                              {segment.speaker}
-                            </Badge>
-                          </div>
-
-                          {/* 3. Text Content Column - Flexible */}
-                          <div className="flex-1 min-w-0">
-                            {isActive && segmentWordTimings.length > 0 ? (
-                              <p className="text-[13.5px] sm:text-[14.5px] leading-relaxed text-foreground select-none">
-                                {segmentWordTimings.map((wordTiming, wordIdx) => {
-                                  const isCurrentWord = currentTime >= wordTiming.startTime && currentTime <= wordTiming.endTime;
-                                  const isWordPast = currentTime > wordTiming.endTime;
-                                  
-                                  return (
-                                    <span
-                                      key={wordIdx}
-                                      onClick={(e) => {
-                                        e.stopPropagation(); // Avoid double seek from parent container click
-                                        handleSegmentClick(wordTiming.startTime);
-                                      }}
-                                      className={`inline-block mr-1 rounded px-1 transition-all duration-100 cursor-pointer ${
-                                        isCurrentWord
-                                          ? 'font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/60 dark:bg-emerald-950/40 border border-emerald-500/20 scale-[1.03]'
-                                          : isWordPast
-                                          ? 'text-foreground font-semibold opacity-90'
-                                          : 'text-muted-foreground/50 font-normal'
-                                      }`}
-                                    >
-                                      {wordTiming.word}
-                                    </span>
-                                  );
-                                })}
-                              </p>
-                            ) : (
-                              <p className={`text-[13.5px] sm:text-[14.5px] leading-relaxed transition-all duration-300 ${
-                                isActive ? 'font-semibold text-foreground' : isPast ? 'text-muted-foreground/80' : 'text-foreground/95'
-                              }`}>
-                                {segment.text}
-                              </p>
-                            )}
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                    {transcriptionSegments.map((segment, idx) => (
+                      <TranscriptRowItem
+                        key={idx}
+                        segment={segment}
+                        idx={idx}
+                        speakerColor={speakerColors[segment.speaker] || ''}
+                        onClick={handleSegmentClick}
+                        activeSegmentRef={activeSegmentRef}
+                      />
+                    ))}
                   </motion.div>
                 </div>
               </Card>
