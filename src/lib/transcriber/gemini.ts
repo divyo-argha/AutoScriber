@@ -3,7 +3,6 @@ import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { GEMINI_TRANSCRIPTION_PROMPT, GEMINI_CHUNK_PROMPT } from './types';
 import type { TranscriptionSegment, ChunkResult } from './types';
 import { isQuotaError } from './error-utils';
-import { transcribeChunkWithSoniox } from './soniox';
 import fs from 'fs';
 import path from 'path';
 
@@ -198,8 +197,7 @@ export async function transcribeWithGemini(
   filePath: string,
   apiKey: string,
   modelId: string = 'gemini-2.5-flash',
-  timeOffset: number = 0,
-  sonioxApiKey?: string
+  timeOffset: number = 0
 ): Promise<ChunkResult> {
   const modelsToTry = [
     modelId,
@@ -228,19 +226,6 @@ export async function transcribeWithGemini(
       if (errMsg.includes('not found') || errMsg.includes('empty') || errMsg.includes('0 bytes')) {
         break;
       }
-    }
-  }
-
-  if (sonioxApiKey) {
-    console.warn('[gemini] All Gemini models failed during full transcription. Attempting fallback to Soniox...');
-    try {
-      const result = await transcribeChunkWithSoniox(filePath, sonioxApiKey, 'stt-async-preview', 0, timeOffset);
-      return {
-        ...result,
-        fallbackUsed: true
-      };
-    } catch (sonioxErr) {
-      console.error('[gemini] Fallback to Soniox also failed:', sonioxErr);
     }
   }
 
@@ -351,8 +336,7 @@ export async function transcribeChunkWithGemini(
   apiKey: string,
   modelId: string,
   chunkIndex: number,
-  timeOffset: number,
-  sonioxApiKey?: string
+  timeOffset: number
 ): Promise<ChunkResult> {
   const modelsToTry = [
     modelId,
@@ -381,19 +365,6 @@ export async function transcribeChunkWithGemini(
       if (errMsg.includes('not found') || errMsg.includes('empty') || errMsg.includes('0 bytes')) {
         break;
       }
-    }
-  }
-
-  if (sonioxApiKey) {
-    console.warn(`[gemini] All Gemini models failed for chunk ${chunkIndex}. Attempting fallback to Soniox...`);
-    try {
-      const result = await transcribeChunkWithSoniox(filePath, sonioxApiKey, 'stt-async-preview', chunkIndex, timeOffset);
-      return {
-        ...result,
-        fallbackUsed: true
-      };
-    } catch (sonioxErr) {
-      console.error(`[gemini] Fallback to Soniox for chunk ${chunkIndex} also failed:`, sonioxErr);
     }
   }
 

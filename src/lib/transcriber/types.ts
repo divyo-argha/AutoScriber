@@ -24,7 +24,7 @@ export interface ChunkResult {
 export interface ModelInfo {
   id: string;
   name: string;
-  provider: 'gemini' | 'soniox';
+  provider: 'gemini';
   description: string;
   maxAudioLength: number;
   supportsDiarization: boolean;
@@ -92,15 +92,6 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     supportsDiarization: true,
     supportsTimestamps: true,
     tierInfo: 'Free Tier (15 RPM / 1,500 RPD)',
-  },
-  {
-    id: 'stt-async-preview',
-    name: 'Soniox Async',
-    provider: 'soniox',
-    description: 'Soniox async transcription engine. Speaker diarization and word-level timestamps.',
-    maxAudioLength: 14400,
-    supportsDiarization: true,
-    supportsTimestamps: true,
   },
 ];
 

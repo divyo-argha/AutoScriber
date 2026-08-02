@@ -11,7 +11,6 @@ export async function GET() {
       ...settings,
       geminiApiKey: process.env.GEMINI_API_KEY ? '***' : '',
       userGeminiApiKey: settings.geminiApiKey || '',
-      userSonioxApiKey: (settings as any).sonioxApiKey || '',
     });
   } catch (err) {
     console.error('Error fetching settings:', err);
@@ -29,7 +28,6 @@ export async function POST(request: NextRequest) {
         chunkDuration: body.chunkDuration,
         overlapDuration: body.overlapDuration,
         geminiApiKey: body.userGeminiApiKey || '',
-        ...(body.userSonioxApiKey !== undefined && { sonioxApiKey: body.userSonioxApiKey }),
       } as any,
       create: {
         id: 'default',
@@ -37,7 +35,6 @@ export async function POST(request: NextRequest) {
         chunkDuration: body.chunkDuration || 300,
         overlapDuration: body.overlapDuration || 30,
         geminiApiKey: body.userGeminiApiKey || '',
-        sonioxApiKey: body.userSonioxApiKey || '',
       } as any,
     });
     return NextResponse.json(settings);

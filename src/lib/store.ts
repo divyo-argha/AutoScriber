@@ -50,7 +50,6 @@ type SettingsState = {
   chunkDuration: number;
   overlapDuration: number;
   userGeminiApiKey: string;
-  userSonioxApiKey: string;
 };
 
 interface AppState {
@@ -100,7 +99,6 @@ interface AppState {
   chunkDuration: number;
   overlapDuration: number;
   userGeminiApiKey: string;
-  userSonioxApiKey: string;
   setSettings: (settings: Partial<SettingsState>) => void;
 
   // History
@@ -144,7 +142,6 @@ const initialState = {
   chunkDuration: 300,
   overlapDuration: 30,
   userGeminiApiKey: '',
-  userSonioxApiKey: '',
   historyJobs: [] as HistoryJob[],
   batchJobs: [] as BatchJob[],
 };
@@ -198,7 +195,6 @@ export const useAppStore = create<AppState>((set) => ({
       chunkDuration: prev.chunkDuration,
       overlapDuration: prev.overlapDuration,
       userGeminiApiKey: prev.userGeminiApiKey,
-      userSonioxApiKey: prev.userSonioxApiKey,
       historyJobs: prev.historyJobs,
       selectedModel: prev.selectedModel,
     };

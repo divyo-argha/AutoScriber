@@ -187,12 +187,6 @@ export function UploadArea() {
         else if (data.errorType === 'auth_failed') { setPreflightWarning('Gemini API key is invalid. Check your key in Settings.'); }
         else { onPass(); }
       } catch { setPreflightChecking(false); onPass(); }
-    } else if (modelInfo?.provider === 'soniox') {
-      if (!state.userSonioxApiKey) {
-        setPreflightWarning('Soniox API key is not configured. Enter it in Settings.');
-      } else {
-        onPass();
-      }
     } else {
       onPass();
     }

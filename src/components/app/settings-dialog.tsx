@@ -21,24 +21,20 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { chunkDuration, overlapDuration, userGeminiApiKey, setSettings } = useAppStore();
 
   const [localGeminiKey, setLocalGeminiKey] = useState(userGeminiApiKey);
-  const [localSonioxKey, setLocalSonioxKey] = useState('');
   const [localChunkDuration, setLocalChunkDuration] = useState(String(chunkDuration));
   const [localOverlapDuration, setLocalOverlapDuration] = useState(String(overlapDuration));
   const [geminiStatus, setGeminiStatus] = useState<TestStatus>('idle');
   const [geminiError, setGeminiError] = useState('');
-  const [sonioxStatus, setSonioxStatus] = useState<TestStatus>('idle');
-  const [sonioxError, setSonioxError] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     fetch('/api/settings').then(r => r.json()).then(data => {
       if (data.userGeminiApiKey) { setLocalGeminiKey(data.userGeminiApiKey); setSettings({ userGeminiApiKey: data.userGeminiApiKey }); }
-      if (data.userSonioxApiKey) { setLocalSonioxKey(data.userSonioxApiKey); setSettings({ userSonioxApiKey: data.userSonioxApiKey }); }
       if (data.chunkDuration) { setLocalChunkDuration(String(data.chunkDuration)); setSettings({ chunkDuration: data.chunkDuration }); }
       if (data.overlapDuration) { setLocalOverlapDuration(String(data.overlapDuration)); setSettings({ overlapDuration: data.overlapDuration }); }
     }).catch(() => {});
-    setGeminiStatus('idle'); setSonioxStatus('idle');
+    setGeminiStatus('idle');
   }, [open, setSettings]);
 
   const testGemini = async () => {
@@ -53,29 +49,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     } catch { setGeminiStatus('error'); setGeminiError('Network error'); }
   };
 
-  const testSoniox = async () => {
-    if (!localSonioxKey) { setSonioxStatus('error'); setSonioxError('Enter your Soniox API key first'); return; }
-    setSonioxStatus('testing'); setSonioxError('');
-    try {
-      const res = await fetch('https://api.soniox.com/v1/models', {
-        headers: { Authorization: `Bearer ${localSonioxKey}` },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (res.ok) setSonioxStatus('connected');
-      else { setSonioxStatus('error'); setSonioxError(res.status === 401 ? 'Invalid API key' : `Error ${res.status}`); }
-    } catch { setSonioxStatus('error'); setSonioxError('Network error'); }
-  };
-
   const saveSettings = async () => {
     setSaving(true);
     try {
       const body = {
         chunkDuration: parseInt(localChunkDuration) || 300,
-        overlapDuration: parseInt(localOverlapDuration) || 10,
+        overlapDuration: parseInt(localOverlapDuration) || 30,
         userGeminiApiKey: localGeminiKey,
-        userSonioxApiKey: localSonioxKey,
       };
-      setSettings({ chunkDuration: body.chunkDuration, overlapDuration: body.overlapDuration, userGeminiApiKey: localGeminiKey, userSonioxApiKey: localSonioxKey });
+      setSettings({ chunkDuration: body.chunkDuration, overlapDuration: body.overlapDuration, userGeminiApiKey: localGeminiKey });
       await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       onOpenChange(false);
     } catch (err) { console.error(err); }
@@ -87,7 +69,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Configure API keys and transcription preferences</DialogDescription>
+          <DialogDescription>Configure Gemini API key and transcription preferences</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="keys" className="mt-2">
@@ -114,28 +96,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               {geminiStatus === 'error' && <p className="text-xs text-destructive">{geminiError}</p>}
               <p className="text-xs text-muted-foreground">
                 Free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">aistudio.google.com</a>
-              </p>
-            </div>
-
-            <div className="border-t" />
-
-            {/* Soniox */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Soniox API Key</Label>
-                <Badge variant="outline" className="text-xs">🎙️ Soniox</Badge>
-              </div>
-              <div className="flex gap-2 items-center">
-                <Input type="password" placeholder="sk-..." value={localSonioxKey} onChange={e => setLocalSonioxKey(e.target.value)} className="flex-1" />
-                <Button variant="outline" size="icon" onClick={testSoniox} disabled={sonioxStatus === 'testing'}>
-                  {sonioxStatus === 'testing' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
-                </Button>
-                {sonioxStatus === 'connected' && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
-                {sonioxStatus === 'error' && <XCircle className="w-4 h-4 text-destructive shrink-0" />}
-              </div>
-              {sonioxStatus === 'error' && <p className="text-xs text-destructive">{sonioxError}</p>}
-              <p className="text-xs text-muted-foreground">
-                Get key at <a href="https://console.soniox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">console.soniox.com</a>. Native Bangla STT with diarization.
               </p>
             </div>
 

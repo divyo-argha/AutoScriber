@@ -4,7 +4,6 @@ import { splitAudioIntoChunks, getAudioDuration } from '@/lib/audio/slicer';
 import { mergeChunkResults } from '@/lib/transcriber/merger';
 import { formatTime } from '@/lib/format-utils';
 import { transcribeChunkWithGemini } from '@/lib/transcriber/gemini';
-import { transcribeChunkWithSoniox } from '@/lib/transcriber/soniox';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
 import type { TranscriptionSegment, TranscriptionResult, ChunkResult } from '@/lib/transcriber/types';
 import { classifyGeminiError } from '@/lib/transcriber/error-utils';
@@ -31,7 +30,6 @@ export async function POST(request: NextRequest) {
 
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
-    const sonioxApiKey = (settings as any)?.sonioxApiKey || process.env.SONIOX_API_KEY || '';
     const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300; // 5 mins
     const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 30; // 30s overlap
 
@@ -50,11 +48,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid model selected' }, { status: 400 });
     }
 
-    if (modelInfo.provider === 'gemini' && !geminiApiKey) {
-      return NextResponse.json({ error: 'Gemini API key is required for cloud transcription' }, { status: 400 });
-    }
-    if (modelInfo.provider === 'soniox' && !sonioxApiKey) {
-      return NextResponse.json({ error: 'Soniox API key is required. Add it in Settings.' }, { status: 400 });
+    if (!geminiApiKey) {
+      return NextResponse.json({ error: 'Gemini API key is required for transcription' }, { status: 400 });
     }
 
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'autoscriber-upload-'));
@@ -112,7 +107,6 @@ export async function POST(request: NextRequest) {
       modelInfo,
       modelId,
       geminiApiKey,
-      sonioxApiKey,
       chunkDuration,
       overlapDuration,
       duration,
@@ -134,14 +128,13 @@ interface TranscriptionJobParams {
   modelInfo: typeof AVAILABLE_MODELS[number];
   modelId: string;
   geminiApiKey: string;
-  sonioxApiKey: string;
   chunkDuration: number;
   overlapDuration: number;
   duration: number | null;
 }
 
 async function processTranscriptionJob(params: TranscriptionJobParams) {
-  const { jobId, filePath, tempDir, modelInfo, modelId, geminiApiKey, sonioxApiKey, chunkDuration, overlapDuration, duration } = params;
+  const { jobId, filePath, tempDir, modelInfo, modelId, geminiApiKey, chunkDuration, overlapDuration, duration } = params;
 
   try {
     let chunks;
@@ -183,9 +176,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       while (chunkAttempts < maxChunkAttempts && !result) {
         chunkAttempts++;
         try {
-          result = modelInfo.provider === 'soniox'
-            ? await transcribeChunkWithSoniox(chunk.filePath, sonioxApiKey, modelId, chunk.index, chunk.startTime)
-            : await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime, sonioxApiKey);
+          result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime);
         } catch (chunkErr) {
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
           console.warn(`[transcribe] Chunk ${chunk.index} attempt ${chunkAttempts}/${maxChunkAttempts} failed: ${errMsg}`);

@@ -16,15 +16,14 @@ import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
 
 export function Header() {
   const {
-    selectedModel,
-    setSelectedModel,
     currentView,
     setCurrentView,
+    selectedModel,
+    setSelectedModel,
+    userGeminiApiKey,
+    geminiApiKey,
     reset,
     isProcessing,
-    userGeminiApiKey,
-    userSonioxApiKey,
-    geminiApiKey,
   } = useAppStore();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -36,11 +35,9 @@ export function Header() {
   }, []);
 
   const hasGeminiKey = !!(userGeminiApiKey || geminiApiKey === '***');
-  const hasSonioxKey = !!userSonioxApiKey;
 
   function isModelAvailable(model: typeof AVAILABLE_MODELS[number]) {
     if (model.provider === 'gemini') return hasGeminiKey;
-    if (model.provider === 'soniox') return hasSonioxKey;
     return false;
   }
 
@@ -50,7 +47,9 @@ export function Header() {
       <div className="flex items-center gap-2 w-full">
         <span className={available ? '' : 'text-muted-foreground'}>{model.name}</span>
         {!available && (
-          <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0 ml-auto" title="API key not set — configure in Settings" />
+          <span title="API key not set — configure in Settings" className="shrink-0 ml-auto flex items-center">
+            <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+          </span>
         )}
       </div>
     );
