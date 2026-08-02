@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { splitAudioIntoChunks, getAudioDuration, formatTime } from '@/lib/transcriber/chunker';
+import { splitAudioIntoChunks, getAudioDuration } from '@/lib/audio/slicer';
+import { mergeChunkResults } from '@/lib/transcriber/merger';
+import { formatTime } from '@/lib/format-utils';
 import { transcribeChunkWithGemini } from '@/lib/transcriber/gemini';
 import { transcribeChunkWithSoniox } from '@/lib/transcriber/soniox';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
-import type { TranscriptionSegment, TranscriptionResult } from '@/lib/transcriber/types';
+import type { TranscriptionSegment, TranscriptionResult, ChunkResult } from '@/lib/transcriber/types';
 import { classifyGeminiError } from '@/lib/transcriber/error-utils';
 import fs from 'fs';
 import path from 'path';
@@ -30,8 +32,8 @@ export async function POST(request: NextRequest) {
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
     const sonioxApiKey = (settings as any)?.sonioxApiKey || process.env.SONIOX_API_KEY || '';
-    const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300;
-    const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 10;
+    const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 600; // 10 mins
+    const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 30; // 30s overlap
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -142,17 +144,24 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
   const { jobId, filePath, tempDir, modelInfo, modelId, geminiApiKey, sonioxApiKey, chunkDuration, overlapDuration, duration } = params;
 
   try {
-    const effectiveChunkDuration = chunkDuration;
-
     let chunks;
     try {
-      chunks = await splitAudioIntoChunks(filePath, effectiveChunkDuration, overlapDuration);
+      chunks = await splitAudioIntoChunks(filePath, { chunkDuration, overlapDuration });
     } catch (chunkErr) {
       console.error('[transcribe] Chunking failed, using whole file as fallback:', chunkErr);
-      chunks = [{ index: 0, filePath, startTime: 0, duration: duration ?? 0 }];
+      chunks = [{
+        index: 0,
+        filePath,
+        startTime: 0,
+        duration: duration ?? 0,
+        coreStartTime: 0,
+        coreEndTime: duration ?? 0,
+        hasStartOverlap: false,
+        hasEndOverlap: false,
+      }];
     }
 
-    console.log(`[transcribe] Split into ${chunks.length} chunk(s)`);
+    console.log(`[transcribe] Split into ${chunks.length} chunk(s) (10m chunks with 30s overlaps)`);
 
     await db.transcriptionJob.update({
       where: { id: jobId },
@@ -162,7 +171,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       },
     });
 
-    const allSegments: TranscriptionSegment[] = [];
+    const completedChunkResults: { chunk: typeof chunks[0]; result: ChunkResult }[] = [];
     let chunksDone = 0;
     let fallbackUsed = false;
 
@@ -173,7 +182,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
           : await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime, sonioxApiKey);
 
         console.log(`[transcribe] Chunk ${chunk.index}: ${result.segments.length} segments`);
-        allSegments.push(...result.segments);
+        completedChunkResults.push({ chunk, result });
         if (result.fallbackUsed) {
           fallbackUsed = true;
         }
@@ -184,18 +193,18 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
           data: {
             chunksDone,
             progress: Math.round((chunksDone / chunks.length) * 100),
+            chunkResults: JSON.stringify(completedChunkResults.map(c => c.result)),
           },
         });
       } catch (chunkErr) {
         const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
         console.error(`[transcribe] Error processing chunk ${chunk.index}:`, errMsg);
-        // Rethrow so the outer catch handles job failure
         throw chunkErr;
       }
     }
 
-    // Merge, deduplicate overlap regions, and sort all segments
-    const merged = mergeAndDeduplicateSegments(allSegments, overlapDuration);
+    // Merge, deduplicate 30s overlap regions cleanly across core chunk windows
+    const merged = mergeChunkResults(completedChunkResults);
     const fullText = merged.map(s => `[${formatTime(s.startTime)}] ${s.speaker}: ${s.text}`).join('\n');
     const totalDuration = merged.length > 0 ? Math.max(...merged.map(s => s.endTime)) : (duration ?? 0);
 
@@ -216,11 +225,12 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
         chunksDone: chunks.length,
         chunksTotal: chunks.length,
         result: JSON.stringify(result),
+        chunkResults: JSON.stringify(completedChunkResults.map(c => c.result)),
         duration: totalDuration,
       },
     });
 
-    console.log(`[transcribe] Job ${jobId} completed. ${merged.length} segments total. Fallback used: ${fallbackUsed}`);
+    console.log(`[transcribe] Job ${jobId} completed. ${merged.length} segments total after overlap deduplication. Fallback used: ${fallbackUsed}`);
   } catch (processErr) {
     const classified = classifyGeminiError(processErr);
     const errorMessage = classified.isLocationError

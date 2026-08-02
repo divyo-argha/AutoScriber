@@ -21,6 +21,7 @@ export function ProcessingView() {
     processingStatus,
     chunksTotal,
     chunksDone,
+    liveChunkResults,
     jobId,
     setProcessingState,
     setTranscriptionResult,
@@ -128,16 +129,24 @@ export function ProcessingView() {
 
       if (!job || !job.status) return;
 
+      let liveResults: import('@/lib/transcriber/types').ChunkResult[] = [];
+      if (job.chunkResults) {
+        try {
+          liveResults = typeof job.chunkResults === 'string' ? JSON.parse(job.chunkResults) : job.chunkResults;
+        } catch {}
+      }
+
       setProcessingState({
         processingProgress: job.progress ?? 0,
         chunksTotal: job.chunksTotal ?? 0,
         chunksDone: job.chunksDone ?? 0,
+        liveChunkResults: liveResults,
         processingStatus: job.status === 'processing'
-          ? `Transcribing chunks: ${job.chunksDone}/${job.chunksTotal}`
+          ? `Transcribing 10-min segment ${job.chunksDone + 1}/${job.chunksTotal}...`
           : job.status === 'chunking'
-            ? 'Preparing audio chunks...'
+            ? 'Splitting audio into 10-min segments with 30s overlaps...'
             : job.status === 'completed'
-              ? 'Finalizing transcription...'
+              ? 'Deduplicating overlaps & finalizing merged transcript...'
               : job.status === 'failed'
                 ? job.errorMessage || 'Transcription failed'
                 : job.status,
@@ -290,6 +299,45 @@ export function ProcessingView() {
               </div>
             </div>
           </div>
+
+          {/* Live Per-Segment Transcription Results */}
+          {liveChunkResults && liveChunkResults.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Live 10-Min Segment Transcriptions ({liveChunkResults.length} Ready)
+                </h3>
+              </div>
+              <div className="max-h-56 overflow-y-auto space-y-2 pr-1 divide-y divide-border/20">
+                {liveChunkResults.map((chunkRes, idx) => (
+                  <div key={idx} className="pt-2 text-xs space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        Segment {chunkRes.chunkIndex + 1}
+                      </span>
+                      <span>{chunkRes.segments.length} dialogue turns</span>
+                    </div>
+                    <div className="space-y-1 bg-muted/30 p-2.5 rounded-md text-foreground">
+                      {chunkRes.segments.slice(0, 3).map((seg, sIdx) => (
+                        <p key={sIdx} className="truncate text-[11.5px]">
+                          <span className="font-medium text-muted-foreground mr-1">
+                            [{Math.floor(seg.startTime / 60)}m{Math.floor(seg.startTime % 60)}s] {seg.speaker}:
+                          </span>
+                          {seg.text}
+                        </p>
+                      ))}
+                      {chunkRes.segments.length > 3 && (
+                        <p className="text-[10px] text-muted-foreground italic">
+                          + {chunkRes.segments.length - 3} more segments in this 10-min chunk...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Processing Steps */}
           <AnimatePresence>

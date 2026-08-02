@@ -127,9 +127,25 @@ async function generateContentWithRetry(
 const GEMINI_FALLBACK_MODELS = [
   'gemini-2.5-flash',
   'gemini-2.0-flash',
-  'gemini-1.5-flash',
   'gemini-2.0-flash-lite',
+  'gemini-1.5-flash',
 ];
+
+let lastRequestTimestamp = 0;
+
+/**
+ * Ensures requests adhere to Free Tier Rate Limits (e.g. 10 RPM -> ~6s delay between requests).
+ */
+async function enforceRateLimitPacing(minDelayMs: number = 6000): Promise<void> {
+  const now = Date.now();
+  const elapsed = now - lastRequestTimestamp;
+  if (lastRequestTimestamp > 0 && elapsed < minDelayMs) {
+    const waitTime = minDelayMs - elapsed;
+    console.log(`[gemini] Free Tier rate limit pacing: waiting ${Math.round(waitTime / 1000)}s before next request...`);
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+  lastRequestTimestamp = Date.now();
+}
 
 export async function transcribeWithGemini(
   filePath: string,
@@ -358,6 +374,9 @@ async function transcribeChunkWithGeminiInternal(
   const mimeType = getMimeType(filePath);
   let result;
   let fileToCleanup: string | null = null;
+
+  // Enforce AI Studio Free Tier rate limiting delay for gemini models
+  await enforceRateLimitPacing(modelId === 'gemini-2.0-flash-lite' ? 2000 : 6000);
 
   try {
     if (fileStats.size >= FILE_SIZE_THRESHOLD) {

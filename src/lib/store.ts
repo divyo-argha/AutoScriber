@@ -35,6 +35,7 @@ type ProcessingState = {
   chunksDone: number;
   currentChunkIndex: number;
   jobId: string | null;
+  liveChunkResults: import('./transcriber/types').ChunkResult[];
 };
 
 type PlaybackState = {
@@ -77,6 +78,7 @@ interface AppState {
   chunksTotal: number;
   chunksDone: number;
   currentChunkIndex: number;
+  liveChunkResults: import('./transcriber/types').ChunkResult[];
   setProcessingState: (state: Partial<ProcessingState>) => void;
 
   // Results
@@ -129,6 +131,7 @@ const initialState = {
   chunksTotal: 0,
   chunksDone: 0,
   currentChunkIndex: 0,
+  liveChunkResults: [] as import('./transcriber/types').ChunkResult[],
   transcriptionSegments: [] as TranscriptionSegment[],
   transcriptionText: '',
   jobId: null as string | null,
@@ -138,8 +141,8 @@ const initialState = {
   audioDuration: 0,
   activeSegmentIndex: -1,
   geminiApiKey: '',
-  chunkDuration: 300,
-  overlapDuration: 10,
+  chunkDuration: 600,
+  overlapDuration: 30,
   userGeminiApiKey: '',
   userSonioxApiKey: '',
   historyJobs: [] as HistoryJob[],

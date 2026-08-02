@@ -29,6 +29,8 @@ export interface ModelInfo {
   maxAudioLength: number;
   supportsDiarization: boolean;
   supportsTimestamps: boolean;
+  tierInfo?: string;
+  recommended?: boolean;
 }
 
 export interface TranscriptionJob {
@@ -44,6 +46,7 @@ export interface TranscriptionJob {
   chunksDone: number;
   errorMessage: string | null;
   result: TranscriptionResult | null;
+  chunkResults?: ChunkResult[] | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,43 +56,48 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     id: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
     provider: 'gemini',
-    description: 'Google latest fast multimodal model. Excellent Bangla-English mixed transcription with native diarization.',
+    description: 'Recommended AI Studio Free Tier flagship model. Best quality, fast audio understanding, diarization, and mixed Bangla-English transcription.',
     maxAudioLength: 7200,
     supportsDiarization: true,
     supportsTimestamps: true,
+    tierInfo: 'Free Tier (10 RPM / 250 RPD)',
+    recommended: true,
   },
   {
     id: 'gemini-2.0-flash',
     name: 'Gemini 2.0 Flash',
     provider: 'gemini',
-    description: 'Fast and efficient Gemini model. Great for Bangla transcription with good accuracy.',
+    description: 'High-volume Free Tier model. Fast execution with 1,500 RPD daily quota.',
     maxAudioLength: 3600,
     supportsDiarization: true,
     supportsTimestamps: true,
+    tierInfo: 'Free Tier (15 RPM / 1,500 RPD)',
   },
   {
     id: 'gemini-2.0-flash-lite',
     name: 'Gemini 2.0 Flash Lite',
     provider: 'gemini',
-    description: 'Lightweight Gemini model. Faster but less accurate for complex audio.',
+    description: 'High-throughput lightweight model. Highest RPM limit (30 RPM) on AI Studio free tier.',
     maxAudioLength: 3600,
     supportsDiarization: true,
     supportsTimestamps: true,
+    tierInfo: 'Free Tier (30 RPM / 1,500 RPD)',
   },
   {
     id: 'gemini-1.5-flash',
     name: 'Gemini 1.5 Flash',
     provider: 'gemini',
-    description: 'Previous generation Gemini Flash. Slightly cheaper, good Bangla accuracy.',
+    description: 'Previous generation Gemini Flash. Reliable legacy fallback option.',
     maxAudioLength: 3600,
     supportsDiarization: true,
     supportsTimestamps: true,
+    tierInfo: 'Free Tier (15 RPM / 1,500 RPD)',
   },
   {
     id: 'stt-async-preview',
     name: 'Soniox Async',
     provider: 'soniox',
-    description: 'Soniox async transcription. Native Bangla support with speaker diarization and word-level timestamps.',
+    description: 'Soniox async transcription engine. Speaker diarization and word-level timestamps.',
     maxAudioLength: 14400,
     supportsDiarization: true,
     supportsTimestamps: true,

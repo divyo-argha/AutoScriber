@@ -20,6 +20,7 @@ model TranscriptionJob {
   chunksDone  Int      @default(0)
   errorMessage String?
   result      String?  // JSON string of transcription segments
+  chunkResults String? // JSON array of intermediate per-chunk results
   audioPath   String?  // Path to saved audio file for playback from history
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -31,6 +32,6 @@ model AppSettings {
   geminiApiBaseUrl String @default("")
   sonioxApiKey    String @default("")
   defaultModel    String @default("gemini-2.5-flash")
-  chunkDuration   Int    @default(300)
-  overlapDuration Int    @default(10)
+  chunkDuration   Int    @default(600) // 10 minutes (600 seconds)
+  overlapDuration Int    @default(30)  // 30 seconds overlap
 }

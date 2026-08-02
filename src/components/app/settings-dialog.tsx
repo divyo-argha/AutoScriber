@@ -140,23 +140,24 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
 
             <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Models per key:</p>
-              <p>• <strong>Gemini key</strong> → Gemini 2.5 Flash, 2.0 Flash, 1.5 Flash</p>
-              <p>• <strong>Soniox key</strong> → Soniox Async (native Bangla STT)</p>
-              <p>Models without a key show a ⚠ warning in the dropdown.</p>
+              <p className="font-medium text-foreground">AI Studio Free Tier Models:</p>
+              <p>• <strong>Gemini 2.5 Flash</strong> (Recommended) — 10 RPM / 250 RPD</p>
+              <p>• <strong>Gemini 2.0 Flash</strong> — 15 RPM / 1,500 RPD</p>
+              <p>• <strong>Gemini 2.0 Flash Lite</strong> — 30 RPM / 1,500 RPD</p>
+              <p>• <strong>Gemini 1.5 Flash</strong> — 15 RPM / 1,500 RPD</p>
             </div>
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Chunk Duration (seconds)</Label>
-              <Input type="number" min="30" max="1800" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} />
-              <p className="text-xs text-muted-foreground">How long each audio chunk should be. Default: 300s (5 min)</p>
+              <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Length of core audio chunk. Default: 600s (10 minutes)</p>
             </div>
             <div className="space-y-2">
               <Label>Overlap Duration (seconds)</Label>
-              <Input type="number" min="0" max="30" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Overlap between chunks to prevent cutting mid-sentence. Default: 10s</p>
+              <Input type="number" min="0" max="60" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Overlap duration at start and end of chunks to prevent missing words. Default: 30s</p>
             </div>
           </TabsContent>
         </Tabs>
