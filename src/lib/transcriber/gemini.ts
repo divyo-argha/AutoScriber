@@ -79,8 +79,56 @@ function createGenAIClient(apiKey: string): GoogleGenerativeAI {
   return new GoogleGenerativeAI(apiKey);
 }
 
+function isTransientError(err: any): boolean {
+  if (!err) return false;
+  const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+
+  // Rate limits (429) & quota errors
+  if (
+    isQuotaError(err) ||
+    errMsg.includes('429') ||
+    errMsg.includes('too many requests') ||
+    errMsg.includes('quota') ||
+    errMsg.includes('resource_exhausted')
+  ) {
+    return true;
+  }
+
+  // Transient server errors (5xx)
+  if (
+    errMsg.includes('500') ||
+    errMsg.includes('502') ||
+    errMsg.includes('503') ||
+    errMsg.includes('504') ||
+    errMsg.includes('internal error') ||
+    errMsg.includes('bad gateway') ||
+    errMsg.includes('service unavailable') ||
+    errMsg.includes('overloaded')
+  ) {
+    return true;
+  }
+
+  // Network connection failures, timeouts, & Node fetch errors
+  if (
+    errMsg.includes('fetch failed') ||
+    errMsg.includes('econnreset') ||
+    errMsg.includes('etimedout') ||
+    errMsg.includes('enotfound') ||
+    errMsg.includes('socket hang up') ||
+    errMsg.includes('network') ||
+    errMsg.includes('und_err') ||
+    errMsg.includes('econnrefused') ||
+    errMsg.includes('aborted') ||
+    errMsg.includes('failed to fetch')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
- * Call generateContent with exponential backoff on rate limits (429) or transient errors (5xx).
+ * Call generateContent with exponential backoff on rate limits (429), transient errors (5xx), or network issues (fetch failed).
  */
 async function generateContentWithRetry(
   model: any,
@@ -95,10 +143,9 @@ async function generateContentWithRetry(
     } catch (err: any) {
       attempt++;
       const errMsg = err instanceof Error ? err.message : String(err);
-      const isRateLimit = isQuotaError(err) || errMsg.includes('Too Many Requests') || errMsg.includes('quota');
-      const isTransient = errMsg.includes('500') || errMsg.includes('503') || errMsg.includes('internal error') || errMsg.includes('bad gateway') || errMsg.includes('service unavailable');
+      const isTransient = isTransientError(err);
       
-      if ((isRateLimit || isTransient) && attempt <= maxRetries) {
+      if (isTransient && attempt <= maxRetries) {
         let delayMs = initialDelayMs * Math.pow(2, attempt - 1);
         
         // Try to extract dynamic retry delay from error message or response headers if available
@@ -106,16 +153,16 @@ async function generateContentWithRetry(
         if (retryDelayMatch && retryDelayMatch[1]) {
           const seconds = parseFloat(retryDelayMatch[1]);
           if (!isNaN(seconds) && seconds > 0) {
-            delayMs = (seconds + 1) * 1000; // adding 1s safety buffer
+            delayMs = (seconds + 1) * 1000;
           }
-        } else if (err.status === 429 && err.headers?.get?.('retry-after')) {
+        } else if (err?.status === 429 && err?.headers?.get?.('retry-after')) {
           const retryAfter = parseInt(err.headers.get('retry-after'), 10);
           if (!isNaN(retryAfter) && retryAfter > 0) {
             delayMs = (retryAfter + 1) * 1000;
           }
         }
         
-        console.warn(`[gemini] API error hit (${isRateLimit ? '429' : '5xx'}). Retrying attempt ${attempt}/${maxRetries} after ${Math.round(delayMs / 1000)}s. Error: ${errMsg}`);
+        console.warn(`[gemini] Transient/Network error hit (${errMsg.substring(0, 80)}). Retrying attempt ${attempt}/${maxRetries} after ${Math.round(delayMs / 1000)}s...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       } else {
         throw err;
@@ -374,9 +421,6 @@ async function transcribeChunkWithGeminiInternal(
   const mimeType = getMimeType(filePath);
   let result;
   let fileToCleanup: string | null = null;
-
-  // Enforce AI Studio Free Tier rate limiting delay for gemini models
-  await enforceRateLimitPacing(modelId === 'gemini-2.0-flash-lite' ? 2000 : 6000);
 
   try {
     if (fileStats.size >= FILE_SIZE_THRESHOLD) {

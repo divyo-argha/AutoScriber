@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         id: 'default',
         defaultModel: body.defaultModel || 'gemini-2.5-flash',
         chunkDuration: body.chunkDuration || 300,
-        overlapDuration: body.overlapDuration || 10,
+        overlapDuration: body.overlapDuration || 30,
         geminiApiKey: body.userGeminiApiKey || '',
         sonioxApiKey: body.userSonioxApiKey || '',
       } as any,

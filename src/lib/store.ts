@@ -141,7 +141,7 @@ const initialState = {
   audioDuration: 0,
   activeSegmentIndex: -1,
   geminiApiKey: '',
-  chunkDuration: 600,
+  chunkDuration: 300,
   overlapDuration: 30,
   userGeminiApiKey: '',
   userSonioxApiKey: '',

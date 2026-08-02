@@ -1,47 +1,52 @@
-import ffmpeg from 'fluent-ffmpeg';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import type { ChunkInfo, SlicerOptions } from './types';
 
-// On macOS, Next.js background workers might run without /opt/homebrew/bin in PATH.
-if (process.platform === 'darwin') {
-  const brewFfmpeg = '/opt/homebrew/bin/ffmpeg';
-  const brewFfprobe = '/opt/homebrew/bin/ffprobe';
-  if (fs.existsSync(brewFfmpeg)) {
-    ffmpeg.setFfmpegPath(brewFfmpeg);
+const execFileAsync = promisify(execFile);
+
+function getFfmpegBinary(): string {
+  if (process.platform === 'darwin' && fs.existsSync('/opt/homebrew/bin/ffmpeg')) {
+    return '/opt/homebrew/bin/ffmpeg';
   }
-  if (fs.existsSync(brewFfprobe)) {
-    ffmpeg.setFfprobePath(brewFfprobe);
+  return 'ffmpeg';
+}
+
+function getFfprobeBinary(): string {
+  if (process.platform === 'darwin' && fs.existsSync('/opt/homebrew/bin/ffprobe')) {
+    return '/opt/homebrew/bin/ffprobe';
   }
+  return 'ffprobe';
 }
 
 export async function getAudioDuration(filePath: string): Promise<number> {
-  return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, metadata) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      const duration = metadata.format?.duration || 0;
-      resolve(duration);
-    });
-  });
+  const ffprobePath = getFfprobeBinary();
+  try {
+    const { stdout } = await execFileAsync(ffprobePath, [
+      '-v', 'error',
+      '-show_entries', 'format=duration',
+      '-of', 'default=noprint_wrappers=1:nokey=1',
+      filePath,
+    ]);
+    const duration = parseFloat(stdout.trim());
+    return isNaN(duration) || duration <= 0 ? 0 : duration;
+  } catch (err) {
+    console.error('[slicer] ffprobe failed to get audio duration:', err);
+    return 0;
+  }
 }
 
 /**
- * Split an audio file into 10-minute segments with 30s overlaps at both start and end.
- *
- * Example for 25-minute audio file (coreDuration=600, overlap=30):
- * - Chunk 0: [0s, 630s] (Core: 0s - 600s)
- * - Chunk 1: [570s, 1230s] (Core: 600s - 1200s, 30s overlap at start & end)
- * - Chunk 2: [1170s, 1500s] (Core: 1200s - 1500s, 30s overlap at start)
+ * Split an audio file into 5-minute segments with 30s overlaps at both start and end up front.
+ * Uses pure FFmpeg in parallel with fast input seeking. NO AI involved.
  */
 export async function splitAudioIntoChunks(
   filePath: string,
   options?: SlicerOptions
 ): Promise<ChunkInfo[]> {
-  const chunkDuration = options?.chunkDuration ?? 600; // 10 mins (600s)
+  const chunkDuration = options?.chunkDuration ?? 300; // 5 mins (300s)
   const overlapDuration = options?.overlapDuration ?? 30; // 30s overlap
   let outputDir = options?.outputDir;
 
@@ -94,34 +99,36 @@ export async function splitAudioIntoChunks(
     }];
   }
 
-  const chunks: ChunkInfo[] = [];
-  let index = 0;
+  const chunkSpecs: {
+    index: number;
+    outputPath: string;
+    chunkStart: number;
+    chunkActualDuration: number;
+    coreStart: number;
+    coreEnd: number;
+    hasStartOverlap: boolean;
+    hasEndOverlap: boolean;
+  }[] = [];
 
+  let index = 0;
   for (let coreStart = 0; coreStart < duration; coreStart += chunkDuration) {
     const coreEnd = Math.min(coreStart + chunkDuration, duration);
-    
-    // Add 30s start overlap if not the first chunk
     const hasStartOverlap = coreStart > 0;
     const chunkStart = Math.max(0, coreStart - (hasStartOverlap ? overlapDuration : 0));
-
-    // Add 30s end overlap if not the last chunk
     const hasEndOverlap = coreEnd < duration;
     const chunkEnd = Math.min(duration, coreEnd + (hasEndOverlap ? overlapDuration : 0));
-    
     const chunkActualDuration = chunkEnd - chunkStart;
-    const ext = path.extname(filePath) || '.mp3';
-    const outputFileName = `chunk_${index.toString().padStart(4, '0')}${ext}`;
+
+    const outputFileName = `chunk_${index.toString().padStart(4, '0')}.mp3`;
     const outputPath = path.join(outputDir, outputFileName);
 
-    await extractAudioChunkFast(filePath, outputPath, chunkStart, chunkActualDuration);
-
-    chunks.push({
+    chunkSpecs.push({
       index,
-      filePath: outputPath,
-      startTime: chunkStart,
-      duration: chunkActualDuration,
-      coreStartTime: coreStart,
-      coreEndTime: coreEnd,
+      outputPath,
+      chunkStart,
+      chunkActualDuration,
+      coreStart,
+      coreEnd,
       hasStartOverlap,
       hasEndOverlap,
     });
@@ -129,8 +136,27 @@ export async function splitAudioIntoChunks(
     index++;
   }
 
-  console.log(`[slicer] Split audio (${Math.round(duration)}s) into ${chunks.length} chunks of 10 mins with 30s overlap.`);
-  return chunks;
+  console.log(`[slicer] Splitting ${Math.round(duration)}s audio into ${chunkSpecs.length} chunks (pure FFmpeg, fast parallel extraction)...`);
+
+  // Extract all chunks in parallel using pure FFmpeg (fast input seek -ss before -i)
+  await Promise.all(
+    chunkSpecs.map(spec =>
+      extractAudioChunkFast(filePath, spec.outputPath, spec.chunkStart, spec.chunkActualDuration)
+    )
+  );
+
+  console.log(`[slicer] Pure FFmpeg chunking complete for all ${chunkSpecs.length} chunks.`);
+
+  return chunkSpecs.map(spec => ({
+    index: spec.index,
+    filePath: spec.outputPath,
+    startTime: spec.chunkStart,
+    duration: spec.chunkActualDuration,
+    coreStartTime: spec.coreStart,
+    coreEndTime: spec.coreEnd,
+    hasStartOverlap: spec.hasStartOverlap,
+    hasEndOverlap: spec.hasEndOverlap,
+  }));
 }
 
 /**
@@ -142,39 +168,28 @@ function extractAudioChunkFast(
   startTime: number,
   duration: number
 ): Promise<void> {
+  const ffmpegPath = getFfmpegBinary();
+  const args = [
+    '-ss', startTime.toFixed(3),
+    '-i', inputPath,
+    '-t', duration.toFixed(3),
+    '-c:a', 'libmp3lame',
+    '-b:a', '96k',
+    '-ar', '16000',
+    '-ac', '1',
+    '-y',
+    outputPath,
+  ];
+
   return new Promise((resolve, reject) => {
-    // Attempt stream copy first for ultra-fast slicing
-    const processStreamCopy = () => {
-      ffmpeg()
-        .input(inputPath)
-        .inputOptions([`-ss ${startTime}`])
-        .outputOptions([`-t ${duration}`, '-c copy', '-y'])
-        .output(outputPath)
-        .on('end', () => resolve())
-        .on('error', () => {
-          // If stream copy fails (e.g. non-matching codecs or keyframe issue), fallback to fast encoding
-          processFastEncode();
-        })
-        .run();
-    };
-
-    const processFastEncode = () => {
-      ffmpeg()
-        .input(inputPath)
-        .inputOptions([`-ss ${startTime}`, '-threads 0'])
-        .outputOptions([
-          `-t ${duration}`,
-          '-c:a libmp3lame',
-          '-q:a 5', // Fast low-complexity variable bitrate MP3 encoding
-          '-y',
-        ])
-        .output(outputPath)
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err))
-        .run();
-    };
-
-    processStreamCopy();
+    execFile(ffmpegPath, args, (err) => {
+      if (err) {
+        console.error(`[slicer] Error slicing chunk at ${startTime}s:`, err);
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
   });
 }
 
@@ -202,3 +217,4 @@ export function cleanupChunks(chunks: ChunkInfo[]): void {
     }
   }
 }
+

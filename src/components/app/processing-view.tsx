@@ -142,9 +142,9 @@ export function ProcessingView() {
         chunksDone: job.chunksDone ?? 0,
         liveChunkResults: liveResults,
         processingStatus: job.status === 'processing'
-          ? `Transcribing 10-min segment ${job.chunksDone + 1}/${job.chunksTotal}...`
+          ? `Transcribing segment ${job.chunksDone + 1}/${job.chunksTotal}...`
           : job.status === 'chunking'
-            ? 'Splitting audio into 10-min segments with 30s overlaps...'
+            ? 'Splitting audio into chunks with FFmpeg...'
             : job.status === 'completed'
               ? 'Deduplicating overlaps & finalizing merged transcript...'
               : job.status === 'failed'
@@ -306,7 +306,7 @@ export function ProcessingView() {
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Live 10-Min Segment Transcriptions ({liveChunkResults.length} Ready)
+                  Live Segment Transcriptions ({liveChunkResults.length} Ready)
                 </h3>
               </div>
               <div className="max-h-56 overflow-y-auto space-y-2 pr-1 divide-y divide-border/20">

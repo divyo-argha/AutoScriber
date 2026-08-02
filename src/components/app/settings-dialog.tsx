@@ -152,7 +152,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <div className="space-y-2">
               <Label>Chunk Duration (seconds)</Label>
               <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Length of core audio chunk. Default: 600s (10 minutes)</p>
+              <p className="text-xs text-muted-foreground">Length of core audio chunk. Default: 300s (5 minutes)</p>
             </div>
             <div className="space-y-2">
               <Label>Overlap Duration (seconds)</Label>

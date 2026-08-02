@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
     const sonioxApiKey = (settings as any)?.sonioxApiKey || process.env.SONIOX_API_KEY || '';
-    const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 600; // 10 mins
+    const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300; // 5 mins
     const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 30; // 30s overlap
 
     if (!file) {
@@ -161,7 +161,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       }];
     }
 
-    console.log(`[transcribe] Split into ${chunks.length} chunk(s) (10m chunks with 30s overlaps)`);
+    console.log(`[transcribe] Split into ${chunks.length} chunk(s) (5-min chunks with 30s overlaps)`);
 
     await db.transcriptionJob.update({
       where: { id: jobId },
@@ -176,31 +176,50 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
     let fallbackUsed = false;
 
     for (const chunk of chunks) {
-      try {
-        const result = modelInfo.provider === 'soniox'
-          ? await transcribeChunkWithSoniox(chunk.filePath, sonioxApiKey, modelId, chunk.index, chunk.startTime)
-          : await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime, sonioxApiKey);
+      let result: ChunkResult | null = null;
+      let chunkAttempts = 0;
+      const maxChunkAttempts = 3;
 
+      while (chunkAttempts < maxChunkAttempts && !result) {
+        chunkAttempts++;
+        try {
+          result = modelInfo.provider === 'soniox'
+            ? await transcribeChunkWithSoniox(chunk.filePath, sonioxApiKey, modelId, chunk.index, chunk.startTime)
+            : await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime, sonioxApiKey);
+        } catch (chunkErr) {
+          const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
+          console.warn(`[transcribe] Chunk ${chunk.index} attempt ${chunkAttempts}/${maxChunkAttempts} failed: ${errMsg}`);
+          if (chunkAttempts < maxChunkAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          } else {
+            console.error(`[transcribe] Chunk ${chunk.index} failed all ${maxChunkAttempts} attempts.`);
+          }
+        }
+      }
+
+      if (result) {
         console.log(`[transcribe] Chunk ${chunk.index}: ${result.segments.length} segments`);
         completedChunkResults.push({ chunk, result });
         if (result.fallbackUsed) {
           fallbackUsed = true;
         }
-
-        chunksDone++;
-        await db.transcriptionJob.update({
-          where: { id: jobId },
-          data: {
-            chunksDone,
-            progress: Math.round((chunksDone / chunks.length) * 100),
-            chunkResults: JSON.stringify(completedChunkResults.map(c => c.result)),
-          },
-        });
-      } catch (chunkErr) {
-        const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
-        console.error(`[transcribe] Error processing chunk ${chunk.index}:`, errMsg);
-        throw chunkErr;
+      } else {
+        console.warn(`[transcribe] Skipping failed chunk ${chunk.index} to preserve remaining transcriptions.`);
       }
+
+      chunksDone++;
+      await db.transcriptionJob.update({
+        where: { id: jobId },
+        data: {
+          chunksDone,
+          progress: Math.round((chunksDone / chunks.length) * 100),
+          chunkResults: JSON.stringify(completedChunkResults.map(c => c.result)),
+        },
+      });
+    }
+
+    if (completedChunkResults.length === 0) {
+      throw new Error('Transcription produced no results. All chunk attempts failed. Please check network connection and API keys.');
     }
 
     // Merge, deduplicate 30s overlap regions cleanly across core chunk windows
