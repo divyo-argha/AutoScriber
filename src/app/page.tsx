@@ -27,7 +27,6 @@ export default function Home() {
               chunkDuration: data.chunkDuration || 300,
               overlapDuration: data.overlapDuration || 10,
               userGeminiApiKey: data.userGeminiApiKey || '',
-              userSonioxApiKey: data.userSonioxApiKey || '',
             });
           }
         }

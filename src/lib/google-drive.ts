@@ -8,7 +8,7 @@ export interface GoogleDriveFile {
   size: string;
 }
 
-export async function initGoogleAuth(): Promise<gapi.auth2.GoogleAuth | null> {
+export async function initGoogleAuth(): Promise<any> {
   return new Promise((resolve) => {
     if (!window.gapi) {
       resolve(null);
@@ -29,7 +29,7 @@ export async function initGoogleAuth(): Promise<gapi.auth2.GoogleAuth | null> {
   });
 }
 
-export async function signInWithGoogle(): Promise<gapi.auth2.GoogleUser | null> {
+export async function signInWithGoogle(): Promise<any> {
   const auth = await initGoogleAuth();
   if (!auth) return null;
 
@@ -42,7 +42,7 @@ export async function signInWithGoogle(): Promise<gapi.auth2.GoogleUser | null> 
 }
 
 export async function listDriveAudioFiles(folderId: string = 'root'): Promise<GoogleDriveFile[]> {
-  const token = gapi.auth2.getAuthInstance()?.currentUser.get().getAuthResponse().id_token;
+  const token = window.gapi?.auth2?.getAuthInstance()?.currentUser.get().getAuthResponse().id_token;
   if (!token) return [];
 
   const audioMimes = [
@@ -64,7 +64,7 @@ export async function listDriveAudioFiles(folderId: string = 'root'): Promise<Go
 }
 
 export async function downloadDriveFile(fileId: string, fileName: string): Promise<File | null> {
-  const token = gapi.auth2.getAuthInstance()?.currentUser.get().getAuthResponse().id_token;
+  const token = window.gapi?.auth2?.getAuthInstance()?.currentUser.get().getAuthResponse().id_token;
   if (!token) return null;
 
   try {

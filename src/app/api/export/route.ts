@@ -139,7 +139,7 @@ async function exportDocx(segments: TranscriptionSegment[], fileName: string) {
   
   const buffer = await Packer.toBuffer(doc);
   
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'Content-Disposition': `attachment; filename="${(fileName || 'transcription').replace(/[^a-zA-Z0-9]/g, '_')}.docx"`,
@@ -223,7 +223,7 @@ async function exportPdf(segments: TranscriptionSegment[], fileName: string) {
     });
   });
   
-  return new NextResponse(pdfBuffer, {
+  return new NextResponse(new Uint8Array(pdfBuffer), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${(fileName || 'transcription').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`,

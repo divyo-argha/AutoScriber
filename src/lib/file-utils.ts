@@ -16,7 +16,10 @@ export async function extractAudioFilesFromZip(zipFile: File): Promise<File[]> {
   const processFolder = async (folder: JSZip, path: string = '') => {
     for (const [name, file] of Object.entries(folder.files)) {
       if (file.dir) {
-        await processFolder(file, path + name);
+        const subfolder = folder.folder(name);
+        if (subfolder) {
+          await processFolder(subfolder, path + name);
+        }
       } else if (isAudioFile(name)) {
         const blob = await file.async('blob');
         const fullPath = path + name;

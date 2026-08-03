@@ -323,7 +323,7 @@ export function HistoryView() {
                               className="overflow-hidden"
                             >
                               <div className="border-t px-4 py-3 space-y-3 bg-muted/30">
-                                <div className="max-h-[200px] overflow-y-auto">
+                                <div className="max-h-200px overflow-y-auto">
                                   {resultData.segments.slice(0, 10).map((seg: Record<string, unknown>, idx: number) => (
                                     <div key={idx} className="flex gap-2 py-1 text-xs">
                                       <span className="text-muted-foreground font-mono shrink-0">
