@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Key, Server, CheckCircle2, XCircle, Loader2, Wifi } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -18,7 +19,8 @@ interface SettingsDialogProps {
 type TestStatus = 'idle' | 'testing' | 'connected' | 'error';
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSettings } = useAppStore();
+  const { toast } = useToast();
+  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setSettings } = useAppStore();
 
   const [localGeminiKey, setLocalGeminiKey] = useState(userGeminiApiKey);
   const [localChunkDuration, setLocalChunkDuration] = useState(String(chunkDuration));
@@ -40,16 +42,24 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const testGemini = async () => {
     setGeminiStatus('testing'); setGeminiError('');
     try {
-      const params = new URLSearchParams({ model: selectedModel || 'gemini-2.0-flash' });
+      const params = new URLSearchParams({ model: selectedModel || 'gemini-2.5-flash' });
       if (localGeminiKey) params.set('apiKey', localGeminiKey);
       const res = await fetch(`/api/gemini-test?${params}`);
       const data = await res.json();
       if (data.connected) {
         setGeminiStatus('connected');
-        toast({
-          title: 'Connection Successful',
-          description: 'Gemini API connection test passed!',
-        });
+        if (data.fallbackUsed && data.workingModel) {
+          setSelectedModel(data.workingModel);
+          toast({
+            title: 'Connection Successful (Fallback)',
+            description: `${selectedModel} is rate-limited. Automatically switched your active model to ${data.workingModel}.`,
+          });
+        } else {
+          toast({
+            title: 'Connection Successful',
+            description: 'Gemini API connection test passed!',
+          });
+        }
       } else {
         const errMsg = data.error || data.suggestion || 'Connection failed';
         setGeminiStatus('error');

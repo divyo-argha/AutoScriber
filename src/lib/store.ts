@@ -117,7 +117,7 @@ interface AppState {
 
 const initialState = {
   currentView: 'upload' as AppView,
-  selectedModel: 'gemini-2.0-flash',
+  selectedModel: 'gemini-2.5-flash',
   availableModels: AVAILABLE_MODELS,
   uploadedFile: null as File | null,
   uploadedFileName: '',
