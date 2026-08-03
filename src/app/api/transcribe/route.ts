@@ -5,7 +5,7 @@ import { mergeChunkResults } from '@/lib/transcriber/merger';
 import { formatTime } from '@/lib/format-utils';
 import { transcribeChunkWithGemini } from '@/lib/transcriber/gemini';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
-import type { TranscriptionSegment, TranscriptionResult, ChunkResult } from '@/lib/transcriber/types';
+import type { TranscriptionResult, ChunkResult } from '@/lib/transcriber/types';
 import { classifyGeminiError } from '@/lib/transcriber/error-utils';
 import fs from 'fs';
 import path from 'path';
@@ -154,7 +154,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       }];
     }
 
-    console.log(`[transcribe] Split into ${chunks.length} chunk(s) (5-min chunks with 30s overlaps)`);
+    console.log(`[transcribe] Split into ${chunks.length} chunk(s) (${chunkDuration}s chunks with ${overlapDuration}s overlaps)`);
 
     await db.transcriptionJob.update({
       where: { id: jobId },
@@ -165,8 +165,12 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
     });
 
     const completedChunkResults: { chunk: typeof chunks[0]; result: ChunkResult }[] = [];
+    const failedChunks: typeof chunks = [];
     let chunksDone = 0;
     let fallbackUsed = false;
+    // Once a fallback model proves to work (e.g. the primary is quota-limited),
+    // prefer it for the remaining chunks instead of retrying the dead one.
+    let activeModel = modelId;
 
     for (const chunk of chunks) {
       let result: ChunkResult | null = null;
@@ -176,7 +180,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       while (chunkAttempts < maxChunkAttempts && !result) {
         chunkAttempts++;
         try {
-          result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, modelId, chunk.index, chunk.startTime);
+          result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, activeModel, chunk.index, chunk.startTime);
         } catch (chunkErr) {
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
           console.warn(`[transcribe] Chunk ${chunk.index} attempt ${chunkAttempts}/${maxChunkAttempts} failed: ${errMsg}`);
@@ -191,11 +195,12 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       if (result) {
         console.log(`[transcribe] Chunk ${chunk.index}: ${result.segments.length} segments`);
         completedChunkResults.push({ chunk, result });
+        if (result.model) activeModel = result.model;
         if (result.fallbackUsed) {
           fallbackUsed = true;
         }
       } else {
-        console.warn(`[transcribe] Skipping failed chunk ${chunk.index} to preserve remaining transcriptions.`);
+        failedChunks.push(chunk);
       }
 
       chunksDone++;
@@ -209,11 +214,35 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       });
     }
 
+    // Second-chance pass: a chunk may have failed because a per-minute quota
+    // was momentarily exhausted. Wait once, then retry the failed chunks.
+    if (failedChunks.length > 0) {
+      console.warn(`[transcribe] ${failedChunks.length} chunk(s) failed. Waiting 20s, then retrying them...`);
+      await new Promise(resolve => setTimeout(resolve, 20000));
+      for (const chunk of [...failedChunks]) {
+        try {
+          const result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, activeModel, chunk.index, chunk.startTime);
+          console.log(`[transcribe] Chunk ${chunk.index} recovered on retry: ${result.segments.length} segments`);
+          completedChunkResults.push({ chunk, result });
+          if (result.model) activeModel = result.model;
+          if (result.fallbackUsed) fallbackUsed = true;
+          failedChunks.splice(failedChunks.indexOf(chunk), 1);
+        } catch (retryErr) {
+          console.error(`[transcribe] Chunk ${chunk.index} still failed on retry:`, retryErr);
+        }
+      }
+    }
+
+    const skippedChunks = failedChunks.map(c => c.index);
+    if (skippedChunks.length > 0) {
+      console.warn(`[transcribe] Skipping chunks [${skippedChunks.join(', ')}] (${skippedChunks.length}/${chunks.length}) — content from these may be missing.`);
+    }
+
     if (completedChunkResults.length === 0) {
       throw new Error('Transcription produced no results. All chunk attempts failed. Please check network connection and API keys.');
     }
 
-    // Merge, deduplicate 30s overlap regions cleanly across core chunk windows
+    // Merge and deduplicate overlapping speech across chunk boundaries
     const merged = mergeChunkResults(completedChunkResults);
     const fullText = merged.map(s => `[${formatTime(s.startTime)}] ${s.speaker}: ${s.text}`).join('\n');
     const totalDuration = merged.length > 0 ? Math.max(...merged.map(s => s.endTime)) : (duration ?? 0);
@@ -225,6 +254,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       language: 'bn',
       model: modelId,
       fallbackUsed,
+      skippedChunks: skippedChunks.length > 0 ? skippedChunks : undefined,
     };
 
     await db.transcriptionJob.update({
@@ -240,7 +270,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       },
     });
 
-    console.log(`[transcribe] Job ${jobId} completed. ${merged.length} segments total after overlap deduplication. Fallback used: ${fallbackUsed}`);
+    console.log(`[transcribe] Job ${jobId} completed. ${merged.length} segments total after overlap deduplication. Fallback used: ${fallbackUsed}. Skipped: ${skippedChunks.length}`);
   } catch (processErr) {
     const classified = classifyGeminiError(processErr);
     const errorMessage = classified.isLocationError
@@ -260,52 +290,4 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
     try { fs.unlinkSync(filePath); } catch {}
     try { fs.rmdirSync(tempDir); } catch {}
   }
-}
-
-/**
- * Sort, remove duplicate segments from chunk overlap boundaries,
- * and merge adjacent same-speaker segments.
- */
-function mergeAndDeduplicateSegments(
-  segments: TranscriptionSegment[],
-  overlapDuration: number
-): TranscriptionSegment[] {
-  if (segments.length === 0) return [];
-
-  // Sort by start time
-  const sorted = [...segments].sort((a, b) => a.startTime - b.startTime);
-
-  // Deduplicate segments that are near-identical (within overlap window)
-  // Keep the segment with the more accurate (earlier) startTime
-  const deduped: TranscriptionSegment[] = [];
-  for (const seg of sorted) {
-    const isDuplicate = deduped.some(existing => {
-      const timeDiff = Math.abs(existing.startTime - seg.startTime);
-      const textMatch = existing.text.trim().toLowerCase() === seg.text.trim().toLowerCase();
-      return timeDiff < Math.max(overlapDuration, 3) && textMatch;
-    });
-    if (!isDuplicate) {
-      deduped.push(seg);
-    }
-  }
-
-  // Merge consecutive same-speaker segments with small gaps (< 2s)
-  const merged: TranscriptionSegment[] = [];
-  let current = { ...deduped[0] };
-
-  for (let i = 1; i < deduped.length; i++) {
-    const seg = deduped[i];
-    if (
-      current.speaker === seg.speaker &&
-      seg.startTime - current.endTime < 2
-    ) {
-      current.endTime = Math.max(current.endTime, seg.endTime);
-      current.text = current.text + ' ' + seg.text;
-    } else {
-      merged.push(current);
-      current = { ...seg };
-    }
-  }
-  merged.push(current);
-  return merged;
 }

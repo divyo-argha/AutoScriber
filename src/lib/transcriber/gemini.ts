@@ -33,42 +33,67 @@ function parseTranscriptionResponse(text: string): TranscriptionSegment[] {
     jsonStr = jsonMatch[1].trim();
   }
 
-  // Extract JSON array - be strict about it
-  const arrayMatch = jsonStr.match(/^\s*\[[\s\S]*\]\s*$/);
-  if (!arrayMatch) {
-    // Try to find array within text
-    const innerMatch = jsonStr.match(/\[[\s\S]*\]/);
-    if (innerMatch) {
-      jsonStr = innerMatch[0];
-    } else {
-      console.error('[gemini] No JSON array found in response');
-      return [];
-    }
-  } else {
-    jsonStr = arrayMatch[0];
-  }
-
-  try {
-    const parsed = JSON.parse(jsonStr);
-    if (!Array.isArray(parsed)) {
-      console.error('[gemini] Response is not an array');
-      return [];
-    }
-
-    return parsed
-      .filter(seg => seg && typeof seg === 'object')
-      .map((seg: Record<string, unknown>) => ({
-        speaker: String(seg.speaker || 'Speaker Unknown'),
-        startTime: Number(seg.startTime) || 0,
-        endTime: Number(seg.endTime) || 0,
-        text: String(seg.text || ''),
-      }))
-      .filter(seg => seg.text.trim().length > 0);
-  } catch (parseErr) {
-    console.error('[gemini] JSON parse failed:', parseErr);
-    console.error('[gemini] Attempted to parse:', jsonStr.substring(0, 200));
+  // Locate the JSON array span (ignore any surrounding commentary)
+  const startIdx = jsonStr.indexOf('[');
+  if (startIdx === -1) {
+    console.error('[gemini] No JSON array found in response');
     return [];
   }
+  const endIdx = jsonStr.lastIndexOf(']');
+  jsonStr = endIdx === -1 ? jsonStr.slice(startIdx) : jsonStr.slice(startIdx, endIdx + 1);
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (parseErr) {
+    parsed = salvageParseArray(jsonStr);
+    if (!parsed) {
+      console.error('[gemini] JSON parse failed:', parseErr);
+      console.error('[gemini] Attempted to parse:', jsonStr.substring(0, 200));
+      return [];
+    }
+  }
+
+  if (!Array.isArray(parsed)) {
+    console.error('[gemini] Response is not an array');
+    return [];
+  }
+
+  return (parsed as Record<string, unknown>[])
+    .filter(seg => seg && typeof seg === 'object')
+    .map((seg: Record<string, unknown>) => ({
+      speaker: String(seg.speaker || 'Speaker Unknown'),
+      startTime: Number(seg.startTime) || 0,
+      endTime: Number(seg.endTime) || 0,
+      text: String(seg.text || ''),
+    }))
+    .filter(seg => seg.text.trim().length > 0);
+}
+
+/**
+ * Salvage a truncated or slightly malformed JSON array: fix trailing commas
+ * and progressively drop incomplete trailing objects until the JSON parses.
+ * Gemini sometimes cuts a long response mid-array; this recovers everything
+ * that was fully emitted.
+ */
+function salvageParseArray(jsonStr: string): unknown[] | null {
+  let candidate = jsonStr.replace(/,\s*$/, '');
+  for (let attempt = 0; attempt < 20; attempt++) {
+    if (!candidate.trim().endsWith(']')) {
+      candidate = candidate.trim().replace(/,\s*$/, '') + ']';
+    }
+    candidate = candidate.replace(/,\s*\]$/, ']');
+    try {
+      const parsed = JSON.parse(candidate);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      // Drop the last object and retry
+      const lastBrace = candidate.lastIndexOf('}');
+      if (lastBrace === -1) return null;
+      candidate = candidate.slice(0, lastBrace + 1).replace(/,\s*$/, '');
+    }
+  }
+  return null;
 }
 
 /**
@@ -135,6 +160,8 @@ async function generateContentWithRetry(
   maxRetries: number = 5,
   initialDelayMs: number = 2000
 ): Promise<any> {
+  // Free-tier Gemini quotas are per-minute (e.g. 10 RPM), so pace requests.
+  await enforceRateLimitPacing();
   let attempt = 0;
   while (true) {
     try {
@@ -143,8 +170,13 @@ async function generateContentWithRetry(
       attempt++;
       const errMsg = err instanceof Error ? err.message : String(err);
       const isTransient = isTransientError(err);
-      
-      if (isTransient && attempt <= maxRetries) {
+
+      // A "limit: 0" quota means this model is permanently unavailable for
+      // this API key (e.g. retired model or new key without access). Retrying
+      // is pointless — throw so the caller can switch to a fallback model.
+      const isHardQuota = errMsg.includes('limit: 0') || errMsg.includes('per_day') || errMsg.includes('per-day');
+
+      if (isTransient && !isHardQuota && attempt <= maxRetries) {
         let delayMs = initialDelayMs * Math.pow(2, attempt - 1);
         
         // Try to extract dynamic retry delay from error message or response headers if available
@@ -238,7 +270,13 @@ async function transcribeWithGeminiInternal(
   timeOffset: number = 0
 ): Promise<ChunkResult> {
   const genAI = createGenAIClient(apiKey);
-  const model = genAI.getGenerativeModel({ model: modelId });
+  const model = genAI.getGenerativeModel({
+    model: modelId,
+    generationConfig: {
+      temperature: 0,
+      maxOutputTokens: 16384,
+    },
+  });
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`Audio file not found: ${filePath}`);
@@ -304,6 +342,15 @@ async function transcribeWithGeminiInternal(
 
     let segments = parseTranscriptionResponse(text);
 
+    // A non-empty response that produced no segments means the model returned
+    // unparseable/truncated JSON (or an error in prose). Retry rather than
+    // silently losing this chunk's content. A response of "[]" is a valid
+    // (silent) transcription and is kept.
+    const meaningfulResponse = text.replace(/[\s\[\]]/g, '');
+    if (segments.length === 0 && meaningfulResponse.length > 0) {
+      throw new Error(`Gemini returned an unparseable response (${text.substring(0, 120)}). Retrying...`);
+    }
+
     if (timeOffset > 0) {
       segments = segments.map(seg => ({
         ...seg,
@@ -316,6 +363,7 @@ async function transcribeWithGeminiInternal(
       chunkIndex: 0,
       segments,
       rawText: text,
+      model: modelId,
     };
   } finally {
     if (fileToCleanup) {
@@ -378,7 +426,13 @@ async function transcribeChunkWithGeminiInternal(
   timeOffset: number
 ): Promise<ChunkResult> {
   const genAI = createGenAIClient(apiKey);
-  const model = genAI.getGenerativeModel({ model: modelId });
+  const model = genAI.getGenerativeModel({
+    model: modelId,
+    generationConfig: {
+      temperature: 0,
+      maxOutputTokens: 16384,
+    },
+  });
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`Chunk file not found: ${filePath}`);
@@ -442,6 +496,15 @@ async function transcribeChunkWithGeminiInternal(
 
     let segments = parseTranscriptionResponse(text);
 
+    // A non-empty response that produced no segments means the model returned
+    // unparseable/truncated JSON (or an error in prose). Retry rather than
+    // silently losing this chunk's content. A response of "[]" is a valid
+    // (silent) transcription and is kept.
+    const meaningfulResponse = text.replace(/[\s\[\]]/g, '');
+    if (segments.length === 0 && meaningfulResponse.length > 0) {
+      throw new Error(`Gemini returned an unparseable response for chunk ${chunkIndex} (${text.substring(0, 120)}). Retrying...`);
+    }
+
     if (timeOffset > 0) {
       segments = segments.map(seg => ({
         ...seg,
@@ -454,6 +517,7 @@ async function transcribeChunkWithGeminiInternal(
       chunkIndex,
       segments,
       rawText: text,
+      model: modelId,
     };
   } finally {
     if (fileToCleanup) {

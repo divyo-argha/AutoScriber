@@ -12,6 +12,7 @@ export interface TranscriptionResult {
   language: string;
   model: string;
   fallbackUsed?: boolean;
+  skippedChunks?: number[];
 }
 
 export interface ChunkResult {
@@ -19,6 +20,7 @@ export interface ChunkResult {
   segments: TranscriptionSegment[];
   rawText: string;
   fallbackUsed?: boolean;
+  model?: string;
 }
 
 export interface ModelInfo {
@@ -85,33 +87,35 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
   },
 ];
 
-export const GEMINI_TRANSCRIPTION_PROMPT = `You are a Bangla-English audio transcription system. Your ONLY job is to output valid JSON.
+export const GEMINI_TRANSCRIPTION_PROMPT = `You are a professional Bangla-English speech transcription engine. Your ONLY job is to output a valid JSON array of transcribed speech segments.
 
 RULES:
-1. Transcribe audio in the language spoken (Bangla or English)
-2. Identify speakers as Speaker 1, Speaker 2, etc
-3. Provide accurate timestamps in seconds
-4. Output ONLY a valid JSON array - nothing else, no markdown, no explanation
+1. Transcribe EVERY word that is spoken, exactly as spoken, in the language(s) used (Bangla, English, or mixed). Never summarize, correct, paraphrase, or translate.
+2. Transcribe the audio from its first second to its very last second. Never truncate or drop the final sentence — always finish it completely, even if it is cut off at the end of the audio.
+3. Identify speakers as "Speaker 1", "Speaker 2", etc., in order of first appearance. Keep the same label for the same voice.
+4. Timestamps must be in seconds, relative to the start of the provided audio, with 1 decimal place (e.g. 0.0, 12.3, 45.7). The first segment should start at or near 0.0, and the last segment must cover the final audio content.
+5. Split the transcript into natural segments of 1-3 sentences. Assign accurate startTime and endTime to every segment. Use the full audio duration — never stop early.
+6. Keep filler words ("আরে", "হুম", "um", "yeah") if they are spoken. Only add [laughing], [silence] style notations when genuinely relevant.
 
-OUTPUT FORMAT (REQUIRED):
+OUTPUT FORMAT (REQUIRED — output ONLY the JSON array; no markdown, no code fences, no extra text):
 [
   {"speaker": "Speaker 1", "startTime": 0.0, "endTime": 5.2, "text": "আমি মনে করি this is very important"},
   {"speaker": "Speaker 2", "startTime": 5.5, "endTime": 10.1, "text": "হ্যাঁ, I agree"}
-]
+]`;
 
-CRITICAL: Output ONLY the JSON array. No markdown. No code blocks. No text before or after.`;
+export const GEMINI_CHUNK_PROMPT = `You are a professional Bangla-English speech transcription engine. Your ONLY job is to output a valid JSON array of transcribed speech segments.
 
-export const GEMINI_CHUNK_PROMPT = `You are a Bangla-English audio transcription system. Your ONLY job is to output valid JSON.
+The provided audio is a middle segment of a longer recording. It may begin and end in the middle of a conversation or a sentence. Transcribe it exactly as heard.
 
 RULES:
-1. Transcribe audio in the language spoken (Bangla or English)
-2. Identify speakers as Speaker 1, Speaker 2, etc
-3. Provide accurate timestamps in seconds (relative to chunk start)
-4. Output ONLY a valid JSON array - nothing else, no markdown, no explanation
+1. Transcribe EVERY word that is spoken in this audio, exactly as spoken, in the language(s) used (Bangla, English, or mixed). Never summarize, correct, paraphrase, or translate.
+2. Transcribe the audio from its first second to its very last second. If a sentence is already in progress at the start, transcribe the words you hear; if the audio ends mid-sentence, finish the sentence in full. Never drop the last sentence.
+3. Identify speakers as "Speaker 1", "Speaker 2", etc., in order of first appearance in THIS audio. Keep the same label for the same voice.
+4. Timestamps must be in seconds, relative to the start of THIS audio file (0.0 = first second of this audio), with 1 decimal place (e.g. 0.0, 12.3, 45.7). Never use timestamps of the original longer recording.
+5. Split the transcript into natural segments of 1-3 sentences. Assign accurate startTime and endTime to every segment. The last segment must reach the very end of the audio.
+6. Keep filler words ("আরে", "হুম", "um", "yeah") if they are spoken. Only add [laughing], [silence] style notations when genuinely relevant.
 
-OUTPUT FORMAT (REQUIRED):
+OUTPUT FORMAT (REQUIRED — output ONLY the JSON array; no markdown, no code fences, no extra text):
 [
   {"speaker": "Speaker 1", "startTime": 0.0, "endTime": 5.2, "text": "আমি মনে করি this is very important"}
-]
-
-CRITICAL: Output ONLY the JSON array. No markdown. No code blocks. No text before or after.`;
+]`;
