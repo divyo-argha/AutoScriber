@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS "TranscriptionJob" (
     "fileSize" INTEGER NOT NULL,
     "duration" REAL,
     "status" TEXT NOT NULL DEFAULT 'pending',
+    "controlStatus" TEXT NOT NULL DEFAULT 'running',
     "progress" INTEGER NOT NULL DEFAULT 0,
     "model" TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
     "language" TEXT NOT NULL DEFAULT 'bn',

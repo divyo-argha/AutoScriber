@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { splitAudioIntoChunks, getAudioDuration } from '@/lib/audio/slicer';
+import { splitAudioIntoChunks, getAudioDuration, cleanupChunks } from '@/lib/audio/slicer';
 import { mergeChunkResults } from '@/lib/transcriber/merger';
 import { formatTime } from '@/lib/format-utils';
 import { transcribeChunkWithGemini } from '@/lib/transcriber/gemini';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
 import type { TranscriptionResult, ChunkResult } from '@/lib/transcriber/types';
+import type { ChunkInfo } from '@/lib/audio/types';
 import { classifyGeminiError } from '@/lib/transcriber/error-utils';
 import fs from 'fs';
 import path from 'path';
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
       chunkDuration,
       overlapDuration,
       duration,
+      audioPath: persistentAudioPath,
     });
 
     return NextResponse.json({ jobId: job.id, status: 'started' });
@@ -131,13 +133,83 @@ interface TranscriptionJobParams {
   chunkDuration: number;
   overlapDuration: number;
   duration: number | null;
+  audioPath: string | null;
+}
+
+const CONTROL_POLL_INTERVAL = 1500;
+
+async function getJobControlStatus(jobId: string): Promise<string> {
+  try {
+    const job = await db.transcriptionJob.findUnique({
+      where: { id: jobId },
+      select: { controlStatus: true },
+    });
+    return job?.controlStatus || 'running';
+  } catch {
+    return 'running';
+  }
+}
+
+function isCancelRequested(controlStatus: string): boolean {
+  return controlStatus === 'cancel_requested' || controlStatus === 'cancelled';
+}
+
+/**
+ * Blocks while the job is paused. Resolves 'running' once resumed or
+ * 'cancelled' if the user cancels while paused.
+ */
+async function waitWhilePaused(jobId: string): Promise<'running' | 'cancelled'> {
+  for (;;) {
+    const control = await getJobControlStatus(jobId);
+    if (control === 'running') return 'running';
+    if (isCancelRequested(control)) return 'cancelled';
+    await new Promise(resolve => setTimeout(resolve, CONTROL_POLL_INTERVAL));
+  }
+}
+
+/**
+ * Sleep that aborts early when the job is paused or cancelled, so the UI
+ * controls stay responsive. Returns 'running' if the sleep completed.
+ */
+async function sleepWithControl(jobId: string, ms: number): Promise<'running' | 'cancelled'> {
+  const step = CONTROL_POLL_INTERVAL;
+  for (let elapsed = 0; elapsed < ms; elapsed += step) {
+    const control = await getJobControlStatus(jobId);
+    if (isCancelRequested(control)) return 'cancelled';
+    if (control === 'paused') {
+      const resumed = await waitWhilePaused(jobId);
+      if (resumed === 'cancelled') return 'cancelled';
+    }
+    await new Promise(resolve => setTimeout(resolve, Math.min(step, ms - elapsed)));
+  }
+  return 'running';
+}
+
+/** Mark the job cancelled and delete its persisted audio file. */
+async function cancelJob(jobId: string, audioPath: string | null) {
+  try {
+    await db.transcriptionJob.update({
+      where: { id: jobId },
+      data: { status: 'cancelled', controlStatus: 'cancelled' },
+    });
+  } catch (err) {
+    console.error('[transcribe] Failed to mark job cancelled:', err);
+  }
+  if (audioPath) {
+    try {
+      if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+      console.log(`[transcribe] Deleted audio for cancelled job: ${audioPath}`);
+    } catch (err) {
+      console.error('[transcribe] Failed to delete cancelled job audio:', err);
+    }
+  }
 }
 
 async function processTranscriptionJob(params: TranscriptionJobParams) {
-  const { jobId, filePath, tempDir, modelInfo, modelId, geminiApiKey, chunkDuration, overlapDuration, duration } = params;
+  const { jobId, filePath, tempDir, modelInfo, modelId, geminiApiKey, chunkDuration, overlapDuration, duration, audioPath } = params;
+  let chunks: ChunkInfo[] = [];
 
   try {
-    let chunks;
     try {
       chunks = await splitAudioIntoChunks(filePath, { chunkDuration, overlapDuration });
     } catch (chunkErr) {
@@ -173,11 +245,34 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
     let activeModel = modelId;
 
     for (const chunk of chunks) {
+      // Respect pause/resume/cancel between chunks
+      const control = await getJobControlStatus(jobId);
+      if (isCancelRequested(control)) {
+        console.log(`[transcribe] Job ${jobId} cancelled by user before chunk ${chunk.index}.`);
+        await cancelJob(jobId, audioPath);
+        return;
+      }
+      if (control === 'paused') {
+        console.log(`[transcribe] Job ${jobId} paused before chunk ${chunk.index}. Waiting for resume...`);
+        const resumed = await waitWhilePaused(jobId);
+        if (resumed === 'cancelled') {
+          console.log(`[transcribe] Job ${jobId} cancelled while paused.`);
+          await cancelJob(jobId, audioPath);
+          return;
+        }
+      }
+
       let result: ChunkResult | null = null;
       let chunkAttempts = 0;
       const maxChunkAttempts = 3;
 
       while (chunkAttempts < maxChunkAttempts && !result) {
+        // Cancel takes priority over retrying a failing chunk
+        if (isCancelRequested(await getJobControlStatus(jobId))) {
+          console.log(`[transcribe] Job ${jobId} cancelled during chunk ${chunk.index} attempts.`);
+          await cancelJob(jobId, audioPath);
+          return;
+        }
         chunkAttempts++;
         try {
           result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, activeModel, chunk.index, chunk.startTime);
@@ -185,7 +280,12 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
           console.warn(`[transcribe] Chunk ${chunk.index} attempt ${chunkAttempts}/${maxChunkAttempts} failed: ${errMsg}`);
           if (chunkAttempts < maxChunkAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            const waited = await sleepWithControl(jobId, 3000);
+            if (waited === 'cancelled') {
+              console.log(`[transcribe] Job ${jobId} cancelled while waiting between chunk attempts.`);
+              await cancelJob(jobId, audioPath);
+              return;
+            }
           } else {
             console.error(`[transcribe] Chunk ${chunk.index} failed all ${maxChunkAttempts} attempts.`);
           }
@@ -216,10 +316,21 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
 
     // Second-chance pass: a chunk may have failed because a per-minute quota
     // was momentarily exhausted. Wait once, then retry the failed chunks.
+    // The wait is interruptible by pause/cancel.
     if (failedChunks.length > 0) {
       console.warn(`[transcribe] ${failedChunks.length} chunk(s) failed. Waiting 20s, then retrying them...`);
-      await new Promise(resolve => setTimeout(resolve, 20000));
+      const waited = await sleepWithControl(jobId, 20000);
+      if (waited === 'cancelled') {
+        console.log(`[transcribe] Job ${jobId} cancelled during retry wait.`);
+        await cancelJob(jobId, audioPath);
+        return;
+      }
       for (const chunk of [...failedChunks]) {
+        if (isCancelRequested(await getJobControlStatus(jobId))) {
+          console.log(`[transcribe] Job ${jobId} cancelled during retry pass.`);
+          await cancelJob(jobId, audioPath);
+          return;
+        }
         try {
           const result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, activeModel, chunk.index, chunk.startTime);
           console.log(`[transcribe] Chunk ${chunk.index} recovered on retry: ${result.segments.length} segments`);
@@ -240,6 +351,13 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
 
     if (completedChunkResults.length === 0) {
       throw new Error('Transcription produced no results. All chunk attempts failed. Please check network connection and API keys.');
+    }
+
+    // Final cancel check before assembling the result
+    if (isCancelRequested(await getJobControlStatus(jobId))) {
+      console.log(`[transcribe] Job ${jobId} cancelled before final assembly.`);
+      await cancelJob(jobId, audioPath);
+      return;
     }
 
     // Merge and deduplicate overlapping speech across chunk boundaries
@@ -287,6 +405,8 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
       },
     });
   } finally {
+    // Clean up the FFmpeg chunk files (they live in their own temp dir)
+    try { cleanupChunks(chunks); } catch {}
     try { fs.unlinkSync(filePath); } catch {}
     try { fs.rmdirSync(tempDir); } catch {}
   }

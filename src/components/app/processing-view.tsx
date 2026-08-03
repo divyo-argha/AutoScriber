@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock, AlertTriangle, Globe, Settings, Wifi } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock, AlertTriangle, Globe, Settings, Wifi, Pause, Play, Ban } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionResult } from '@/lib/transcriber/types';
 
@@ -32,6 +32,8 @@ export function ProcessingView() {
   const hasStarted = useRef(false);
   const startTimeRef = useRef<number>(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const [paused, setPaused] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const estimatedTime = useMemo(() => {
     if (!isProcessing || processingProgress <= 0 || processingProgress >= 100) return '';
@@ -53,9 +55,39 @@ export function ProcessingView() {
   // Parse the error type from the status message
   const isLocationError = processingStatus.includes('location') && processingStatus.includes('not supported');
   const isAuthError = processingStatus.includes('API key') && (processingStatus.includes('not valid') || processingStatus.includes('invalid'));
-  const isFailed = !isProcessing && (
+  const isCancelled = !isProcessing && processingStatus.startsWith('Cancelled');
+  const isFailed = !isProcessing && !isCancelled && (
     processingStatus.startsWith('Failed') || processingStatus.startsWith('Error')
   );
+
+  // Pause, resume, or cancel the running job via the control API
+  const sendControl = useCallback(async (action: 'pause' | 'resume' | 'cancel') => {
+    if (!jobId) return;
+    if (action === 'cancel' && !confirm('Cancel this transcription? All progress for this job will be lost.')) {
+      return;
+    }
+    if (action === 'cancel') setCancelling(true);
+    try {
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: jobId, action }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error('Control request failed:', data.error);
+      }
+    } catch (err) {
+      console.error('Control request failed:', err);
+    } finally {
+      if (action === 'cancel') setCancelling(false);
+    }
+  }, [jobId]);
+
+  const goBackToUpload = useCallback(() => {
+    hasStarted.current = false;
+    setCurrentView('upload');
+  }, [setCurrentView]);
 
   const startTranscription = useCallback(async () => {
     if (!uploadedFile || hasStarted.current) return;
@@ -136,13 +168,17 @@ export function ProcessingView() {
         } catch {}
       }
 
+      setPaused(job.controlStatus === 'paused');
+
       setProcessingState({
         processingProgress: job.progress ?? 0,
         chunksTotal: job.chunksTotal ?? 0,
         chunksDone: job.chunksDone ?? 0,
         liveChunkResults: liveResults,
         processingStatus: job.status === 'processing'
-          ? `Transcribing segment ${job.chunksDone + 1}/${job.chunksTotal}...`
+          ? job.controlStatus === 'paused'
+            ? 'Paused — press Resume to continue'
+            : `Transcribing segment ${job.chunksDone + 1}/${job.chunksTotal}...`
           : job.status === 'chunking'
             ? 'Splitting audio into chunks with FFmpeg...'
             : job.status === 'completed'
@@ -155,6 +191,7 @@ export function ProcessingView() {
       if (job.status === 'completed' && job.result) {
         const result: TranscriptionResult = typeof job.result === 'string' ? JSON.parse(job.result) : job.result;
 
+        setPaused(false);
         setProcessingState({
           isProcessing: false,
           processingProgress: 100,
@@ -166,9 +203,19 @@ export function ProcessingView() {
       }
 
       if (job.status === 'failed') {
+        setPaused(false);
         setProcessingState({
           isProcessing: false,
           processingStatus: `Failed: ${job.errorMessage || 'Transcription failed'}`,
+        });
+      }
+
+      if (job.status === 'cancelled') {
+        setPaused(false);
+        setProcessingState({
+          isProcessing: false,
+          processingProgress: job.progress ?? 0,
+          processingStatus: 'Cancelled by user',
         });
       }
     } catch (err) {
@@ -215,6 +262,10 @@ export function ProcessingView() {
               <div className="flex items-center justify-center w-24 h-24 rounded-full bg-emerald-50 dark:bg-emerald-950/30">
                 <CheckCircle2 className="w-10 h-10 text-emerald-600" />
               </div>
+            ) : isCancelled ? (
+              <div className="flex items-center justify-center w-24 h-24 rounded-full bg-amber-50 dark:bg-amber-950/30">
+                <Ban className="w-10 h-10 text-amber-600" />
+              </div>
             ) : isFailed ? (
               <div className="flex items-center justify-center w-24 h-24 rounded-full bg-destructive/10">
                 <XCircle className="w-10 h-10 text-destructive" />
@@ -229,9 +280,9 @@ export function ProcessingView() {
           {/* Status Text */}
           <div className="text-center space-y-2">
             <h2 className="text-lg font-semibold">
-              {isProcessing ? 'Transcribing Audio' : processingProgress === 100 ? 'Complete!' : isFailed ? 'Transcription Failed' : 'Processing'}
+              {isProcessing ? 'Transcribing Audio' : processingProgress === 100 ? 'Complete!' : isCancelled ? 'Transcription Cancelled' : isFailed ? 'Transcription Failed' : 'Processing'}
             </h2>
-            {!isFailed && (
+            {!isFailed && !isCancelled && (
               <p className="text-sm text-muted-foreground">
                 {processingStatus}
               </p>
@@ -275,6 +326,37 @@ export function ProcessingView() {
               </span>
             </div>
           </div>
+
+          {/* Pause / Resume / Cancel controls */}
+          {isProcessing && (
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                variant={paused ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => sendControl(paused ? 'resume' : 'pause')}
+                disabled={cancelling}
+                className={`gap-1.5 min-w-[110px] ${paused ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+              >
+                {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                {paused ? 'Resume' : 'Pause'}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => sendControl('cancel')}
+                disabled={cancelling}
+                className="gap-1.5 min-w-[110px]"
+              >
+                {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                {cancelling ? 'Cancelling...' : 'Cancel'}
+              </Button>
+            </div>
+          )}
+          {paused && isProcessing && (
+            <p className="text-xs text-muted-foreground text-center">
+              Paused — the current chunk finishes, then transcription holds until you press Resume.
+            </p>
+          )}
 
           {/* File & Model Info */}
           <div className="grid grid-cols-2 gap-3">
@@ -329,7 +411,7 @@ export function ProcessingView() {
                       ))}
                       {chunkRes.segments.length > 3 && (
                         <p className="text-[10px] text-muted-foreground italic">
-                          + {chunkRes.segments.length - 3} more segments in this 10-min chunk...
+                          + {chunkRes.segments.length - 3} more segments in this {chunkDuration}s chunk...
                         </p>
                       )}
                     </div>
@@ -376,6 +458,33 @@ export function ProcessingView() {
               </motion.div>
             )}
           </AnimatePresence>
+          {/* Cancelled Actions */}
+          {isCancelled && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-medium">Transcription Cancelled</p>
+                  <p className="text-xs mt-1 opacity-80">The job was cancelled. {chunksDone > 0 ? `${chunksDone} of ${chunksTotal} chunk(s) had been transcribed.` : 'No chunks were transcribed.'} No result was saved.</p>
+                </div>
+              </div>
+              <div className="flex justify-center gap-3">
+                <Button variant="outline" onClick={goBackToUpload}>
+                  Go Back
+                </Button>
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => {
+                    hasStarted.current = false;
+                    startTranscription();
+                  }}
+                >
+                  Start New Transcription
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Error Actions */}
           {isFailed && (
             <div className="space-y-3">

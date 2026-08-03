@@ -12,7 +12,8 @@ model TranscriptionJob {
   fileName    String
   fileSize    Int
   duration    Float?
-  status      String   @default("pending") // pending, uploading, chunking, processing, completed, failed
+  status      String   @default("pending") // pending, uploading, chunking, processing, completed, failed, cancelled
+  controlStatus String @default("running") // running, paused, cancel_requested, cancelled
   progress    Int      @default(0) // 0-100
   model       String   @default("gemini-2.5-flash")
   language    String   @default("bn")

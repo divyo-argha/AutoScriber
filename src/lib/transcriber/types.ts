@@ -40,7 +40,8 @@ export interface TranscriptionJob {
   fileName: string;
   fileSize: number;
   duration: number | null;
-  status: 'pending' | 'uploading' | 'chunking' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'uploading' | 'chunking' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  controlStatus: string; // running, paused, cancel_requested, cancelled
   progress: number;
   model: string;
   language: string;

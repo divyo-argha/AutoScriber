@@ -23,13 +23,20 @@ function startServer() {
     const { PrismaClient } = require(path.join(serverDir, 'node_modules', '@prisma', 'client'));
     const prisma = new PrismaClient();
     Promise.all([
-      prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "TranscriptionJob" ("id" TEXT NOT NULL PRIMARY KEY, "fileName" TEXT NOT NULL, "fileSize" INTEGER NOT NULL, "duration" REAL, "status" TEXT NOT NULL DEFAULT 'pending', "progress" INTEGER NOT NULL DEFAULT 0, "model" TEXT NOT NULL DEFAULT 'gemini-2.5-flash', "language" TEXT NOT NULL DEFAULT 'bn', "chunksTotal" INTEGER NOT NULL DEFAULT 0, "chunksDone" INTEGER NOT NULL DEFAULT 0, "errorMessage" TEXT, "result" TEXT, "audioPath" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`),
+      prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "TranscriptionJob" ("id" TEXT NOT NULL PRIMARY KEY, "fileName" TEXT NOT NULL, "fileSize" INTEGER NOT NULL, "duration" REAL, "status" TEXT NOT NULL DEFAULT 'pending', "controlStatus" TEXT NOT NULL DEFAULT 'running', "progress" INTEGER NOT NULL DEFAULT 0, "model" TEXT NOT NULL DEFAULT 'gemini-2.5-flash', "language" TEXT NOT NULL DEFAULT 'bn', "chunksTotal" INTEGER NOT NULL DEFAULT 0, "chunksDone" INTEGER NOT NULL DEFAULT 0, "errorMessage" TEXT, "result" TEXT, "audioPath" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`),
       prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "AppSettings" ("id" TEXT NOT NULL PRIMARY KEY DEFAULT 'default', "geminiApiKey" TEXT NOT NULL DEFAULT '', "geminiApiBaseUrl" TEXT NOT NULL DEFAULT '', "sonioxApiKey" TEXT NOT NULL DEFAULT '', "defaultModel" TEXT NOT NULL DEFAULT 'gemini-2.5-flash', "chunkDuration" INTEGER NOT NULL DEFAULT 300, "overlapDuration" INTEGER NOT NULL DEFAULT 10)`),
     ]).then(async () => {
       // Ensure the sonioxApiKey column exists in case AppSettings was created in an older version
       try {
         await prisma.$executeRawUnsafe(`ALTER TABLE "AppSettings" ADD COLUMN "sonioxApiKey" TEXT NOT NULL DEFAULT ''`);
         console.log('Database migrated successfully (added sonioxApiKey).');
+      } catch (e) {
+        // Ignored if column already exists
+      }
+      // Ensure the controlStatus column exists for pause/resume/cancel support
+      try {
+        await prisma.$executeRawUnsafe(`ALTER TABLE "TranscriptionJob" ADD COLUMN "controlStatus" TEXT NOT NULL DEFAULT 'running'`);
+        console.log('Database migrated successfully (added controlStatus).');
       } catch (e) {
         // Ignored if column already exists
       }
