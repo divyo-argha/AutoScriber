@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { db } from '@/lib/db';
 import type { ThematicAnalysisResult, Code, Theme, Quote } from './types';
 
 const THEMATIC_ANALYSIS_PROMPT = `You are a qualitative research assistant specializing in HCI thematic analysis following Braun & Clarke methodology.
@@ -50,9 +51,11 @@ export async function analyzeThemes(
   transcripts: Array<{ content: string; fileName: string }>,
   researchQuestion?: string
 ): Promise<ThematicAnalysisResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  // Prefer the API key saved in Settings; fall back to the environment variable.
+  const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
+  const apiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured');
+    throw new Error('Gemini API key not configured. Set it in Settings and try again.');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);

@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatTime, formatTimeSRT } from '@/lib/format-utils';
-import type { TranscriptionSegment } from '@/lib/transcriber/types';
+import type { TranscriptionSegment, TranscriptionResult } from '@/lib/transcriber/types';
+import type { BatchJob } from '@/lib/store';
 
 function buildTxt(segments: TranscriptionSegment[]): string {
   return segments.map(s => `[${formatTime(s.startTime)}] ${s.speaker}: ${s.text}`).join('\n');
@@ -44,13 +45,56 @@ function downloadBlob(content: string, filename: string) {
 }
 
 export function BatchView() {
-  const { batchJobs, updateBatchJob, setCurrentView, clearBatch, selectedModel, chunkDuration } = useAppStore();
+  const { batchJobs, setCurrentView, clearBatch, chunkDuration } = useAppStore();
   const processingRef = useRef(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
+  }, []);
+
+  // Transcribe one file via the async job API, polling until it finishes.
+  const transcribeOne = useCallback(async (job: BatchJob): Promise<{ result: TranscriptionResult; jobId: string }> => {
+    const formData = new FormData();
+    formData.append('file', job.file);
+    formData.append('model', useAppStore.getState().selectedModel);
+    formData.append('chunkDuration', String(useAppStore.getState().chunkDuration));
+    formData.append('overlapDuration', String(useAppStore.getState().overlapDuration));
+
+    const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok || !data.jobId) {
+      throw new Error(data.error || `Server error (${res.status})`);
+    }
+
+    // The job processes in the background; poll it like the single-file flow.
+    for (let attempt = 0; attempt < 900; attempt++) {
+      if (!mountedRef.current) throw new Error('Canceled');
+      await new Promise(r => setTimeout(r, 2000));
+
+      const pollRes = await fetch(`/api/jobs?id=${encodeURIComponent(data.jobId)}`);
+      if (!pollRes.ok) throw new Error('Failed to check job status');
+      const jobData = await pollRes.json();
+
+      if (jobData.status === 'completed') {
+        const result: TranscriptionResult = typeof jobData.result === 'string' ? JSON.parse(jobData.result) : jobData.result;
+        if (result?.segments?.length > 0) {
+          return { result, jobId: data.jobId };
+        }
+        throw new Error('Transcription finished but produced no segments');
+      }
+      if (jobData.status === 'failed') {
+        throw new Error(jobData.errorMessage || 'Transcription failed');
+      }
+
+      // Live progress feedback while polling
+      useAppStore.getState().updateBatchJob(job.id, {
+        progress: Math.max(jobData.progress ?? 15, 15),
+      });
+    }
+
+    throw new Error('Transcription timed out after 30 minutes');
   }, []);
 
   // Process jobs sequentially
@@ -64,50 +108,33 @@ export function BatchView() {
       if (!mountedRef.current) break;
       if (job.status !== 'queued') continue;
 
-      updateBatchJob(job.id, { status: 'processing', progress: 5 });
+      useAppStore.getState().updateBatchJob(job.id, { status: 'processing', progress: 5 });
 
       try {
-        const formData = new FormData();
-        formData.append('file', job.file);
-        formData.append('model', selectedModel);
-        formData.append('chunkDuration', String(useAppStore.getState().chunkDuration));
-        formData.append('overlapDuration', String(useAppStore.getState().overlapDuration));
-
-        updateBatchJob(job.id, { progress: 15 });
-
-        const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
-        const data = await res.json();
-
+        const { result, jobId } = await transcribeOne(job);
         if (!mountedRef.current) break;
-
-        if (res.ok && data.status === 'completed' && data.result?.segments?.length > 0) {
-          updateBatchJob(job.id, {
-            status: 'done',
-            progress: 100,
-            segments: data.result.segments,
-            fullText: data.result.fullText,
-            jobId: data.jobId,
-            skippedChunks: data.result.skippedChunks || [],
-          });
-        } else {
-          updateBatchJob(job.id, {
-            status: 'failed',
-            progress: 0,
-            error: data.error || 'Transcription failed',
-          });
-        }
+        useAppStore.getState().updateBatchJob(job.id, {
+          status: 'done',
+          progress: 100,
+          segments: result.segments,
+          fullText: result.fullText,
+          jobId,
+          skippedChunks: result.skippedChunks || [],
+        });
       } catch (err) {
         if (!mountedRef.current) break;
-        updateBatchJob(job.id, {
+        const msg = err instanceof Error ? err.message : 'Network error';
+        if (msg === 'Canceled') break;
+        useAppStore.getState().updateBatchJob(job.id, {
           status: 'failed',
           progress: 0,
-          error: err instanceof Error ? err.message : 'Network error',
+          error: msg,
         });
       }
     }
 
     processingRef.current = false;
-  }, [selectedModel, updateBatchJob]);
+  }, [transcribeOne]);
 
   useEffect(() => {
     if (batchJobs.some(j => j.status === 'queued')) {
