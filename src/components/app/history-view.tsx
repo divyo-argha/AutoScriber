@@ -104,7 +104,7 @@ export function HistoryView() {
             // Clear uploadedFile since we're loading from history (audio comes from /api/audio)
             setUploadedFile(null);
             // Set the transcription result with the job ID so AudioPlayer can load audio from /api/audio
-            setTranscriptionResult(result.segments, result.fullText, job.id);
+            setTranscriptionResult(result.segments, result.fullText, job.id, result.skippedChunks);
             setCurrentView('result');
             return;
           }
@@ -331,7 +331,7 @@ export function HistoryView() {
                                           ? `${Math.floor(seg.startTime / 60)}:${Math.floor(seg.startTime % 60).toString().padStart(2, '0')}`
                                           : '0:00'}
                                       </span>
-                                      <span className="font-medium shrink-0">{seg.speaker}:</span>
+                                      <span className="font-medium shrink-0">{String(seg.speaker)}:</span>
                                       <span className="text-muted-foreground truncate">{seg.text as string}</span>
                                     </div>
                                   ))}

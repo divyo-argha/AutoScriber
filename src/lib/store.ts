@@ -25,6 +25,7 @@ export interface BatchJob {
   fullText: string;
   jobId: string | null; // server job id
   error: string | null;
+  skippedChunks: number[];
 }
 
 type ProcessingState = {
@@ -84,7 +85,8 @@ interface AppState {
   transcriptionSegments: TranscriptionSegment[];
   transcriptionText: string;
   jobId: string | null;
-  setTranscriptionResult: (segments: TranscriptionSegment[], text: string, jobId?: string) => void;
+  transcriptionSkippedChunks: number[];
+  setTranscriptionResult: (segments: TranscriptionSegment[], text: string, jobId?: string, skippedChunks?: number[]) => void;
 
   // Audio playback state
   audioUrl: string | null;
@@ -133,6 +135,7 @@ const initialState = {
   transcriptionSegments: [] as TranscriptionSegment[],
   transcriptionText: '',
   jobId: null as string | null,
+  transcriptionSkippedChunks: [] as number[],
   audioUrl: null as string | null,
   isPlaying: false,
   currentTime: 0,
@@ -165,9 +168,10 @@ export const useAppStore = create<AppState>((set) => ({
 
   setProcessingState: (state) => set((prev) => ({ ...prev, ...state })),
 
-  setTranscriptionResult: (segments, text, jobId) => set({
+  setTranscriptionResult: (segments, text, jobId, skippedChunks) => set({
     transcriptionSegments: segments,
     transcriptionText: text,
+    transcriptionSkippedChunks: skippedChunks || [],
     ...(jobId ? { jobId } : {}),
   }),
 

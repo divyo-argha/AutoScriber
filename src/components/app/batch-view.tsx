@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
   FileAudio, CheckCircle2, XCircle, Loader2, Download,
-  RotateCcw, Archive, Clock, User,
+  RotateCcw, Archive, Clock, User, AlertTriangle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatTime, formatTimeSRT } from '@/lib/format-utils';
@@ -44,7 +44,7 @@ function downloadBlob(content: string, filename: string) {
 }
 
 export function BatchView() {
-  const { batchJobs, updateBatchJob, setCurrentView, clearBatch, selectedModel } = useAppStore();
+  const { batchJobs, updateBatchJob, setCurrentView, clearBatch, selectedModel, chunkDuration } = useAppStore();
   const processingRef = useRef(false);
   const mountedRef = useRef(true);
 
@@ -87,6 +87,7 @@ export function BatchView() {
             segments: data.result.segments,
             fullText: data.result.fullText,
             jobId: data.jobId,
+            skippedChunks: data.result.skippedChunks || [],
           });
         } else {
           updateBatchJob(job.id, {
@@ -244,6 +245,16 @@ export function BatchView() {
 
                         {job.status === 'failed' && (
                           <p className="text-xs text-destructive mt-1 truncate">{job.error}</p>
+                        )}
+
+                        {job.status === 'done' && job.skippedChunks.length > 0 && (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 shrink-0" />
+                            {job.skippedChunks.length} chunk{job.skippedChunks.length !== 1 ? 's' : ''} failed (likely quota) — audio at {job.skippedChunks
+                              .sort((a, b) => a - b)
+                              .map(i => `[${formatTime(i * chunkDuration)} – ${formatTime((i + 1) * chunkDuration)}]`)
+                              .join(', ')} may be missing
+                          </p>
                         )}
 
                         {/* Preview snippet */}

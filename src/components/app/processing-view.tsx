@@ -161,7 +161,7 @@ export function ProcessingView() {
           processingStatus: 'Transcription complete!',
         });
 
-        setTranscriptionResult(result.segments, result.fullText, job.id);
+        setTranscriptionResult(result.segments, result.fullText, job.id, result.skippedChunks);
         setCurrentView('result');
       }
 

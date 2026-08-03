@@ -111,7 +111,8 @@ import {
   Loader2,
   Headphones,
   List,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionSegment } from '@/lib/transcriber/types';
@@ -134,7 +135,7 @@ const stagger = {
 };
 
 export function TranscriptionViewer() {
-  const { transcriptionSegments, transcriptionText, reset, setCurrentView, jobId, currentTime, activeSegmentIndex } = useAppStore();
+  const { transcriptionSegments, transcriptionText, reset, setCurrentView, jobId, currentTime, activeSegmentIndex, transcriptionSkippedChunks, chunkDuration, audioDuration } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('player');
@@ -177,6 +178,15 @@ export function TranscriptionViewer() {
     const speakers = new Set(transcriptionSegments.map(s => s.speaker));
     return Array.from(speakers);
   }, [transcriptionSegments]);
+
+  // Time ranges covered by skipped (failed) chunks, so the user knows exactly
+  // which parts of the recording may be missing from the transcript.
+  const skippedRanges = useMemo(() => {
+    const dur = Math.max(chunkDuration || 300, 1);
+    return transcriptionSkippedChunks
+      .sort((a, b) => a - b)
+      .map(i => [i * dur, Math.min((i + 1) * dur, audioDuration > 0 ? audioDuration : (i + 1) * dur)] as [number, number]);
+  }, [transcriptionSkippedChunks, chunkDuration, audioDuration]);
 
   const copyToClipboard = async () => {
     try {
@@ -379,6 +389,32 @@ export function TranscriptionViewer() {
           </Button>
         </div>
       </motion.div>
+
+      {/* Missing-content warning (failed chunks after all retries) */}
+      <AnimatePresence>
+        {transcriptionSkippedChunks.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="flex items-start gap-3 p-4 rounded-2xl border border-amber-500/30 bg-amber-50/70 dark:bg-amber-950/25 shadow-sm"
+          >
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="min-w-0 space-y-1">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                {transcriptionSkippedChunks.length} chunk{transcriptionSkippedChunks.length !== 1 ? 's' : ''} could not be transcribed
+              </p>
+              <p className="text-xs text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
+                The following time range{skippedRanges.length !== 1 ? 's' : ''} {skippedRanges.length !== 1 ? 'are' : 'is'} likely missing from this transcript
+                {skippedRanges.length > 0 && (
+                  <span className="font-mono font-medium">: {skippedRanges.map(([start, end]) => `[${formatTime(start)} – ${formatTime(end)}]`).join(', ')}</span>
+                )}
+                . This usually happens when the free-tier API quota is exhausted mid-run. Try again later, use a different model, or split the file into smaller parts.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Speaker Legend */}
       <AnimatePresence>

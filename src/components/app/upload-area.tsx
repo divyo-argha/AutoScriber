@@ -253,6 +253,7 @@ export function UploadArea() {
         fullText: '',
         jobId: null,
         error: null,
+        skippedChunks: [],
       }));
       setBatchJobs(jobs);
       setCurrentView('batch');
