@@ -180,7 +180,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
         showError(`Failed to start recording: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     }
-  }, [startAudioMonitoring]);
+  }, [startAudioMonitoring, showError]);
   
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && status === 'recording') {
@@ -247,7 +247,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
       // Some browsers throw if already stopped
     }
     recorder.stop();
-  }, [onRecordingComplete, stopTimer, stopAnimationLoop, stopStream, closeAudioContext]);
+  }, [onRecordingComplete, stopTimer, stopAnimationLoop, stopStream, closeAudioContext, showError]);
   
   // Cleanup on unmount
   useEffect(() => {
