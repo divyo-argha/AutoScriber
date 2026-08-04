@@ -178,7 +178,9 @@ export function ProcessingView() {
         processingStatus: job.status === 'processing'
           ? job.controlStatus === 'paused'
             ? 'Paused — press Resume to continue'
-            : `Transcribing segment ${job.chunksDone + 1}/${job.chunksTotal}...`
+            : job.chunksDone >= job.chunksTotal && job.chunksTotal > 0
+              ? 'Deduplicating overlaps & finalizing merged transcript...'
+              : `Transcribing segment ${Math.min(job.chunksDone + 1, job.chunksTotal)}/${job.chunksTotal}...`
           : job.status === 'chunking'
             ? 'Splitting audio into chunks with FFmpeg...'
             : job.status === 'completed'
@@ -295,35 +297,22 @@ export function ProcessingView() {
             )}
           </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-medium text-foreground">
-                <span>Overall Progress</span>
-                <span>{processingProgress}%</span>
-              </div>
-              <Progress value={processingProgress} className="h-2.5" />
-            </div>
-
-            {isProcessing && chunksTotal > 0 && (
-              <div className="space-y-2 p-3 rounded-lg bg-muted/40 border border-muted-foreground/10">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground font-medium">
-                    Chunks Completed
-                  </span>
-                  <span className="text-muted-foreground">
-                    {chunksDone} / {chunksTotal} ({Math.round((chunksDone / chunksTotal) * 100)}%)
-                  </span>
-                </div>
-                <Progress value={(chunksDone / chunksTotal) * 100} className="h-1.5 bg-secondary" />
-              </div>
-            )}
-
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Status: {processingStatus}</span>
+          {/* Single Unified Progress Bar */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-xs font-medium text-foreground">
+              <span>Progress</span>
               <span>
-                {chunksTotal > 0 ? `Chunks: ${chunksDone}/${chunksTotal}` : 'Preparing...'}
+                {processingProgress}%
+                {chunksTotal > 0 && (
+                  <span className="text-muted-foreground ml-1.5 font-normal">
+                    ({Math.min(chunksDone, chunksTotal)}/{chunksTotal} Chunks)
+                  </span>
+                )}
               </span>
+            </div>
+            <Progress value={processingProgress} className="h-2.5" />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span className="truncate pr-2">Status: {processingStatus}</span>
             </div>
           </div>
 

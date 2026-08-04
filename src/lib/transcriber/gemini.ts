@@ -157,11 +157,12 @@ function isTransientError(err: any): boolean {
 async function generateContentWithRetry(
   model: any,
   contents: any[],
-  maxRetries: number = 5,
+  modelId: string = 'gemini-2.5-flash',
+  maxRetries: number = 2,
   initialDelayMs: number = 2000
 ): Promise<any> {
-  // Free-tier Gemini quotas are per-minute (e.g. 10 RPM), so pace requests.
-  await enforceRateLimitPacing();
+  // Model-aware pacing (e.g. 3s for Flash models, 30s for Pro models)
+  await enforceRateLimitPacing(modelId);
   let attempt = 0;
   while (true) {
     try {
@@ -172,8 +173,7 @@ async function generateContentWithRetry(
       const isTransient = isTransientError(err);
 
       // A "limit: 0" quota means this model is permanently unavailable for
-      // this API key (e.g. retired model or new key without access). Retrying
-      // is pointless — throw so the caller can switch to a fallback model.
+      // this API key. Retrying is pointless — throw so caller uses fallback.
       const isHardQuota = errMsg.includes('limit: 0') || errMsg.includes('per_day') || errMsg.includes('per-day');
 
       if (isTransient && !isHardQuota && attempt <= maxRetries) {
@@ -191,7 +191,14 @@ async function generateContentWithRetry(
           if (!isNaN(retryAfter) && retryAfter > 0) {
             delayMs = (retryAfter + 1) * 1000;
           }
+        } else if (isQuotaError(err) || errMsg.includes('429')) {
+          // Mandatory minimum wait for 429 rate limit errors + random jitter
+          delayMs = Math.max(delayMs, 4000);
         }
+        
+        // Add random jitter (0-800ms) to prevent burst concurrency
+        const jitter = Math.floor(Math.random() * 800);
+        delayMs += jitter;
         
         console.warn(`[gemini] Transient/Network error hit (${errMsg.substring(0, 80)}). Retrying attempt ${attempt}/${maxRetries} after ${Math.round(delayMs / 1000)}s...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -211,14 +218,17 @@ const GEMINI_FALLBACK_MODELS = [
 let lastRequestTimestamp = 0;
 
 /**
- * Ensures requests adhere to Free Tier Rate Limits (e.g. 10 RPM -> ~6s delay between requests).
+ * Ensures requests adhere strictly to Free Tier Rate Limits (Flash: ~3s pacing, Pro: ~30s pacing).
  */
-async function enforceRateLimitPacing(minDelayMs: number = 6000): Promise<void> {
+async function enforceRateLimitPacing(modelId: string = 'gemini-2.5-flash'): Promise<void> {
+  const isProModel = modelId.toLowerCase().includes('pro');
+  const minDelayMs = isProModel ? 30000 : 3000;
+
   const now = Date.now();
   const elapsed = now - lastRequestTimestamp;
   if (lastRequestTimestamp > 0 && elapsed < minDelayMs) {
     const waitTime = minDelayMs - elapsed;
-    console.log(`[gemini] Free Tier rate limit pacing: waiting ${Math.round(waitTime / 1000)}s before next request...`);
+    console.log(`[gemini] Rate limit pacing (${modelId}): waiting ${Math.round(waitTime / 1000)}s before next request...`);
     await new Promise(resolve => setTimeout(resolve, waitTime));
   }
   lastRequestTimestamp = Date.now();
@@ -321,7 +331,7 @@ async function transcribeWithGeminiInternal(
         },
       };
 
-      result = await generateContentWithRetry(model, [prompt, filePart]);
+      result = await generateContentWithRetry(model, [prompt, filePart], modelId);
     } else {
       console.log(`[gemini] File size ${fileStats.size} bytes is < 5MB. Transcribing inline...`);
       const audioData = fs.readFileSync(filePath);
@@ -332,7 +342,7 @@ async function transcribeWithGeminiInternal(
         },
       };
 
-      result = await generateContentWithRetry(model, [prompt, audioPart]);
+      result = await generateContentWithRetry(model, [prompt, audioPart], modelId);
     }
 
     const response = result.response;
@@ -475,7 +485,7 @@ async function transcribeChunkWithGeminiInternal(
         },
       };
 
-      result = await generateContentWithRetry(model, [GEMINI_CHUNK_PROMPT, filePart]);
+      result = await generateContentWithRetry(model, [GEMINI_CHUNK_PROMPT, filePart], modelId);
     } else {
       console.log(`[gemini] Chunk ${chunkIndex} size ${fileStats.size} bytes is < 5MB. Transcribing inline...`);
       const audioData = fs.readFileSync(filePath);
@@ -486,7 +496,7 @@ async function transcribeChunkWithGeminiInternal(
         },
       };
 
-      result = await generateContentWithRetry(model, [GEMINI_CHUNK_PROMPT, audioPart]);
+      result = await generateContentWithRetry(model, [GEMINI_CHUNK_PROMPT, audioPart], modelId);
     }
 
     const response = result.response;

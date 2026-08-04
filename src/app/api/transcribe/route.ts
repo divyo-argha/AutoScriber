@@ -264,7 +264,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
 
       let result: ChunkResult | null = null;
       let chunkAttempts = 0;
-      const maxChunkAttempts = 3;
+      const maxChunkAttempts = 2;
 
       while (chunkAttempts < maxChunkAttempts && !result) {
         // Cancel takes priority over retrying a failing chunk
@@ -280,7 +280,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
           console.warn(`[transcribe] Chunk ${chunk.index} attempt ${chunkAttempts}/${maxChunkAttempts} failed: ${errMsg}`);
           if (chunkAttempts < maxChunkAttempts) {
-            const waited = await sleepWithControl(jobId, 3000);
+            const waited = await sleepWithControl(jobId, 2000);
             if (waited === 'cancelled') {
               console.log(`[transcribe] Job ${jobId} cancelled while waiting between chunk attempts.`);
               await cancelJob(jobId, audioPath);
@@ -308,18 +308,16 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
         where: { id: jobId },
         data: {
           chunksDone,
-          progress: Math.round((chunksDone / chunks.length) * 100),
+          progress: Math.min(98, Math.round((chunksDone / chunks.length) * 100)),
           chunkResults: JSON.stringify(completedChunkResults.map(c => c.result)),
         },
       });
     }
 
-    // Second-chance pass: a chunk may have failed because a per-minute quota
-    // was momentarily exhausted. Wait once, then retry the failed chunks.
-    // The wait is interruptible by pause/cancel.
+    // Second-chance pass: if any chunk failed, wait briefly (5s) then retry once.
     if (failedChunks.length > 0) {
-      console.warn(`[transcribe] ${failedChunks.length} chunk(s) failed. Waiting 20s, then retrying them...`);
-      const waited = await sleepWithControl(jobId, 20000);
+      console.warn(`[transcribe] ${failedChunks.length} chunk(s) failed. Waiting 5s, then retrying them...`);
+      const waited = await sleepWithControl(jobId, 5000);
       if (waited === 'cancelled') {
         console.log(`[transcribe] Job ${jobId} cancelled during retry wait.`);
         await cancelJob(jobId, audioPath);

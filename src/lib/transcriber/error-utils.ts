@@ -10,7 +10,7 @@ export function isQuotaError(err: unknown): boolean {
     errMsg.includes('Too Many Requests') ||
     errMsg.includes('quota') ||
     errMsg.includes('Quota exceeded') ||
-    errMsg.includes('fetch failed')
+    errMsg.includes('resource_exhausted')
   );
 }
 
