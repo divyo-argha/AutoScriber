@@ -5,6 +5,7 @@ import { useAppStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock, AlertTriangle, Globe, Settings, Wifi, Pause, Play, Ban } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionResult } from '@/lib/transcriber/types';
@@ -34,6 +35,8 @@ export function ProcessingView() {
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const [paused, setPaused] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [confirmPauseOpen, setConfirmPauseOpen] = useState(false);
 
   const estimatedTime = useMemo(() => {
     if (!isProcessing || processingProgress <= 0 || processingProgress >= 100) return '';
@@ -63,26 +66,42 @@ export function ProcessingView() {
   // Pause, resume, or cancel the running job via the control API
   const sendControl = useCallback(async (action: 'pause' | 'resume' | 'cancel') => {
     if (!jobId) return;
-    if (action === 'cancel' && !confirm('Cancel this transcription? All progress for this job will be lost.')) {
-      return;
+    if (action === 'cancel') {
+      setCancelling(true);
+      try {
+        localStorage.removeItem('autoscribe_active_job_id');
+      } catch {}
     }
-    if (action === 'cancel') setCancelling(true);
     try {
       const res = await fetch('/api/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: jobId, action }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        console.error('Control request failed:', data.error);
+      if (res.ok) {
+        if (action === 'cancel') {
+          setProcessingState({
+            isProcessing: false,
+            processingStatus: 'Cancelled by user',
+          });
+        } else if (action === 'pause') {
+          setPaused(true);
+          setProcessingState({
+            processingStatus: 'Paused — press Resume to continue',
+          });
+        } else if (action === 'resume') {
+          setPaused(false);
+          setProcessingState({
+            processingStatus: 'Resuming transcription...',
+          });
+        }
       }
     } catch (err) {
       console.error('Control request failed:', err);
     } finally {
       if (action === 'cancel') setCancelling(false);
     }
-  }, [jobId]);
+  }, [jobId, setProcessingState]);
 
   const goBackToUpload = useCallback(() => {
     hasStarted.current = false;
@@ -140,6 +159,10 @@ export function ProcessingView() {
         return;
       }
 
+      try {
+        localStorage.setItem('autoscribe_active_job_id', data.jobId);
+      } catch {}
+
       setProcessingState({
         processingStatus: 'Waiting for the model to start...',
         jobId: data.jobId,
@@ -191,6 +214,7 @@ export function ProcessingView() {
       });
 
       if (job.status === 'completed' && job.result) {
+        try { localStorage.removeItem('autoscribe_active_job_id'); } catch {}
         const result: TranscriptionResult = typeof job.result === 'string' ? JSON.parse(job.result) : job.result;
 
         setPaused(false);
@@ -205,6 +229,7 @@ export function ProcessingView() {
       }
 
       if (job.status === 'failed') {
+        try { localStorage.removeItem('autoscribe_active_job_id'); } catch {}
         setPaused(false);
         setProcessingState({
           isProcessing: false,
@@ -213,6 +238,7 @@ export function ProcessingView() {
       }
 
       if (job.status === 'cancelled') {
+        try { localStorage.removeItem('autoscribe_active_job_id'); } catch {}
         setPaused(false);
         setProcessingState({
           isProcessing: false,
@@ -232,7 +258,7 @@ export function ProcessingView() {
   }, [uploadedFile, startTranscription]);
 
   useEffect(() => {
-    if (!isProcessing || !jobId) return;
+    if (!jobId) return;
 
     const tick = async () => {
       await pollJobStatus(jobId);
@@ -247,7 +273,7 @@ export function ProcessingView() {
         pollingRef.current = null;
       }
     };
-  }, [isProcessing, jobId, pollJobStatus]);
+  }, [jobId, pollJobStatus]);
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -322,7 +348,13 @@ export function ProcessingView() {
               <Button
                 variant={paused ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => sendControl(paused ? 'resume' : 'pause')}
+                onClick={() => {
+                  if (paused) {
+                    sendControl('resume');
+                  } else {
+                    setConfirmPauseOpen(true);
+                  }
+                }}
                 disabled={cancelling}
                 className={`gap-1.5 min-w-[110px] ${paused ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
               >
@@ -332,7 +364,7 @@ export function ProcessingView() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => sendControl('cancel')}
+                onClick={() => setConfirmCancelOpen(true)}
                 disabled={cancelling}
                 className="gap-1.5 min-w-[110px]"
               >
@@ -596,6 +628,64 @@ export function ProcessingView() {
           )}
         </div>
       </Card>
+
+      {/* Cancel Confirmation Modal */}
+      <Dialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Ban className="w-5 h-5" />
+              Cancel Transcription?
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-sm text-muted-foreground">
+              Are you sure you want to stop transcribing <strong>{uploadedFileName || 'this audio file'}</strong>? Progress for this job will be cancelled immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 flex-col-reverse sm:flex-row">
+            <Button variant="outline" onClick={() => setConfirmCancelOpen(false)}>
+              Keep Transcribing
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirmCancelOpen(false);
+                sendControl('cancel');
+              }}
+            >
+              Cancel Job
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pause Confirmation Modal */}
+      <Dialog open={confirmPauseOpen} onOpenChange={setConfirmPauseOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Pause className="w-5 h-5 text-amber-500" />
+              Pause Transcription?
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-sm text-muted-foreground">
+              Pause processing at the current segment? You can resume transcription at any time without losing completed progress.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 flex-col-reverse sm:flex-row">
+            <Button variant="outline" onClick={() => setConfirmPauseOpen(false)}>
+              Continue Transcribing
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => {
+                setConfirmPauseOpen(false);
+                sendControl('pause');
+              }}
+            >
+              Pause Processing
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

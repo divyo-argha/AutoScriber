@@ -13,7 +13,7 @@ import { Footer } from '@/components/app/footer';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
-  const { currentView, setSettings, setHistoryJobs } = useAppStore();
+  const { currentView, setCurrentView, setSettings, setHistoryJobs, setProcessingState } = useAppStore();
 
   // Load settings on mount
   useEffect(() => {
@@ -33,12 +33,12 @@ export default function Home() {
       } catch {}
     };
 
-    const loadHistory = async () => {
+    const loadHistoryAndCheckActiveJob = async () => {
       try {
         const res = await fetch('/api/jobs');
         if (res.ok) {
           const data = await res.json();
-          if (data.jobs) {
+          if (data.jobs && Array.isArray(data.jobs)) {
             setHistoryJobs(data.jobs.map((job: Record<string, unknown>) => ({
               id: job.id as string,
               fileName: job.fileName as string,
@@ -50,14 +50,32 @@ export default function Home() {
               segmentsCount: job.result ? JSON.parse(job.result as string).segments?.length || 0 : 0,
               speakersCount: job.result ? new Set(JSON.parse(job.result as string).segments?.map((s: Record<string, unknown>) => s.speaker)).size : 0,
             })));
+
+            // Restore active/in-flight transcription if user reloaded or navigated back
+            const storedJobId = typeof window !== 'undefined' ? localStorage.getItem('autoscribe_active_job_id') : null;
+            const activeJob = data.jobs.find((j: Record<string, unknown>) =>
+              j.id === storedJobId || ['pending', 'uploading', 'chunking', 'processing', 'paused'].includes(j.status as string)
+            );
+
+            if (activeJob && ['pending', 'uploading', 'chunking', 'processing', 'paused'].includes(activeJob.status as string)) {
+              setProcessingState({
+                isProcessing: true,
+                jobId: activeJob.id as string,
+                processingProgress: (activeJob.progress as number) ?? 0,
+                chunksTotal: (activeJob.chunksTotal as number) ?? 0,
+                chunksDone: (activeJob.chunksDone as number) ?? 0,
+                processingStatus: (activeJob.status as string) === 'paused' ? 'Paused — press Resume to continue' : 'Transcribing audio...',
+              });
+              setCurrentView('processing');
+            }
           }
         }
       } catch {}
     };
 
     loadSettings();
-    loadHistory();
-  }, [setSettings, setHistoryJobs]);
+    loadHistoryAndCheckActiveJob();
+  }, [setSettings, setHistoryJobs, setProcessingState, setCurrentView]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

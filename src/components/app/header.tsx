@@ -24,6 +24,8 @@ export function Header() {
     geminiApiKey,
     reset,
     isProcessing,
+    jobId,
+    processingProgress,
   } = useAppStore();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -63,7 +65,7 @@ export function Header() {
           <div className="flex items-center justify-between h-16">
             <div
               className="flex items-center gap-3 cursor-pointer"
-              onClick={() => { if (!isProcessing) { reset(); setCurrentView('upload'); } }}
+              onClick={() => { if (!isProcessing) { reset(); } setCurrentView('upload'); }}
             >
               <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
                 <Mic className="w-5 h-5" />
@@ -76,7 +78,7 @@ export function Header() {
 
             <div className="hidden sm:flex items-center gap-3">
               <span className="text-sm text-muted-foreground">Model:</span>
-              <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isProcessing}>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
                 <SelectTrigger className="w-[220px]">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="truncate">{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
@@ -96,6 +98,17 @@ export function Header() {
             </div>
 
             <div className="flex items-center gap-2">
+              {isProcessing && currentView !== 'processing' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentView('processing')}
+                  className="gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 animate-pulse font-medium"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  Processing ({processingProgress}%)
+                </Button>
+              )}
               {currentView !== 'upload' && currentView !== 'history' && currentView !== 'thematic' && !isProcessing && (
                 <Button variant="outline" size="sm" onClick={() => { reset(); setCurrentView('upload'); }} className="gap-1.5">
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -106,7 +119,6 @@ export function Header() {
                 variant={currentView === 'thematic' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentView(currentView === 'thematic' ? 'upload' : 'thematic')}
-                disabled={isProcessing}
                 className="gap-1.5"
               >
                 <Brain className="w-4 h-4" />
@@ -116,13 +128,12 @@ export function Header() {
                 variant={currentView === 'history' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentView(currentView === 'history' ? 'upload' : 'history')}
-                disabled={isProcessing}
                 className="gap-1.5"
               >
                 <History className="w-4 h-4" />
                 <span className="hidden sm:inline">History</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} disabled={isProcessing}>
+              <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
                 <Settings className="w-4.5 h-4.5" />
               </Button>
             </div>

@@ -53,14 +53,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Cannot ${action} a job that is already "${job.status}"` }, { status: 400 });
     }
 
-    const controlStatus =
-      action === 'pause' ? 'paused' :
-      action === 'resume' ? 'running' :
-      'cancel_requested';
+    const updateData =
+      action === 'cancel'
+        ? { status: 'cancelled', controlStatus: 'cancelled' }
+        : action === 'pause'
+        ? { controlStatus: 'paused' }
+        : { controlStatus: 'running' };
 
     const updated = await db.transcriptionJob.update({
       where: { id },
-      data: { controlStatus },
+      data: updateData,
     });
 
     return NextResponse.json(updated);
