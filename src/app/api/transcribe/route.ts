@@ -136,7 +136,7 @@ interface TranscriptionJobParams {
   audioPath: string | null;
 }
 
-const CONTROL_POLL_INTERVAL = 1500;
+const CONTROL_POLL_INTERVAL = 3000;
 
 async function getJobControlStatus(jobId: string): Promise<string> {
   try {

@@ -71,7 +71,7 @@ export function BatchView() {
     // The job processes in the background; poll it like the single-file flow.
     for (let attempt = 0; attempt < 900; attempt++) {
       if (!mountedRef.current) throw new Error('Canceled');
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 3000));
 
       const pollRes = await fetch(`/api/jobs?id=${encodeURIComponent(data.jobId)}`);
       if (!pollRes.ok) throw new Error('Failed to check job status');

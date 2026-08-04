@@ -239,7 +239,7 @@ export function ProcessingView() {
     };
 
     tick();
-    pollingRef.current = setInterval(tick, 1200);
+    pollingRef.current = setInterval(tick, 2500);
 
     return () => {
       if (pollingRef.current) {
