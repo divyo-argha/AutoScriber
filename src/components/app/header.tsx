@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Settings, Mic, RotateCcw, History, Brain, AlertTriangle } from 'lucide-react';
+import { Settings, Mic, RotateCcw, History, AlertTriangle } from 'lucide-react';
 import { SettingsDialog } from './settings-dialog';
 import {
   Select,
@@ -110,21 +110,12 @@ export function Header() {
                   Processing ({processingProgress}%)
                 </Button>
               )}
-              {currentView !== 'upload' && currentView !== 'history' && currentView !== 'thematic' && !isProcessing && (
+              {currentView !== 'upload' && currentView !== 'history' && !isProcessing && (
                 <Button variant="outline" size="sm" onClick={() => { reset(); setCurrentView('upload'); }} className="gap-1.5">
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">New</span>
                 </Button>
               )}
-              <Button
-                variant={currentView === 'thematic' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrentView(currentView === 'thematic' ? 'upload' : 'thematic')}
-                className="gap-1.5"
-              >
-                <Brain className="w-4 h-4" />
-                <span className="hidden sm:inline">Analysis</span>
-              </Button>
               <Button
                 variant={currentView === 'history' ? 'secondary' : 'ghost'}
                 size="sm"

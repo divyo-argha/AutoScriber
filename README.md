@@ -7,7 +7,7 @@
 
   <p>
     <strong>AI-powered Bangla audio transcription.</strong><br />
-    Speaker diarization · Word-level sync · Thematic analysis · 6 export formats.
+    Speaker diarization · Word-level sync · 6 export formats.
   </p>
 
   <p>
@@ -42,7 +42,7 @@
 
 ## What is AutoScribe?
 
-AutoScribe is a full-stack web application that transcribes Bangla (and Bangla-English code-switched) audio using **Google Gemini** or **local Ollama** models. It handles recordings of any length by splitting them into overlapping chunks, merging the results, and presenting them in a rich interactive viewer with synchronized playback, speaker diarization, thematic analysis, and multiple export formats.
+AutoScribe is a full-stack web application that transcribes Bangla (and Bangla-English code-switched) audio using **Google Gemini** or **local Ollama** models. It handles recordings of any length by splitting them into overlapping chunks, merging the results, and presenting them in a rich interactive viewer with synchronized playback, speaker diarization, and multiple export formats.
 
 Built for **researchers, journalists, and linguists** working with Bangla-English mixed speech.
 
@@ -107,7 +107,7 @@ Audio files are retained in `data/audio/` so you can replay past transcriptions 
 <td width="50%" valign="top">
 
 ### Transcription Engine
-- Gemini 2.5 Flash, 2.0 Flash, 1.5 Pro
+- Gemini 2.5 Flash, 2.0 Flash, 2.5 Pro
 - Local Ollama model support
 - Bangla, English, code-switched audio
 - Configurable chunk size + overlap
@@ -137,15 +137,6 @@ Audio files are retained in `data/audio/` so you can replay past transcriptions 
 - Per-file real-time progress
 - Parallel or sequential processing
 - Persistent job history in SQLite
-
-</td>
-<td width="50%" valign="top">
-
-### Thematic Analysis
-- AI-powered theme extraction
-- Key quotes and topic clustering
-- Qualitative research coding support
-- Powered by Gemini on completed jobs
 
 </td>
 </tr>
@@ -262,7 +253,7 @@ GEMINI_API_BASE_URL=https://your-proxy.example.com
 ┌─────────────────────────────────────────────────────────┐
 │                    USER INTERFACE                       │
 │   Upload · Record · Processing · Viewer · History       │
-│   Batch · Thematic Analysis · Focus Mode                │
+│   Batch · Focus Mode                                    │
 └────────────────────────┬────────────────────────────────┘
                          ↕
 ┌─────────────────────────────────────────────────────────┐
@@ -277,7 +268,7 @@ GEMINI_API_BASE_URL=https://your-proxy.example.com
                          ↕
 ┌─────────────────────────────────────────────────────────┐
 │                  BUSINESS LOGIC                         │
-│   Chunker (FFmpeg) · Gemini · Ollama · Thematic Analyzer│
+│   Chunker (FFmpeg) · Gemini · Ollama                    │
 └────────────────────────┬────────────────────────────────┘
                          ↕
 ┌─────────────────────────────────────────────────────────┐
@@ -330,7 +321,7 @@ GEMINI_API_BASE_URL=https://your-proxy.example.com
 │   └──────────────────────────┬──────────────────────────────────┘    │
 │                              │                                       │
 │                              ▼                                       │
-│              Interactive Viewer  +  Export  +  Analysis              │
+│              Interactive Viewer  +  Export              │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -359,7 +350,6 @@ autoscribe/
 │   │   ├── history-view.tsx         # Past transcriptions
 │   │   ├── processing-view.tsx      # Real-time progress
 │   │   ├── settings-dialog.tsx      # API key & model config
-│   │   ├── thematic-analysis-view.tsx  # AI theme extraction
 │   │   ├── transcription-viewer.tsx # Main transcript display
 │   │   └── upload-area.tsx          # File upload + drag-drop
 │   └── lib/
@@ -371,8 +361,6 @@ autoscribe/
 │       │   ├── ollama.ts            # Ollama integration
 │       │   ├── chunker.ts           # FFmpeg audio splitting
 │       │   └── types.ts             # Shared types
-│       └── thematic-analysis/
-│           └── analyzer.ts          # Theme extraction logic
 ├── prisma/
 │   └── schema.prisma                # DB schema (SQLite)
 ├── public/

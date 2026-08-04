@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { TranscriptionSegment, ModelInfo } from './transcriber/types';
 import { AVAILABLE_MODELS } from './transcriber/types';
 
-export type AppView = 'upload' | 'processing' | 'result' | 'history' | 'batch' | 'thematic';
+export type AppView = 'upload' | 'processing' | 'result' | 'history' | 'batch';
 
 interface HistoryJob {
   id: string;
