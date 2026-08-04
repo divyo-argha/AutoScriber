@@ -23,10 +23,10 @@ export async function GET(request: NextRequest) {
 
     const modelsToTry = [
       modelId,
-      'gemini-2.0-flash',
       'gemini-2.5-flash',
-      'gemini-2.0-flash-lite',
       'gemini-2.5-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
     ].filter((value, index, self) => self.indexOf(value) === index);
 
     const attempts: { model: string; success: boolean; error?: string }[] = [];
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       suggestion = 'Gemini API is not available in your region. Set up a proxy URL in Settings if needed.';
     } else if (hasQuotaError) {
       errorType = 'quota_exceeded';
-      suggestion = 'API quota exceeded (limit: 0). If you created the key in GCP Cloud Console, please use Google AI Studio (aistudio.google.com) to generate a true Free Key instead.';
+      suggestion = 'Free tier quota exhausted. Either wait for the daily reset (midnight Pacific Time), or upgrade to a paid plan at aistudio.google.com. Note: keys from GCP Cloud Console do NOT get free-tier quota — use Google AI Studio to generate your key instead.';
     } else {
       errorType = 'model_not_found';
       suggestion = 'The requested models were not found or not supported on this account.';
