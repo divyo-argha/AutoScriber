@@ -50,21 +50,44 @@ export function AudioPlayer() {
   const [skipInterval, setSkipInterval] = useState(5);
   const [isBuffering, setIsBuffering] = useState(false);
   const audioUrlCreated = useRef<string | null>(null);
+  const audioSourceRef = useRef<string | null>(null);
   const loopSegmentRef = useRef<{ start: number; end: number } | null>(null);
+  const segmentsRef = useRef(transcriptionSegments);
 
-  // Create audio URL from uploaded file or from server (history)
   useEffect(() => {
-    if (audioUrl) return; // Already have a URL
+    segmentsRef.current = transcriptionSegments;
+  }, [transcriptionSegments]);
 
-    if (uploadedFile) {
-      const url = URL.createObjectURL(uploadedFile);
-      audioUrlCreated.current = url;
-      setAudioPlayback({ audioUrl: url });
-    } else if (jobId) {
-      // Load from server via API (for history playback)
-      const url = `/api/audio?jobId=${jobId}`;
+  // Create audio URL from uploaded file or from server (history).
+  // Rebuilds the URL whenever the underlying source (uploaded file or history
+  // job) actually changes; previously a stale audioUrl from a prior job made
+  // the player keep playing the wrong file.
+  useEffect(() => {
+    const sourceKey = uploadedFile
+      ? `upload:${uploadedFile.name}:${uploadedFile.size}:${uploadedFile.lastModified}`
+      : jobId
+        ? `job:${jobId}`
+        : null;
+
+    if (!sourceKey) return;
+    if (audioSourceRef.current === sourceKey) return;
+
+    if (audioUrlCreated.current) {
+      try { URL.revokeObjectURL(audioUrlCreated.current); } catch {}
       audioUrlCreated.current = null;
-      setAudioPlayback({ audioUrl: url });
+    }
+
+    let nextUrl: string | null = null;
+    if (uploadedFile) {
+      nextUrl = URL.createObjectURL(uploadedFile);
+      audioUrlCreated.current = nextUrl;
+    } else if (jobId) {
+      nextUrl = `/api/audio?jobId=${encodeURIComponent(jobId)}`;
+    }
+
+    audioSourceRef.current = sourceKey;
+    if (nextUrl && nextUrl !== audioUrl) {
+      setAudioPlayback({ audioUrl: nextUrl, currentTime: 0, isPlaying: false, audioDuration: 0, activeSegmentIndex: -1 });
     }
   }, [uploadedFile, jobId, audioUrl, setAudioPlayback]);
 
@@ -97,8 +120,9 @@ export function AudioPlayer() {
       setAudioPlayback({ currentTime: time });
 
       // Find active segment
-      if (transcriptionSegments && transcriptionSegments.length > 0) {
-        const activeIdx = transcriptionSegments.findIndex(
+      const segs = segmentsRef.current;
+      if (segs && segs.length > 0) {
+        const activeIdx = segs.findIndex(
           seg => time >= seg.startTime && time <= seg.endTime
         );
         if (activeIdx !== -1) {
@@ -108,7 +132,7 @@ export function AudioPlayer() {
           
           // Update loop segment reference if in segment loop mode
           if (loopMode === 'segment') {
-            const seg = transcriptionSegments[activeIdx];
+            const seg = segs[activeIdx];
             loopSegmentRef.current = { start: seg.startTime, end: seg.endTime };
           }
         }
@@ -193,7 +217,7 @@ export function AudioPlayer() {
       }
       audioRef.current = null;
     };
-  }, [audioUrl, transcriptionSegments, setAudioPlayback, loopMode]);
+  }, [audioUrl, setAudioPlayback, loopMode]);
 
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;

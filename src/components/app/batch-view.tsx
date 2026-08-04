@@ -94,7 +94,7 @@ export function BatchView() {
       });
     }
 
-    throw new Error('Transcription timed out after 30 minutes');
+    throw new Error('Transcription timed out after 45 minutes');
   }, []);
 
   // Process jobs sequentially

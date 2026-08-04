@@ -70,7 +70,7 @@ export async function analyzeThemes(
 
   const fullPrompt = `${THEMATIC_ANALYSIS_PROMPT}\n\n${context}TRANSCRIPTS:\n${transcriptText}`;
 
-  const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+  const modelsToTry = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite'];
   let text = '';
   let lastErr: any = null;
 

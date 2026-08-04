@@ -33,10 +33,17 @@ export function ProcessingView() {
   const hasStarted = useRef(false);
   const startTimeRef = useRef<number>(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(() => useAppStore.getState().processingStatus.startsWith('Paused'));
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmPauseOpen, setConfirmPauseOpen] = useState(false);
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
 
   const estimatedTime = useMemo(() => {
     if (!isProcessing || processingProgress <= 0 || processingProgress >= 100) return '';
@@ -80,6 +87,7 @@ export function ProcessingView() {
       });
       if (res.ok) {
         if (action === 'cancel') {
+          stopPolling();
           setProcessingState({
             isProcessing: false,
             processingStatus: 'Cancelled by user',
@@ -101,7 +109,7 @@ export function ProcessingView() {
     } finally {
       if (action === 'cancel') setCancelling(false);
     }
-  }, [jobId, setProcessingState]);
+  }, [jobId, setProcessingState, stopPolling]);
 
   const goBackToUpload = useCallback(() => {
     hasStarted.current = false;
@@ -112,6 +120,7 @@ export function ProcessingView() {
     if (!uploadedFile || hasStarted.current) return;
     hasStarted.current = true;
     startTimeRef.current = Date.now();
+    setPaused(false);
 
     setProcessingState({
       isProcessing: true,
@@ -229,6 +238,7 @@ export function ProcessingView() {
       }
 
       if (job.status === 'failed') {
+        stopPolling();
         try { localStorage.removeItem('autoscribe_active_job_id'); } catch {}
         setPaused(false);
         setProcessingState({
@@ -238,6 +248,7 @@ export function ProcessingView() {
       }
 
       if (job.status === 'cancelled') {
+        stopPolling();
         try { localStorage.removeItem('autoscribe_active_job_id'); } catch {}
         setPaused(false);
         setProcessingState({
@@ -249,7 +260,7 @@ export function ProcessingView() {
     } catch (err) {
       console.error('Job polling error:', err);
     }
-  }, [setProcessingState, setTranscriptionResult, setCurrentView]);
+  }, [setProcessingState, setTranscriptionResult, setCurrentView, stopPolling]);
 
   useEffect(() => {
     if (uploadedFile && !hasStarted.current) {

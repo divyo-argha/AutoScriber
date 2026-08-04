@@ -53,8 +53,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key is required for transcription' }, { status: 400 });
     }
 
+    // Sanitize the client-supplied filename to prevent path traversal when it
+    // is joined into local temp & persistent storage paths.
+    const safeFileName = path.basename(file.name).replace(/[^\w.\-() ]/g, '_');
+
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'autoscriber-upload-'));
-    const filePath = path.join(tempDir, file.name);
+    const filePath = path.join(tempDir, safeFileName);
     const buffer = Buffer.from(await file.arrayBuffer());
     fs.writeFileSync(filePath, buffer);
 
@@ -70,7 +74,7 @@ export async function POST(request: NextRequest) {
     console.log(`[transcribe] File saved: ${file.name}, size: ${savedStats.size} bytes`);
 
     ensureAudioStorageDir();
-    const persistentAudioPath = path.join(AUDIO_STORAGE_DIR, `${Date.now()}_${file.name}`);
+    const persistentAudioPath = path.join(AUDIO_STORAGE_DIR, `${Date.now()}_${safeFileName}`);
     try {
       fs.copyFileSync(filePath, persistentAudioPath);
       console.log(`[transcribe] Audio saved to persistent storage: ${persistentAudioPath}`);

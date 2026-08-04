@@ -33,8 +33,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     if (!open) return;
     fetch('/api/settings').then(r => r.json()).then(data => {
       if (data.userGeminiApiKey) { setLocalGeminiKey(data.userGeminiApiKey); setSettings({ userGeminiApiKey: data.userGeminiApiKey }); }
-      if (data.chunkDuration) { setLocalChunkDuration(String(data.chunkDuration)); setSettings({ chunkDuration: data.chunkDuration }); }
-      if (data.overlapDuration) { setLocalOverlapDuration(String(data.overlapDuration)); setSettings({ overlapDuration: data.overlapDuration }); }
+      if (typeof data.chunkDuration === 'number') { setLocalChunkDuration(String(data.chunkDuration)); setSettings({ chunkDuration: data.chunkDuration }); }
+      if (typeof data.overlapDuration === 'number') { setLocalOverlapDuration(String(data.overlapDuration)); setSettings({ overlapDuration: data.overlapDuration }); }
     }).catch(() => {});
     setGeminiStatus('idle');
   }, [open, setSettings]);
@@ -84,9 +84,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const saveSettings = async () => {
     setSaving(true);
     try {
+      const parsedChunk = parseInt(localChunkDuration);
+      const parsedOverlap = parseInt(localOverlapDuration);
       const body = {
-        chunkDuration: parseInt(localChunkDuration) || 300,
-        overlapDuration: parseInt(localOverlapDuration) || 30,
+        chunkDuration: isNaN(parsedChunk) ? 300 : parsedChunk,
+        overlapDuration: isNaN(parsedOverlap) ? 30 : parsedOverlap,
         userGeminiApiKey: localGeminiKey,
       };
       setSettings({ chunkDuration: body.chunkDuration, overlapDuration: body.overlapDuration, userGeminiApiKey: localGeminiKey });
@@ -135,8 +137,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <p className="font-medium text-foreground">AI Studio Free Tier Models:</p>
               <p>• <strong>Gemini 2.5 Flash</strong> (Recommended) — 10 RPM / 250 RPD</p>
               <p>• <strong>Gemini 2.0 Flash</strong> — 15 RPM / 1,500 RPD</p>
+              <p>• <strong>Gemini 2.5 Flash Lite</strong> — 30 RPM / 1,500 RPD</p>
               <p>• <strong>Gemini 2.0 Flash Lite</strong> — 30 RPM / 1,500 RPD</p>
-              <p>• <strong>Gemini 1.5 Flash</strong> — 15 RPM / 1,500 RPD</p>
             </div>
           </TabsContent>
 

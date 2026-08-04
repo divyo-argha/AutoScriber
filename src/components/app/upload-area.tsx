@@ -3,7 +3,7 @@
 import { useCallback, useState, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import type { BatchJob } from '@/lib/store';
-import { extractAudioFilesFromZip, extractAudioFilesFromDirectory } from '@/lib/file-utils';
+import { extractAudioFilesFromZip } from '@/lib/file-utils';
 import { signInWithGoogle, listDriveAudioFiles, downloadDriveFile } from '@/lib/google-drive';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,13 @@ import { useToast } from '@/hooks/use-toast';
 
 const ACCEPTED_EXTENSIONS = '.mp3,.wav,.ogg,.flac,.m4a,.webm,.aac,.wma';
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
+
+const ACCEPTED_TYPES = [
+  'audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/x-wav',
+  'audio/ogg', 'audio/flac', 'audio/mp4', 'audio/m4a',
+  'audio/x-m4a', 'audio/webm', 'audio/aac', 'audio/wma',
+  'audio/x-ms-wma',
+];
 
 function formatFileSize(bytes: number): string {
   if (!bytes || !isFinite(bytes)) return '0 KB';
@@ -30,13 +37,6 @@ function validateFile(file: File): string | null {
   if (file.size > MAX_FILE_SIZE) return `${file.name}: too large (max 2GB)`;
   return null;
 }
-
-const ACCEPTED_TYPES = [
-  'audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/x-wav',
-  'audio/ogg', 'audio/flac', 'audio/mp4', 'audio/m4a',
-  'audio/x-m4a', 'audio/webm', 'audio/aac', 'audio/wma',
-  'audio/x-ms-wma',
-];
 
 export function UploadArea() {
   const { uploadedFile, setUploadedFile, setCurrentView, selectedModel, setBatchJobs, clearBatch, availableModels } = useAppStore();

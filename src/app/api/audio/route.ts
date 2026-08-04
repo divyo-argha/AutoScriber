@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 
-        if (start >= fileSize || end >= fileSize) {
+        if (isNaN(start) || start < 0 || end >= fileSize) {
           return new NextResponse(null, {
             status: 416,
             headers: {
@@ -62,13 +62,14 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        const chunksize = (end - start) + 1;
-        const fileStream = fs.createReadStream(job.audioPath, { start, end });
+        const effectiveEnd = isNaN(end) || end < start ? start : end;
+        const chunksize = (effectiveEnd - start) + 1;
+        const fileStream = fs.createReadStream(job.audioPath, { start, end: effectiveEnd });
 
         return new NextResponse(fileStream as any, {
           status: 206,
           headers: {
-            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+            'Content-Range': `bytes ${start}-${effectiveEnd}/${fileSize}`,
             'Accept-Ranges': 'bytes',
             'Content-Length': String(chunksize),
             'Content-Type': contentType,

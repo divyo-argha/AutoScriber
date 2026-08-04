@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
     const modelsToTry = [
       modelId,
       'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
+      'gemini-2.5-flash',
       'gemini-2.0-flash-lite',
+      'gemini-2.5-flash-lite',
     ].filter((value, index, self) => self.indexOf(value) === index);
 
     const attempts: { model: string; success: boolean; error?: string }[] = [];

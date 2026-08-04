@@ -41,8 +41,21 @@ export async function signInWithGoogle(): Promise<any> {
   }
 }
 
+/** The Google Drive REST API requires an OAuth access_token, not the OpenID id_token. */
+function getDriveAccessToken(): string | null {
+  try {
+    return (
+      window.gapi?.auth2?.getAuthInstance()?.currentUser.get().getAuthResponse().access_token ||
+      window.gapi?.auth2?.getAuthInstance()?.currentUser.get().getAuthResponse(true).access_token ||
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
 export async function listDriveAudioFiles(folderId: string = 'root'): Promise<GoogleDriveFile[]> {
-  const token = window.gapi?.auth2?.getAuthInstance()?.currentUser.get().getAuthResponse().id_token;
+  const token = getDriveAccessToken();
   if (!token) return [];
 
   const audioMimes = [
@@ -64,7 +77,7 @@ export async function listDriveAudioFiles(folderId: string = 'root'): Promise<Go
 }
 
 export async function downloadDriveFile(fileId: string, fileName: string): Promise<File | null> {
-  const token = window.gapi?.auth2?.getAuthInstance()?.currentUser.get().getAuthResponse().id_token;
+  const token = getDriveAccessToken();
   if (!token) return null;
 
   try {

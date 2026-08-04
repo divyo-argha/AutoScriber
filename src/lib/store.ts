@@ -50,6 +50,7 @@ type PlaybackState = {
 type SettingsState = {
   chunkDuration: number;
   overlapDuration: number;
+  geminiApiKey: string;
   userGeminiApiKey: string;
 };
 

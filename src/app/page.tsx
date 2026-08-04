@@ -24,8 +24,9 @@ export default function Home() {
           const data = await res.json();
           if (data) {
             setSettings({
-              chunkDuration: data.chunkDuration || 300,
-              overlapDuration: data.overlapDuration || 10,
+              chunkDuration: typeof data.chunkDuration === 'number' ? data.chunkDuration : 300,
+              overlapDuration: typeof data.overlapDuration === 'number' ? data.overlapDuration : 30,
+              geminiApiKey: data.geminiApiKey ?? '',
               userGeminiApiKey: data.userGeminiApiKey || '',
             });
           }
@@ -64,7 +65,7 @@ export default function Home() {
                 processingProgress: (activeJob.progress as number) ?? 0,
                 chunksTotal: (activeJob.chunksTotal as number) ?? 0,
                 chunksDone: (activeJob.chunksDone as number) ?? 0,
-                processingStatus: (activeJob.status as string) === 'paused' ? 'Paused — press Resume to continue' : 'Transcribing audio...',
+                processingStatus: (activeJob.controlStatus as string) === 'paused' ? 'Paused — press Resume to continue' : 'Transcribing audio...',
               });
               setCurrentView('processing');
             }

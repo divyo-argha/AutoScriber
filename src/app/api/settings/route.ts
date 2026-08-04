@@ -21,19 +21,20 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const isNum = (v: unknown): v is number => typeof v === 'number' && !isNaN(v);
     const settings = await db.appSettings.upsert({
       where: { id: 'default' },
       update: {
         defaultModel: body.defaultModel,
-        chunkDuration: body.chunkDuration,
-        overlapDuration: body.overlapDuration,
+        chunkDuration: isNum(body.chunkDuration) ? body.chunkDuration : 300,
+        overlapDuration: isNum(body.overlapDuration) ? body.overlapDuration : 30,
         geminiApiKey: body.userGeminiApiKey || '',
       } as any,
       create: {
         id: 'default',
         defaultModel: body.defaultModel || 'gemini-2.0-flash',
-        chunkDuration: body.chunkDuration || 300,
-        overlapDuration: body.overlapDuration || 30,
+        chunkDuration: isNum(body.chunkDuration) ? body.chunkDuration : 300,
+        overlapDuration: isNum(body.overlapDuration) ? body.overlapDuration : 30,
         geminiApiKey: body.userGeminiApiKey || '',
       } as any,
     });

@@ -40,8 +40,9 @@ export function Header() {
 
   function isModelAvailable(model?: typeof AVAILABLE_MODELS[number]) {
     if (!model) return false;
-    if (model.provider === 'gemini') return hasGeminiKey;
-    return false;
+    // Only Gemini models require an API key; other providers don't.
+    if (model.provider !== 'gemini') return true;
+    return hasGeminiKey;
   }
 
   const ModelOption = ({ model }: { model: typeof AVAILABLE_MODELS[number] }) => {
