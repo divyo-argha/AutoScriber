@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       } as any,
       create: {
         id: 'default',
-        defaultModel: body.defaultModel || 'gemini-2.5-flash',
+        defaultModel: body.defaultModel || 'gemini-2.0-flash',
         chunkDuration: body.chunkDuration || 300,
         overlapDuration: body.overlapDuration || 30,
         geminiApiKey: body.userGeminiApiKey || '',

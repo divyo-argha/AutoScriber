@@ -42,7 +42,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const testGemini = async () => {
     setGeminiStatus('testing'); setGeminiError('');
     try {
-      const params = new URLSearchParams({ model: selectedModel || 'gemini-2.5-flash' });
+      const params = new URLSearchParams({ model: selectedModel || 'gemini-2.0-flash' });
       if (localGeminiKey) params.set('apiKey', localGeminiKey);
       const res = await fetch(`/api/gemini-test?${params}`);
       const data = await res.json();

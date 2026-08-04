@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const modelId = searchParams.get('model') || 'gemini-2.5-flash';
+  const modelId = searchParams.get('model') || 'gemini-2.0-flash';
   const apiKeyFromQuery = searchParams.get('apiKey')?.trim() || undefined;
 
   const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
@@ -23,8 +23,10 @@ export async function GET(request: NextRequest) {
 
     const modelsToTry = [
       modelId,
-      'gemini-2.5-flash-lite',
-      'gemini-2.5-pro',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-2.0-flash-lite',
     ].filter((value, index, self) => self.indexOf(value) === index);
 
     const attempts: { model: string; success: boolean; error?: string }[] = [];

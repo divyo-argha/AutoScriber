@@ -157,7 +157,7 @@ function isTransientError(err: any): boolean {
 async function generateContentWithRetry(
   model: any,
   contents: any[],
-  modelId: string = 'gemini-2.5-flash',
+  modelId: string = 'gemini-2.0-flash',
   maxRetries: number = 2,
   initialDelayMs: number = 2000
 ): Promise<any> {
@@ -210,9 +210,10 @@ async function generateContentWithRetry(
 }
 
 const GEMINI_FALLBACK_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-pro',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-2.0-flash-lite',
 ];
 
 let lastRequestTimestamp = 0;
@@ -220,7 +221,7 @@ let lastRequestTimestamp = 0;
 /**
  * Ensures requests adhere strictly to Free Tier Rate Limits (Flash: ~3s pacing, Pro: ~30s pacing).
  */
-async function enforceRateLimitPacing(modelId: string = 'gemini-2.5-flash'): Promise<void> {
+async function enforceRateLimitPacing(modelId: string = 'gemini-2.0-flash'): Promise<void> {
   const isProModel = modelId.toLowerCase().includes('pro');
   const minDelayMs = isProModel ? 30000 : 3000;
 
@@ -237,7 +238,7 @@ async function enforceRateLimitPacing(modelId: string = 'gemini-2.5-flash'): Pro
 export async function transcribeWithGemini(
   filePath: string,
   apiKey: string,
-  modelId: string = 'gemini-2.5-flash',
+  modelId: string = 'gemini-2.0-flash',
   timeOffset: number = 0
 ): Promise<ChunkResult> {
   const modelsToTry = [
@@ -263,8 +264,8 @@ export async function transcribeWithGemini(
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error(`[gemini] Full transcription failed with model ${currentModel}: ${errMsg}`);
       
-      // If it's a file error, don't try other models
-      if (errMsg.includes('not found') || errMsg.includes('empty') || errMsg.includes('0 bytes')) {
+      // If it's a local file error, don't try other models
+      if (errMsg.includes('Audio file not found') || errMsg.includes('is empty (0 bytes)')) {
         break;
       }
     }
@@ -276,7 +277,7 @@ export async function transcribeWithGemini(
 async function transcribeWithGeminiInternal(
   filePath: string,
   apiKey: string,
-  modelId: string = 'gemini-2.5-flash',
+  modelId: string = 'gemini-2.0-flash',
   timeOffset: number = 0
 ): Promise<ChunkResult> {
   const genAI = createGenAIClient(apiKey);
@@ -418,8 +419,8 @@ export async function transcribeChunkWithGemini(
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error(`[gemini] Chunk ${chunkIndex} failed with model ${currentModel}: ${errMsg}`);
       
-      // If it's a file error, don't try other models
-      if (errMsg.includes('not found') || errMsg.includes('empty') || errMsg.includes('0 bytes')) {
+      // If it's a local file error, don't try other models
+      if (errMsg.includes('Chunk file not found') || errMsg.includes('is empty (0 bytes)')) {
         break;
       }
     }
@@ -542,7 +543,7 @@ async function transcribeChunkWithGeminiInternal(
   }
 }
 
-export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.5-flash'): Promise<boolean> {
+export async function testGeminiConnection(apiKey: string, modelId: string = 'gemini-2.0-flash'): Promise<boolean> {
   try {
     const genAI = createGenAIClient(apiKey);
     const model = genAI.getGenerativeModel({ model: modelId });

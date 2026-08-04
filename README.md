@@ -15,7 +15,7 @@
     <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
     <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind" /></a>
     <a href="https://prisma.io"><img src="https://img.shields.io/badge/Prisma-6-2D3748?style=flat-square&logo=prisma&logoColor=white" alt="Prisma" /></a>
-    <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini" /></a>
+    <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/Gemini-2.0_Flash-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini" /></a>
     <a href="https://bun.sh"><img src="https://img.shields.io/badge/Bun-runtime-black?style=flat-square&logo=bun" alt="Bun" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square" alt="MIT" /></a>
   </p>
@@ -394,7 +394,7 @@ Open **Settings** (gear icon in the header) to configure:
 |---------|---------|-------------|
 | Gemini API Key | — | Your Google AI Studio key |
 | Gemini Base URL | — | Optional proxy URL |
-| Default Model | `gemini-2.5-flash` | AI model for transcription |
+| Default Model | `gemini-2.0-flash` | AI model for transcription |
 | Chunk Duration | `300 s` | Audio chunk size in seconds |
 | Overlap Duration | `10 s` | Overlap between chunks |
 | Ollama URL | `http://localhost:11434` | Local Ollama server |
@@ -410,7 +410,7 @@ Open **Settings** (gear icon in the header) to configure:
 3. In AutoScribe Settings, set Ollama URL to `http://localhost:11434`
 4. Select the Ollama model from the model dropdown before transcribing
 
-> **Note:** Local models generally produce lower quality Bangla transcriptions than Gemini. Gemini 2.5 Flash is strongly recommended for Bangla audio.
+> **Note:** Local models generally produce lower quality Bangla transcriptions than Gemini. Gemini 2.0 Flash is strongly recommended for Bangla audio.
 
 ---
 
@@ -476,7 +476,7 @@ model TranscriptionJob {
   duration     Float?
   status       String   @default("pending")
   progress     Int      @default(0)
-  model        String   @default("gemini-2.5-flash")
+  model        String   @default("gemini-2.0-flash")
   language     String   @default("bn")
   chunksTotal  Int      @default(0)
   chunksDone   Int      @default(0)
@@ -492,7 +492,7 @@ model AppSettings {
   geminiApiKey     String @default("")
   geminiApiBaseUrl String @default("")
   ollamaUrl        String @default("http://localhost:11434")
-  defaultModel     String @default("gemini-2.5-flash")
+  defaultModel     String @default("gemini-2.0-flash")
   chunkDuration    Int    @default(300)
   overlapDuration  Int    @default(10)
 }

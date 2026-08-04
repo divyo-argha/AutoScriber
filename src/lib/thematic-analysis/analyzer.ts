@@ -59,9 +59,6 @@ export async function analyzeThemes(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ 
-    model: 'gemini-2.5-pro' // Using Pro for superior reasoning on large datasets
-  });
 
   const context = researchQuestion 
     ? `RESEARCH QUESTION: ${researchQuestion}\n\n` 
@@ -73,8 +70,25 @@ export async function analyzeThemes(
 
   const fullPrompt = `${THEMATIC_ANALYSIS_PROMPT}\n\n${context}TRANSCRIPTS:\n${transcriptText}`;
 
-  const result = await model.generateContent(fullPrompt);
-  const text = result.response.text();
+  const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+  let text = '';
+  let lastErr: any = null;
+
+  for (const modelId of modelsToTry) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelId });
+      const result = await model.generateContent(fullPrompt);
+      text = result.response.text();
+      break;
+    } catch (err: any) {
+      lastErr = err;
+      console.warn(`[thematic-analysis] Model ${modelId} failed: ${err.message}. Trying next fallback...`);
+    }
+  }
+
+  if (!text) {
+    throw lastErr || new Error('Thematic analysis failed with all models.');
+  }
 
   return parseAnalysisResponse(text);
 }
