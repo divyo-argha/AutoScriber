@@ -1,6 +1,6 @@
 'use client';
 
-import { Keyboard } from 'lucide-react';
+import { Keyboard, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import styles from './audio-player.module.css';
@@ -44,7 +44,7 @@ export function KeyboardShortcutsModal({ open, onClose }: KeyboardShortcutsModal
             Keyboard Shortcuts
           </h3>
           <Button variant="ghost" size="sm" onClick={onClose} className={styles.modalCloseBtn}>
-            ✕
+            <X className={styles.modalCloseIcon} />
           </Button>
         </div>
         <div className={styles.modalBody}>

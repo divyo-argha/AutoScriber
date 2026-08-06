@@ -192,7 +192,79 @@
   display: flex;
   width: 100%;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
+}
+
+.modelOptionDimmed {
+  opacity: 0.6;
+}
+
+.modelNameWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.modelName {
+  font-weight: 600;
+}
+
+.recBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-full);
+  background-color: color-mix(in oklab, var(--brand-500) 20%, transparent);
+  color: var(--brand-300);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.recBadgeIcon {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+.quotaBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in oklab, var(--destructive) 40%, transparent);
+  background-color: color-mix(in oklab, var(--destructive) 20%, transparent);
+  color: var(--destructive);
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.quotaBadgeIcon {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+.rateLimitBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-full);
+  background-color: color-mix(in oklab, var(--destructive) 25%, transparent);
+  color: var(--destructive);
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.providerTag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
 }
 
 .modelOptionMuted {

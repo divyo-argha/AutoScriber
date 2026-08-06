@@ -2,6 +2,7 @@
 
 import { useAppStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { UploadArea } from './upload';
 import { ProcessingView } from './processing';
 import { TranscriptionViewer } from './result';
@@ -24,28 +25,30 @@ export function ViewRouter() {
           transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
           className={styles.uploadSection}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 }}
-            className={styles.hero}
-          >
-            <h2 className={styles.heroTitle}>
-              Transcribe Your Bangla Audio
-            </h2>
-            <p className={styles.heroSub}>
-              Upload an audio file or record directly from your browser. Get accurate Bangla-English mixed transcriptions with
-              timestamps and speaker diarization. Built for researchers.
-            </p>
-          </motion.div>
+          <ErrorBoundary fallbackTitle="The upload area hit a snag">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.05 }}
+              className={styles.hero}
+            >
+              <h2 className={styles.heroTitle}>
+                Transcribe Your Bangla Audio
+              </h2>
+              <p className={styles.heroSub}>
+                Upload an audio file or record directly from your browser. Get accurate Bangla-English mixed transcriptions with
+                timestamps and speaker diarization. Built for researchers.
+              </p>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.12 }}
-          >
-            <UploadArea />
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.12 }}
+            >
+              <UploadArea />
+            </motion.div>
+          </ErrorBoundary>
         </motion.div>
       )}
       {currentView === 'processing' && (
@@ -56,7 +59,9 @@ export function ViewRouter() {
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.3 }}
         >
-          <ProcessingView />
+          <ErrorBoundary fallbackTitle="The processing view hit a snag">
+            <ProcessingView />
+          </ErrorBoundary>
         </motion.div>
       )}
       {currentView === 'result' && (
@@ -67,7 +72,9 @@ export function ViewRouter() {
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <TranscriptionViewer />
+          <ErrorBoundary fallbackTitle="The transcript view hit a snag">
+            <TranscriptionViewer />
+          </ErrorBoundary>
         </motion.div>
       )}
 
@@ -79,7 +86,9 @@ export function ViewRouter() {
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <HistoryView />
+          <ErrorBoundary fallbackTitle="The history view hit a snag">
+            <HistoryView />
+          </ErrorBoundary>
         </motion.div>
       )}
 
@@ -91,7 +100,9 @@ export function ViewRouter() {
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <BatchView />
+          <ErrorBoundary fallbackTitle="The batch view hit a snag">
+            <BatchView />
+          </ErrorBoundary>
         </motion.div>
       )}
 
@@ -103,7 +114,9 @@ export function ViewRouter() {
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <SettingsView />
+          <ErrorBoundary fallbackTitle="The settings view hit a snag">
+            <SettingsView />
+          </ErrorBoundary>
         </motion.div>
       )}
     </AnimatePresence>

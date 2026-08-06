@@ -31,7 +31,7 @@ export function GeminiTab({
     <div className={styles.tabContent}>
       <div className={styles.card}>
         <div className={styles.cardHead}>
-          <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
+          <div className={`${styles.cardHeadIcon} ${styles.cardHeadIconBrand}`}>
             <Key className={styles.iconMd} />
           </div>
           <div>

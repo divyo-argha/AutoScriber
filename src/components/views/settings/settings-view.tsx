@@ -21,7 +21,7 @@ export function SettingsView() {
         <div className={styles.body}>
           <Tabs value={form.mainSectionTab} onValueChange={v => form.setMainSectionTab(v as 'config' | 'advanced')} className={styles.tabsWrap}>
             {/* MAIN TAB 1: AI ENGINE CONFIG */}
-            <TabsContent value="config" className={styles.tabContent} style={{ marginTop: 0 }}>
+            <TabsContent value="config" className={`${styles.tabContent} ${styles.tabContentFlat}`}>
               <Tabs value={form.activeTab} onValueChange={v => form.setActiveTab(v as 'vertex' | 'gemini')} className={styles.providerTabsWrap}>
                 <TabsList className={styles.providerTabsList}>
                   <TabsTrigger value="vertex" className={`${styles.providerTabBtn} ${styles.providerTabVertex}`}>

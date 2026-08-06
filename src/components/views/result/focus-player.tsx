@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { calculateWordTimings } from '@/lib/word-timing';
 import { formatTime } from '@/lib/format-utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Headphones, Quote } from 'lucide-react';
+import { Headphones, Quote, Mic, Clock } from 'lucide-react';
 import type { TranscriptionSegment } from '@/lib/transcriber/types';
 import styles from './focus-player.module.css';
 import speakerStyles from './speaker-colors.module.css';
@@ -87,10 +87,12 @@ export function FocusPlayer({ segments, speakerColors }: FocusPlayerProps) {
               className={styles.speakerBadge}
             >
               <Badge className={`${styles.speakerPill} ${speakerColors[segment.speaker] || speakerStyles.fallback}`}>
-                🎙️ {segment.speaker}
+                <Mic className={styles.pillIcon} />
+                {segment.speaker}
               </Badge>
               <span className={styles.timePill}>
-                ⏱️ {formatTime(segment.startTime)}
+                <Clock className={styles.pillIcon} />
+                {formatTime(segment.startTime)}
               </span>
             </motion.div>
           </AnimatePresence>

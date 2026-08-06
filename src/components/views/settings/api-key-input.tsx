@@ -22,30 +22,19 @@ export function ApiKeyInput({ value, onChange, showKey, onToggleShow, status, on
     <div className={styles.geminiField}>
       <Label className={styles.advLabel}>API Key</Label>
       <div className={styles.keyRow}>
-        <div style={{ position: 'relative', flex: 1 }}>
+        <div className={styles.keyInputWrap}>
           <Input
             type={showKey ? 'text' : 'password'}
             placeholder="AIzaSy..."
             value={value}
             onChange={e => onChange(e.target.value)}
-            className={styles.keyInput}
-            style={{ paddingRight: '2.5rem' }}
+            className={`${styles.keyInput} ${styles.keyInputPadded}`}
           />
           <button
             type="button"
             onClick={onToggleShow}
-            style={{
-              position: 'absolute',
-              right: '0.75rem',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--muted-foreground)',
-              display: 'flex',
-              alignItems: 'center',
-            }}
+            aria-label={showKey ? 'Hide API key' : 'Show API key'}
+            className={styles.eyeBtn}
           >
             {showKey ? <EyeOff className={styles.iconSm} /> : <Eye className={styles.iconSm} />}
           </button>

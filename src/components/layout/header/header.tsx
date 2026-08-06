@@ -2,7 +2,7 @@
 
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Mic, RotateCcw, History, Settings, AlertTriangle } from 'lucide-react';
+import { Mic, History, Settings, AlertTriangle, Ban, Star } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -44,22 +44,24 @@ export function Header() {
     const isUnselectable = !available || Boolean(disabledReason);
 
     return (
-      <div className={styles.modelOption} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '0.5rem', opacity: isUnselectable ? 0.6 : 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-          <span className={!isUnselectable ? undefined : styles.modelOptionMuted} style={{ fontWeight: 600 }}>{model.name}</span>
+      <div className={`${styles.modelOption} ${isUnselectable ? styles.modelOptionDimmed : ''}`}>
+        <div className={styles.modelNameWrap}>
+          <span className={`${styles.modelName} ${isUnselectable ? styles.modelOptionMuted : ''}`}>{model.name}</span>
           {model.recommended && !disabledReason && (
-            <span style={{ fontSize: '9px', padding: '0.1rem 0.35rem', borderRadius: '9999px', backgroundColor: 'color-mix(in oklab, var(--brand-500) 20%, transparent)', color: 'var(--brand-300)', fontWeight: 700 }}>
-              ★ Rec
+            <span className={styles.recBadge}>
+              <Star className={styles.recBadgeIcon} />
+              Rec
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+        <div className={styles.modelNameWrap}>
           {disabledReason ? (
-            <span title={disabledReason} style={{ fontSize: '9px', padding: '0.1rem 0.4rem', borderRadius: '9999px', backgroundColor: 'color-mix(in oklab, var(--destructive) 20%, transparent)', color: 'var(--destructive)', fontWeight: 700, border: '1px solid color-mix(in oklab, var(--destructive) 40%, transparent)' }}>
-              🚫 Quota Limit
+            <span title={disabledReason} className={styles.quotaBadge}>
+              <Ban className={styles.quotaBadgeIcon} />
+              Quota Limit
             </span>
           ) : (
-            <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.6, fontWeight: 600 }}>
+            <span className={styles.providerTag}>
               {model.provider === 'vertex' ? 'Vertex' : 'Studio'}
             </span>
           )}
@@ -105,7 +107,8 @@ export function Header() {
                   <div className={styles.triggerContent}>
                     <span className={styles.truncate}>{ALL_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
                     {currentModelDisabledReason ? (
-                      <span title={currentModelDisabledReason} style={{ fontSize: '9px', padding: '0.1rem 0.35rem', borderRadius: '9999px', backgroundColor: 'color-mix(in oklab, var(--destructive) 25%, transparent)', color: 'var(--destructive)', fontWeight: 700 }}>
+                      <span title={currentModelDisabledReason} className={styles.rateLimitBadge}>
+                        <Ban className={styles.quotaBadgeIcon} />
                         Rate-Limited
                       </span>
                     ) : !isModelAvailable(ALL_MODELS.find(m => m.id === selectedModel)) ? (
@@ -180,7 +183,8 @@ export function Header() {
                 <div className={styles.triggerContent}>
                   <span className={styles.truncate}>{ALL_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
                   {currentModelDisabledReason ? (
-                    <span title={currentModelDisabledReason} style={{ fontSize: '9px', padding: '0.1rem 0.35rem', borderRadius: '9999px', backgroundColor: 'color-mix(in oklab, var(--destructive) 25%, transparent)', color: 'var(--destructive)', fontWeight: 700 }}>
+                    <span title={currentModelDisabledReason} className={styles.rateLimitBadge}>
+                      <Ban className={styles.quotaBadgeIcon} />
                       Rate-Limited
                     </span>
                   ) : !isModelAvailable(ALL_MODELS.find(m => m.id === selectedModel)) ? (

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Mic } from 'lucide-react';
 import { formatTime } from '@/lib/format-utils';
 import styles from './transcription-viewer.module.css';
 import speakerStyles from './speaker-colors.module.css';
@@ -62,7 +62,8 @@ export function SpeakerLegend({ speakers, speakerColors }: LegendProps) {
               transition={{ delay: i * 0.04 }}
             >
               <Badge className={`${styles.legendBadge} ${speakerColors[speaker] || speakerStyles.fallback}`}>
-                🎙️ {speaker}
+                <Mic className={styles.legendIcon} />
+                {speaker}
               </Badge>
             </motion.div>
           ))}

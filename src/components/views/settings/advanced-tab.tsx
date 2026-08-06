@@ -42,7 +42,7 @@ export function AdvancedTab({
     <div className={styles.tabContent}>
       <div className={styles.card}>
         <div className={styles.cardHead}>
-          <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
+          <div className={`${styles.cardHeadIcon} ${styles.cardHeadIconBrand}`}>
             <Gauge className={styles.iconMd} />
           </div>
           <div>
@@ -51,7 +51,7 @@ export function AdvancedTab({
           </div>
         </div>
 
-        <div className={styles.advGrid} style={{ marginTop: '1rem' }}>
+        <div className={`${styles.advGrid} ${styles.advGridCard}`}>
           <div className={styles.advCol}>
             <Label className={styles.advLabel}>Chunk Duration (seconds)</Label>
             <div className={styles.advInputWrap}>
@@ -59,7 +59,7 @@ export function AdvancedTab({
               <span className={styles.advUnit}>sec</span>
             </div>
             <ChunkPresetButtons value={localChunkDuration} onSelect={onChunkDurationChange} presets={CHUNK_PRESETS} />
-            <p className={styles.advHint} style={{ marginTop: '0.375rem' }}>Long audio is split into chunks of this size for high accuracy.</p>
+            <p className={`${styles.advHint} ${styles.advHintTop}`}>Long audio is split into chunks of this size for high accuracy.</p>
           </div>
           <div className={styles.advCol}>
             <Label className={styles.advLabel}>Overlap Duration (seconds)</Label>
@@ -68,11 +68,11 @@ export function AdvancedTab({
               <span className={styles.advUnit}>sec</span>
             </div>
             <ChunkPresetButtons value={localOverlapDuration} onSelect={onOverlapDurationChange} presets={OVERLAP_PRESETS} />
-            <p className={styles.advHint} style={{ marginTop: '0.375rem' }}>Overlap between chunks avoids cutting words mid-sentence.</p>
+            <p className={`${styles.advHint} ${styles.advHintTop}`}>Overlap between chunks avoids cutting words mid-sentence.</p>
           </div>
         </div>
 
-        <div className={styles.advFooter} style={{ marginTop: '1rem' }}>
+        <div className={styles.advFooterRow}>
           <span className={styles.advSummaryNote}>
             <Radio className={styles.iconXs} /> Applies to all future transcription jobs.
           </span>
@@ -84,7 +84,7 @@ export function AdvancedTab({
 
       <div className={styles.card}>
         <div className={styles.cardHead}>
-          <div className={styles.cardHeadIcon} style={{ color: 'var(--destructive)' }}>
+          <div className={`${styles.cardHeadIcon} ${styles.cardHeadIconDanger}`}>
             <Trash2 className={styles.iconMd} />
           </div>
           <div>
@@ -92,8 +92,8 @@ export function AdvancedTab({
             <p className={styles.cardDesc}>Purge unused or orphaned audio files from disk to free up space.</p>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
-          <p className={styles.advHint} style={{ margin: 0 }}>
+        <div className={styles.cleanRow}>
+          <p className={`${styles.advHint} ${styles.cleanHint}`}>
             Safely deletes temporary files from deleted or old jobs in <code className={styles.credCode}>data/audio/</code>.
           </p>
           <Button
@@ -101,7 +101,7 @@ export function AdvancedTab({
             size="sm"
             onClick={onCleanupStorage}
             disabled={cleaningStorage}
-            style={{ gap: '0.5rem' }}
+            className={styles.cleanBtn}
           >
             {cleaningStorage ? <Loader2 className={`${styles.iconSm} ${styles.spin}`} /> : <Trash2 className={styles.iconSm} />}
             Clean Storage

@@ -38,9 +38,9 @@ export function VertexTab({
   return (
     <div className={styles.tabContent}>
       <div className={styles.card}>
-        <div className={styles.cardHead} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
-            <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
+        <div className={`${styles.cardHead} ${styles.cardHeadRow}`}>
+          <div className={styles.cardHeadLeft}>
+            <div className={`${styles.cardHeadIcon} ${styles.cardHeadIconBrand}`}>
               <ShieldCheck className={styles.iconMd} />
             </div>
             <div>
@@ -48,14 +48,13 @@ export function VertexTab({
               <p className={styles.cardDesc}>Paste your GCP Service Account JSON key. Project ID is auto-extracted.</p>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Label className={styles.projLabel} style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>GCP Region:</Label>
+          <div className={styles.regionWrap}>
+            <Label className={`${styles.projLabel} ${styles.regionLabel}`}>GCP Region:</Label>
             <Input
               placeholder="us-central1"
               value={gcpLocation}
               onChange={e => onLocationChange(e.target.value)}
-              className={styles.projInput}
-              style={{ width: '130px', height: '2.1rem' }}
+              className={`${styles.projInput} ${styles.regionInput}`}
             />
           </div>
         </div>

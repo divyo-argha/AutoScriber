@@ -1190,6 +1190,142 @@
   text-decoration: underline;
 }
 
+/* ---------------------------------- chunk presets ---------------------------------- */
+.presetRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+.presetBtn {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in oklab, var(--white) 10%, transparent);
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+
+.presetBtn:hover {
+  border-color: color-mix(in oklab, var(--brand-500) 40%, transparent);
+  color: var(--foreground);
+}
+
+.presetBtnActive {
+  border: 1px solid var(--brand-500);
+  background-color: color-mix(in oklab, var(--brand-500) 15%, transparent);
+  color: var(--brand-400);
+}
+
+/* ---------------------------------- card layout helpers ---------------------------------- */
+.cardHeadRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.cardHeadLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.cardHeadIconBrand {
+  color: var(--brand-400);
+}
+
+.cardHeadIconDanger {
+  color: var(--destructive);
+}
+
+.regionWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.regionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+
+.regionInput {
+  width: 130px;
+  height: 2.1rem;
+}
+
+.advHintTop {
+  margin-top: 0.375rem;
+}
+
+.advGridCard {
+  margin-top: 1rem;
+}
+
+.advFooterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.cleanRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.cleanHint {
+  margin: 0;
+}
+
+.cleanBtn {
+  gap: 0.5rem;
+}
+
+/* ---------------------------------- gemini api key input ---------------------------------- */
+.keyInputWrap {
+  position: relative;
+  flex: 1;
+}
+
+.keyInputPadded {
+  padding-right: 2.5rem;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  padding: 0;
+}
+
+.eyeBtn:hover {
+  color: var(--foreground);
+}
+
+.tabContentFlat {
+  margin-top: 0;
+}
+
 /* ---------------------------------- footer ---------------------------------- */
 .footer {
   position: sticky;
