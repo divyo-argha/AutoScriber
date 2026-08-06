@@ -60,6 +60,7 @@ export function SettingsView() {
   const { toast } = useToast();
   const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setDisabledModel, clearDisabledModels, setSettings, setCurrentView } = useAppStore();
 
+  const [mainSectionTab, setMainSectionTab] = useState<'config' | 'advanced'>('config');
   const [activeTab, setActiveTab] = useState<'vertex' | 'gemini'>('vertex');
   const [localGeminiKey, setLocalGeminiKey] = useState(userGeminiApiKey);
   const [gcpProjectId, setGcpProjectId] = useState('');
@@ -347,29 +348,8 @@ export function SettingsView() {
 
   return (
     <div className={styles.page}>
-      {/* Sticky top toolbar */}
-      <div className={styles.toolbar}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCurrentView('upload')}
-          className={styles.backBtn}
-        >
-          <ArrowLeft className={styles.iconSm} />
-          Back to App
-        </Button>
-        <div className={styles.toolbarCenter}>
-          <span className={styles.toolbarTitle}>Settings</span>
-          <span className={styles.toolbarChip}>
-            <Activity className={styles.toolbarChipIcon} />
-            {activeTab === 'vertex' ? 'Vertex AI' : 'AI Studio'}
-          </span>
-        </div>
-        <span className={styles.toolbarSpacer} />
-      </div>
-
       <div className={styles.content}>
-        {/* Hero header */}
+        {/* Sleek Hero Header */}
         <div className={styles.header}>
           <div className={styles.glowBlob} />
           <div className={styles.glowBlob2} />
@@ -379,50 +359,48 @@ export function SettingsView() {
                 <Cpu className={styles.headerIcon} />
               </div>
               <div>
-                <h1 className={styles.titleRow}>
-                  Transcription Engine
-                  {activeTab === 'vertex' ? (
-                    <Badge variant="outline" className={styles.vertexBadge}>
-                      <Cloud className={styles.iconXs} /> Vertex AI Ready
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className={styles.geminiBadge}>
-                      <Sparkles className={styles.iconXs} /> API Key Mode
-                    </Badge>
-                  )}
-                </h1>
+                <h1 className={styles.titleRow}>Settings Center</h1>
                 <p className={styles.dialogDesc}>
-                  Choose how AutoScriber transcribes. Configure credentials, pick a model, then verify with one click.
+                  Configure AI engine credentials, audio slicing parameters, and system maintenance.
                 </p>
               </div>
             </div>
-            {activeModelInfo && (
-              <div className={styles.headerStatus}>
-                <span className={styles.headerStatusLabel}>Active model</span>
-                <span className={styles.headerStatusValue}>{activeModelInfo.name}</span>
-              </div>
-            )}
+
+            {/* Top 2 Main Tabs in Header Right */}
+            <div className={styles.headerTabsWrap}>
+              <Tabs value={mainSectionTab} onValueChange={v => setMainSectionTab(v as 'config' | 'advanced')}>
+                <TabsList className={styles.headerTabsList}>
+                  <TabsTrigger value="config" className={styles.headerTabBtn}>
+                    <Sparkles className={styles.iconXs} /> AI Engine
+                  </TabsTrigger>
+                  <TabsTrigger value="advanced" className={styles.headerTabBtn}>
+                    <Gauge className={styles.iconXs} /> Advanced
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         </div>
 
         <div className={styles.body}>
-          <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'vertex' | 'gemini')} className={styles.tabsWrap}>
-            <TabsList className={styles.tabsList}>
-              <TabsTrigger value="vertex" className={`${styles.tabTrigger} ${styles.tabTriggerVertex}`}>
-                <span className={styles.tabTriggerTop}>
-                  <Cloud className={styles.iconSm} />
-                  Vertex AI & GCP
-                </span>
-                <span className={styles.tabTriggerSub}>Service account credentials</span>
-              </TabsTrigger>
-              <TabsTrigger value="gemini" className={`${styles.tabTrigger} ${styles.tabTriggerGemini}`}>
-                <span className={styles.tabTriggerTop}>
-                  <Sparkles className={styles.iconSm} />
-                  Google AI Studio
-                </span>
-                <span className={styles.tabTriggerSub}>Gemini API key</span>
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={mainSectionTab} onValueChange={v => setMainSectionTab(v as 'config' | 'advanced')} className={styles.tabsWrap}>
+            {/* MAIN TAB 1: AI ENGINE CONFIG */}
+            <TabsContent value="config" className={styles.tabContent} style={{ marginTop: 0 }}>
+              <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'vertex' | 'gemini')} className={styles.providerTabsWrap}>
+                <TabsList className={styles.providerTabsList}>
+                  <TabsTrigger value="vertex" className={`${styles.providerTabBtn} ${styles.providerTabVertex}`}>
+                    <span className={styles.tabTriggerTop}>
+                      <Cloud className={styles.iconSm} /> Vertex AI (GCP)
+                    </span>
+                    <span className={styles.tabTriggerSub}>Service account credentials</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="gemini" className={`${styles.providerTabBtn} ${styles.providerTabGemini}`}>
+                    <span className={styles.tabTriggerTop}>
+                      <Sparkles className={styles.iconSm} /> Google AI Studio
+                    </span>
+                    <span className={styles.tabTriggerSub}>Gemini API key</span>
+                  </TabsTrigger>
+                </TabsList>
 
             {/* TAB 1: VERTEX AI & GCP */}
             <TabsContent value="vertex" className={styles.tabContent}>
@@ -718,98 +696,106 @@ export function SettingsView() {
 
             </TabsContent>
           </Tabs>
+        </TabsContent>
 
-          {/* Advanced Chunking & Limits Accordion Section */}
-          <div className={styles.advSection}>
-            <details className={styles.advDetails}>
-              <summary className={styles.advSummary}>
-                <span className={styles.advSummaryLeft}>
-                  <Gauge className={styles.advSummaryIcon} /> Advanced Audio Slicing & Chunk Settings
-                </span>
-                <ChevronDown className={styles.advChevron} />
-              </summary>
-              <div className={styles.advGrid}>
-                <div className={styles.advCol}>
-                  <Label className={styles.advLabel}>Chunk Duration (seconds)</Label>
-                  <div className={styles.advInputWrap}>
-                    <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} className={styles.advInput} />
-                    <span className={styles.advUnit}>sec</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.375rem', flexWrap: 'wrap' }}>
-                    {[{ label: '3 Min', val: '180' }, { label: '5 Min (Default)', val: '300' }, { label: '10 Min', val: '600' }].map(preset => (
-                      <button
-                        key={preset.val}
-                        type="button"
-                        onClick={() => setLocalChunkDuration(preset.val)}
-                        style={{
-                          fontSize: '10px',
-                          padding: '0.125rem 0.5rem',
-                          borderRadius: '9999px',
-                          border: localChunkDuration === preset.val ? '1px solid var(--brand-500)' : '1px solid color-mix(in oklab, var(--white) 10%, transparent)',
-                          backgroundColor: localChunkDuration === preset.val ? 'color-mix(in oklab, var(--brand-500) 15%, transparent)' : 'color-mix(in oklab, var(--muted) 40%, transparent)',
-                          color: localChunkDuration === preset.val ? 'var(--brand-400)' : 'var(--muted-foreground)',
-                          cursor: 'pointer',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className={styles.advHint} style={{ marginTop: '0.375rem' }}>Long audio is split into chunks of this size for high accuracy.</p>
-                </div>
-                <div className={styles.advCol}>
-                  <Label className={styles.advLabel}>Overlap Duration (seconds)</Label>
-                  <div className={styles.advInputWrap}>
-                    <Input type="number" min="0" max="60" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} className={styles.advInput} />
-                    <span className={styles.advUnit}>sec</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.375rem', flexWrap: 'wrap' }}>
-                    {[{ label: '15s', val: '15' }, { label: '30s (Default)', val: '30' }, { label: '45s', val: '45' }].map(preset => (
-                      <button
-                        key={preset.val}
-                        type="button"
-                        onClick={() => setLocalOverlapDuration(preset.val)}
-                        style={{
-                          fontSize: '10px',
-                          padding: '0.125rem 0.5rem',
-                          borderRadius: '9999px',
-                          border: localOverlapDuration === preset.val ? '1px solid var(--brand-500)' : '1px solid color-mix(in oklab, var(--white) 10%, transparent)',
-                          backgroundColor: localOverlapDuration === preset.val ? 'color-mix(in oklab, var(--brand-500) 15%, transparent)' : 'color-mix(in oklab, var(--muted) 40%, transparent)',
-                          color: localOverlapDuration === preset.val ? 'var(--brand-400)' : 'var(--muted-foreground)',
-                          cursor: 'pointer',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className={styles.advHint} style={{ marginTop: '0.375rem' }}>Overlap between chunks avoids cutting words mid-sentence.</p>
-                </div>
+        {/* MAIN TAB 2: ADVANCED & MAINTENANCE */}
+        <TabsContent value="advanced" className={styles.tabContent}>
+          <div className={styles.card}>
+            <div className={styles.cardHead}>
+              <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
+                <Gauge className={styles.iconMd} />
               </div>
-              <div className={styles.advFooter}>
-                <span className={styles.advSummaryNote}>
-                  <Radio className={styles.iconXs} /> Applies to all future transcription jobs.
-                </span>
-                <button type="button" onClick={resetAdvanced} className={styles.advResetBtn}>
-                  <RotateCcw className={styles.iconXs} /> Reset to defaults
-                </button>
+              <div>
+                <p className={styles.cardTitle}>Audio Slicing & Chunk Settings</p>
+                <p className={styles.cardDesc}>Configure chunk lengths & overlap duration for high-accuracy transcription.</p>
               </div>
-            </details>
+            </div>
+
+            <div className={styles.advGrid} style={{ marginTop: '1rem' }}>
+              <div className={styles.advCol}>
+                <Label className={styles.advLabel}>Chunk Duration (seconds)</Label>
+                <div className={styles.advInputWrap}>
+                  <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} className={styles.advInput} />
+                  <span className={styles.advUnit}>sec</span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.375rem', flexWrap: 'wrap' }}>
+                  {[{ label: '3 Min', val: '180' }, { label: '5 Min (Default)', val: '300' }, { label: '10 Min', val: '600' }].map(preset => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => setLocalChunkDuration(preset.val)}
+                      style={{
+                        fontSize: '10px',
+                        padding: '0.125rem 0.5rem',
+                        borderRadius: '9999px',
+                        border: localChunkDuration === preset.val ? '1px solid var(--brand-500)' : '1px solid color-mix(in oklab, var(--white) 10%, transparent)',
+                        backgroundColor: localChunkDuration === preset.val ? 'color-mix(in oklab, var(--brand-500) 15%, transparent)' : 'color-mix(in oklab, var(--muted) 40%, transparent)',
+                        color: localChunkDuration === preset.val ? 'var(--brand-400)' : 'var(--muted-foreground)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <p className={styles.advHint} style={{ marginTop: '0.375rem' }}>Long audio is split into chunks of this size for high accuracy.</p>
+              </div>
+              <div className={styles.advCol}>
+                <Label className={styles.advLabel}>Overlap Duration (seconds)</Label>
+                <div className={styles.advInputWrap}>
+                  <Input type="number" min="0" max="60" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} className={styles.advInput} />
+                  <span className={styles.advUnit}>sec</span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.375rem', flexWrap: 'wrap' }}>
+                  {[{ label: '15s', val: '15' }, { label: '30s (Default)', val: '30' }, { label: '45s', val: '45' }].map(preset => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => setLocalOverlapDuration(preset.val)}
+                      style={{
+                        fontSize: '10px',
+                        padding: '0.125rem 0.5rem',
+                        borderRadius: '9999px',
+                        border: localOverlapDuration === preset.val ? '1px solid var(--brand-500)' : '1px solid color-mix(in oklab, var(--white) 10%, transparent)',
+                        backgroundColor: localOverlapDuration === preset.val ? 'color-mix(in oklab, var(--brand-500) 15%, transparent)' : 'color-mix(in oklab, var(--muted) 40%, transparent)',
+                        color: localOverlapDuration === preset.val ? 'var(--brand-400)' : 'var(--muted-foreground)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <p className={styles.advHint} style={{ marginTop: '0.375rem' }}>Overlap between chunks avoids cutting words mid-sentence.</p>
+              </div>
+            </div>
+
+            <div className={styles.advFooter} style={{ marginTop: '1rem' }}>
+              <span className={styles.advSummaryNote}>
+                <Radio className={styles.iconXs} /> Applies to all future transcription jobs.
+              </span>
+              <button type="button" onClick={resetAdvanced} className={styles.advResetBtn}>
+                <RotateCcw className={styles.iconXs} /> Reset to defaults
+              </button>
+            </div>
           </div>
 
-          {/* Storage Cleanup Section */}
-          <div className={styles.advSection} style={{ marginTop: '1rem' }}>
-            <div className={styles.advGrid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
-              <div>
-                <Label className={styles.advLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                  <Trash2 style={{ width: '1rem', height: '1rem', color: 'var(--muted-foreground)' }} /> Storage Cleanup
-                </Label>
-                <p className={styles.advHint} style={{ margin: 0 }}>
-                  Purge unused or orphaned audio files from disk to free up space.
-                </p>
+          <div className={styles.card}>
+            <div className={styles.cardHead}>
+              <div className={styles.cardHeadIcon} style={{ color: 'var(--destructive)' }}>
+                <Trash2 className={styles.iconMd} />
               </div>
+              <div>
+                <p className={styles.cardTitle}>Storage Maintenance & Cleanup</p>
+                <p className={styles.cardDesc}>Purge unused or orphaned audio files from disk to free up space.</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+              <p className={styles.advHint} style={{ margin: 0 }}>
+                Safely deletes temporary files from deleted or old jobs in <code className={styles.credCode}>data/audio/</code>.
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -822,6 +808,8 @@ export function SettingsView() {
               </Button>
             </div>
           </div>
+        </TabsContent>
+      </Tabs>
         </div>
 
         {/* Footer Actions */}
