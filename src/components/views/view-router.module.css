@@ -1,0 +1,42 @@
+.uploadSection > * + * {
+  margin-top: 2rem;
+}
+
+.hero {
+  margin-inline: auto;
+  max-width: 42rem;
+  text-align: center;
+}
+
+.hero > * + * {
+  margin-top: 0.75rem;
+}
+
+.heroTitle {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+@media (min-width: 640px) {
+  .heroTitle {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+
+.heroSub {
+  margin-inline: auto;
+  max-width: 32rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--muted-foreground);
+}
+
+@media (min-width: 640px) {
+  .heroSub {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}

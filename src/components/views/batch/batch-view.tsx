@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
   FileAudio, CheckCircle2, XCircle, Loader2, Download,
-  RotateCcw, Archive, Clock, User, AlertTriangle,
+  RotateCcw, Archive, Clock, User, AlertTriangle, Ban,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatTime, formatTimeSRT } from '@/lib/format-utils';
@@ -48,6 +48,7 @@ function downloadBlob(content: string, filename: string) {
 export function BatchView() {
   const { batchJobs, setCurrentView, clearBatch, chunkDuration } = useAppStore();
   const processingRef = useRef(false);
+  const stopRequestedRef = useRef(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -71,7 +72,7 @@ export function BatchView() {
 
     // The job processes in the background; poll it like the single-file flow.
     for (let attempt = 0; attempt < 900; attempt++) {
-      if (!mountedRef.current) throw new Error('Canceled');
+      if (!mountedRef.current || stopRequestedRef.current) throw new Error('Canceled');
       await new Promise(r => setTimeout(r, 3000));
 
       const pollRes = await fetch(`/api/jobs?id=${encodeURIComponent(data.jobId)}`);
@@ -102,11 +103,12 @@ export function BatchView() {
   const processQueue = useCallback(async () => {
     if (processingRef.current) return;
     processingRef.current = true;
+    stopRequestedRef.current = false;
 
     const jobs = useAppStore.getState().batchJobs;
 
     for (const job of jobs) {
-      if (!mountedRef.current) break;
+      if (!mountedRef.current || stopRequestedRef.current) break;
       if (job.status !== 'queued') continue;
 
       useAppStore.getState().updateBatchJob(job.id, { status: 'processing', progress: 5 });
@@ -173,7 +175,31 @@ export function BatchView() {
   const doneCount = batchJobs.filter(j => j.status === 'done').length;
   const failedCount = batchJobs.filter(j => j.status === 'failed').length;
   const totalCount = batchJobs.length;
+  const anyActive = batchJobs.some(j => j.status === 'processing' || j.status === 'queued');
   const allFinished = batchJobs.every(j => j.status === 'done' || j.status === 'failed');
+
+  // Stop the whole batch: cancel the in-flight server job (if any) and flag
+  // the queue so the polling loop abandons it.
+  const stopBatch = useCallback(async () => {
+    stopRequestedRef.current = true;
+    const state = useAppStore.getState();
+    const targets = state.batchJobs.filter(j => j.status === 'processing' || j.status === 'queued');
+    const processingJob = targets.find(j => j.status === 'processing');
+    if (processingJob?.jobId) {
+      try {
+        await fetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: processingJob.jobId, action: 'cancel' }),
+        });
+      } catch {}
+    }
+    targets.forEach(j => state.updateBatchJob(j.id, {
+      status: 'failed',
+      progress: 0,
+      error: 'Cancelled by user',
+    }));
+  }, []);
 
   return (
     <div className={styles.root}>
@@ -186,6 +212,12 @@ export function BatchView() {
           </p>
         </div>
         <div className={styles.headerActions}>
+          {anyActive && (
+            <Button variant="destructive" size="sm" onClick={stopBatch} className={styles.btnGap}>
+              <Ban className={styles.iconSm} />
+              Stop Batch
+            </Button>
+          )}
           {doneCount > 1 && (
             <Button onClick={downloadAll} className={`${styles.btnGap} ${styles.primaryBtn}`} size="sm">
               <Archive className={styles.iconSm} />

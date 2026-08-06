@@ -34,6 +34,7 @@ export function ProcessingView() {
   const hasStarted = useRef(false);
   const startTimeRef = useRef<number>(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const [paused, setPaused] = useState(() => useAppStore.getState().processingStatus.startsWith('Paused'));
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
@@ -73,12 +74,27 @@ export function ProcessingView() {
 
   // Pause, resume, or cancel the running job via the control API
   const sendControl = useCallback(async (action: 'pause' | 'resume' | 'cancel') => {
-    if (!jobId) return;
     if (action === 'cancel') {
       setCancelling(true);
       try {
         localStorage.removeItem('autoscribe_active_job_id');
       } catch {}
+
+      // If the upload/startup request is still in flight, abort it right away.
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
+
+      // No job id yet (still uploading/starting) — nothing to cancel server-side.
+      if (!jobId) {
+        setProcessingState({
+          isProcessing: false,
+          processingStatus: 'Cancelled by user',
+        });
+        setCancelling(false);
+        return;
+      }
     }
     try {
       const res = await fetch('/api/jobs', {
@@ -118,7 +134,9 @@ export function ProcessingView() {
   }, [setCurrentView]);
 
   const startTranscription = useCallback(async () => {
-    if (!uploadedFile || hasStarted.current) return;
+    // Prevent a second job from being started while one is already running
+    // (e.g. remounting the view while a job is still in flight).
+    if (!uploadedFile || hasStarted.current || useAppStore.getState().isProcessing) return;
     hasStarted.current = true;
     startTimeRef.current = Date.now();
     setPaused(false);
@@ -144,9 +162,13 @@ export function ProcessingView() {
         processingStatus: 'Starting transcription...',
       });
 
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
 
       const data = await response.json();
@@ -178,11 +200,20 @@ export function ProcessingView() {
         jobId: data.jobId,
       });
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setProcessingState({
+          isProcessing: false,
+          processingStatus: 'Cancelled by user',
+        });
+        return;
+      }
       console.error('Transcription error:', err);
       setProcessingState({
         isProcessing: false,
         processingStatus: `Error: ${err instanceof Error ? err.message : 'Network error. Please check your connection and try again.'}`,
       });
+    } finally {
+      abortRef.current = null;
     }
   }, [uploadedFile, selectedModel, chunkDuration, overlapDuration, setProcessingState]);
 

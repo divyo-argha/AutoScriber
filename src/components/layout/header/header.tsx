@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Settings, Mic, RotateCcw, History, AlertTriangle } from 'lucide-react';
-import { SettingsDialog } from './settings-dialog';
+import { SettingsDialog } from '@/components/settings';
 import {
   Select,
   SelectContent,
@@ -67,7 +67,14 @@ export function Header() {
           <div className={styles.bar}>
             <div
               className={styles.logo}
-              onClick={() => { if (!isProcessing) { reset(); } setCurrentView('upload'); }}
+              onClick={() => {
+                if (isProcessing) {
+                  setCurrentView('processing');
+                  return;
+                }
+                reset();
+                setCurrentView('upload');
+              }}
             >
               <div className={styles.logoIcon}>
                 <Mic className={styles.iconLg} />
