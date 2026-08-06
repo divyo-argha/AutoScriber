@@ -45,6 +45,10 @@
   height: var(--icon-sm);
 }
 
+.iconDanger {
+  color: var(--destructive);
+}
+
 .iconXs {
   width: var(--icon-xs);
   height: var(--icon-xs);

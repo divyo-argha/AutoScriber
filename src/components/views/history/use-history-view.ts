@@ -5,6 +5,7 @@ import { listJobs, getJob, deleteJob, parseJobResult } from '@/lib/api';
 import type { JobRecord } from '@/lib/api';
 import { downloadTranscriptClient } from '@/lib/transcript/download';
 import type { ClientExportFormat } from '@/lib/transcript/download';
+import { useToast } from '@/hooks/use-toast';
 
 export type { JobRecord };
 
@@ -14,11 +15,13 @@ export type { JobRecord };
  */
 export function useHistoryView() {
   const router = useRouter();
+  const { toast } = useToast();
   const { setTranscriptionResult, setUploadedFile } = useAppStore();
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDeleteJob, setConfirmDeleteJob] = useState<JobRecord | null>(null);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -51,24 +54,51 @@ export function useHistoryView() {
           return;
         }
       }
-      alert('This job has no valid transcription results.');
+      toast({
+        variant: 'destructive',
+        title: 'No Results',
+        description: 'This job has no valid transcription results.',
+      });
     } catch (err) {
       console.error('Failed to load job:', err);
-      alert('Failed to load transcription.');
+      toast({
+        variant: 'destructive',
+        title: 'Load Failed',
+        description: 'Failed to load this transcription. Please try again.',
+      });
     }
-  }, [setTranscriptionResult, setUploadedFile, router]);
+  }, [setTranscriptionResult, setUploadedFile, router, toast]);
 
-  const deleteJobById = useCallback(async (jobId: string) => {
-    if (!confirm('Delete this transcription? This cannot be undone.')) return;
-    setDeleting(jobId);
+  const requestDelete = useCallback((job: JobRecord) => {
+    setConfirmDeleteJob(job);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    const job = confirmDeleteJob;
+    if (!job) return;
+    setDeleting(job.id);
+    setConfirmDeleteJob(null);
     try {
-      await deleteJob(jobId);
-      setJobs(prev => prev.filter(j => j.id !== jobId));
+      await deleteJob(job.id);
+      setJobs(prev => prev.filter(j => j.id !== job.id));
+      toast({
+        title: 'Deleted',
+        description: `"${job.fileName}" was removed from history.`,
+      });
     } catch (err) {
       console.error('Failed to delete job:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Delete Failed',
+        description: 'Could not delete this transcription. Please try again.',
+      });
     } finally {
       setDeleting(null);
     }
+  }, [confirmDeleteJob, toast]);
+
+  const cancelDelete = useCallback(() => {
+    setConfirmDeleteJob(null);
   }, []);
 
   const exportFromHistory = useCallback((job: JobRecord, format: ClientExportFormat) => {
@@ -90,11 +120,14 @@ export function useHistoryView() {
     loading,
     expandedJob,
     deleting,
+    confirmDeleteJob,
     completedJobs,
     otherJobs,
     loadJobs,
     loadJob,
-    deleteJobById,
+    requestDelete,
+    confirmDelete,
+    cancelDelete,
     exportFromHistory,
     toggleExpanded,
   };

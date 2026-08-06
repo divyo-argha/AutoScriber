@@ -3,6 +3,7 @@
 import { ArrowRight, Key } from 'lucide-react';
 import { ApiKeyInput } from './api-key-input';
 import { ConnectionStatus } from './connection-status';
+import { GeminiInsights } from './gemini-insights';
 import type { TestStatus } from './use-settings-form';
 import styles from './settings-view.module.css';
 
@@ -36,7 +37,7 @@ export function GeminiTab({
           </div>
           <div>
             <p className={styles.cardTitle}>Gemini API Key</p>
-            <p className={styles.cardDesc}>Generate a free key at AI Studio, paste it below and verify.</p>
+            <p className={styles.cardDesc}>Generate a key at AI Studio, paste it below and verify.</p>
           </div>
         </div>
 
@@ -61,12 +62,14 @@ export function GeminiTab({
         )}
 
         <p className={styles.geminiHint}>
-          Get your free API key at{' '}
+          Get your key at{' '}
           <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className={styles.geminiLink}>
             aistudio.google.com <ArrowRight className={styles.linkArrow} />
           </a>
         </p>
       </div>
+
+      <GeminiInsights />
     </div>
   );
 }

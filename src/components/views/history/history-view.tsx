@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { Trash2 } from 'lucide-react';
 import { useHistoryView } from './use-history-view';
 import { HistoryHeader } from './history-header';
 import { HistoryLoading, HistoryEmpty } from './history-states';
 import { CompletedJobCard } from './completed-job-card';
 import { OtherJobCard } from './other-job-card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import styles from './history-view.module.css';
 
 export function HistoryView() {
@@ -15,11 +17,14 @@ export function HistoryView() {
     jobs,
     expandedJob,
     deleting,
+    confirmDeleteJob,
     completedJobs,
     otherJobs,
     loadJobs,
     loadJob,
-    deleteJobById,
+    requestDelete,
+    confirmDelete,
+    cancelDelete,
     exportFromHistory,
     toggleExpanded,
   } = useHistoryView();
@@ -50,7 +55,7 @@ export function HistoryView() {
                   deleting={deleting === job.id}
                   onToggle={() => toggleExpanded(job.id)}
                   onView={() => loadJob(job.id)}
-                  onDelete={() => deleteJobById(job.id)}
+                  onDelete={() => requestDelete(job)}
                   onExport={(format) => exportFromHistory(job, format)}
                 />
               ))}
@@ -65,13 +70,33 @@ export function HistoryView() {
                   key={job.id}
                   job={job}
                   deleting={deleting === job.id}
-                  onDelete={() => deleteJobById(job.id)}
+                  onDelete={() => requestDelete(job)}
                 />
               ))}
             </div>
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteJob}
+        onOpenChange={(open) => { if (!open) cancelDelete(); }}
+        title="Delete this transcription?"
+        description={
+          <>
+            Are you sure you want to permanently remove{' '}
+            <strong>{confirmDeleteJob?.fileName || 'this file'}</strong> from your history?
+            This action cannot be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        cancelLabel="Keep"
+        tone="danger"
+        icon={<Trash2 className={`${styles.iconSm} ${styles.iconDanger}`} />}
+        loading={deleting === confirmDeleteJob?.id}
+        onConfirm={confirmDelete}
+        showCloseButton={false}
+      />
     </div>
   );
 }

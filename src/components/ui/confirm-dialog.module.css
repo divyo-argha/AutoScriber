@@ -1,0 +1,147 @@
+/* ---------------------------------- confirm dialog ---------------------------------- */
+.overlay {
+  background-color: color-mix(in oklab, var(--black) 60%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.content {
+  position: relative;
+  overflow: hidden;
+  max-width: 30rem;
+  border: 1px solid color-mix(in oklab, var(--brand-500) 25%, transparent);
+  border-radius: var(--radius-card);
+  background-color: var(--card);
+  box-shadow: 0 25px 60px -12px color-mix(in oklab, var(--black) 60%, transparent);
+  padding: 1.5rem;
+}
+
+.content::before {
+  content: '';
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 60%;
+  height: 130%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--brand-500) 12%, transparent),
+    transparent
+  );
+}
+
+.glow {
+  position: absolute;
+  top: -3rem;
+  left: -3rem;
+  width: 7rem;
+  height: 7rem;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(40px);
+  opacity: 0.5;
+}
+
+.glowDanger {
+  background-color: color-mix(in oklab, var(--destructive) 40%, transparent);
+}
+
+.glowWarning {
+  background-color: color-mix(in oklab, var(--amber-500) 40%, transparent);
+}
+
+.glowBrand {
+  background-color: color-mix(in oklab, var(--brand-500) 40%, transparent);
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-full);
+}
+
+.iconWrapDanger {
+  background-color: color-mix(in oklab, var(--destructive) 14%, transparent);
+}
+
+.iconWrapWarning {
+  background-color: color-mix(in oklab, var(--amber-500) 14%, transparent);
+}
+
+.iconWrapBrand {
+  background-color: color-mix(in oklab, var(--brand-500) 14%, transparent);
+}
+
+.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.iconDanger {
+  color: var(--destructive);
+}
+
+.iconWarning {
+  color: var(--amber-500);
+}
+
+.iconBrand {
+  color: var(--brand-400);
+}
+
+.titleWrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.title {
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.description {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.description strong {
+  color: var(--foreground);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.confirmButton {
+  flex: 1;
+}
+
+.cancelButton {
+  flex: 1;
+}
+
+@media (min-width: 640px) {
+  .footer {
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+}
