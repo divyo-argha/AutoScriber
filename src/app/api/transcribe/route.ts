@@ -3,7 +3,8 @@ import { db } from '@/lib/db';
 import { splitAudioIntoChunks, getAudioDuration, cleanupChunks } from '@/lib/audio/slicer';
 import { mergeChunkResults } from '@/lib/transcriber/merger';
 import { formatTime } from '@/lib/format-utils';
-import { transcribeChunkWithGemini } from '@/lib/transcriber/gemini';
+import { transcribeChunk } from '@/lib/transcriber';
+import { getGcpCredentialsInfo } from '@/lib/transcriber/gcp-credentials';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
 import type { TranscriptionResult, ChunkResult } from '@/lib/transcriber/types';
 import type { ChunkInfo } from '@/lib/audio/types';
@@ -31,6 +32,8 @@ export async function POST(request: NextRequest) {
 
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
+    const gcpCreds = getGcpCredentialsInfo(settings?.gcpCredentialsPath, settings?.gcpLocation);
+    const hasGcpCreds = gcpCreds.exists || !!settings?.gcpProjectId || !!process.env.GCP_PROJECT_ID;
     const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300; // 5 mins
     const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 30; // 30s overlap
 
@@ -49,8 +52,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid model selected' }, { status: 400 });
     }
 
-    if (!geminiApiKey) {
-      return NextResponse.json({ error: 'Gemini API key is required for transcription' }, { status: 400 });
+    if (!geminiApiKey && !hasGcpCreds) {
+      return NextResponse.json({ error: 'Gemini API key or GCP Vertex credentials (gcp-credentials.json) are required for transcription' }, { status: 400 });
     }
 
     // Sanitize the client-supplied filename to prevent path traversal when it
@@ -116,6 +119,10 @@ export async function POST(request: NextRequest) {
       overlapDuration,
       duration,
       audioPath: persistentAudioPath,
+      aiProvider: settings?.aiProvider || 'auto',
+      gcpProjectId: settings?.gcpProjectId,
+      gcpLocation: settings?.gcpLocation,
+      gcpCredentialsPath: settings?.gcpCredentialsPath,
     });
 
     return NextResponse.json({ jobId: job.id, status: 'started' });
@@ -138,6 +145,10 @@ interface TranscriptionJobParams {
   overlapDuration: number;
   duration: number | null;
   audioPath: string | null;
+  aiProvider?: string;
+  gcpProjectId?: string;
+  gcpLocation?: string;
+  gcpCredentialsPath?: string;
 }
 
 const CONTROL_POLL_INTERVAL = 3000;
@@ -210,7 +221,22 @@ async function cancelJob(jobId: string, audioPath: string | null) {
 }
 
 async function processTranscriptionJob(params: TranscriptionJobParams) {
-  const { jobId, filePath, tempDir, modelInfo, modelId, geminiApiKey, chunkDuration, overlapDuration, duration, audioPath } = params;
+  const {
+    jobId,
+    filePath,
+    tempDir,
+    modelInfo,
+    modelId,
+    geminiApiKey,
+    chunkDuration,
+    overlapDuration,
+    duration,
+    audioPath,
+    aiProvider = 'auto',
+    gcpProjectId,
+    gcpLocation,
+    gcpCredentialsPath,
+  } = params;
   let chunks: ChunkInfo[] = [];
 
   try {
@@ -279,7 +305,17 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
         }
         chunkAttempts++;
         try {
-          result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, activeModel, chunk.index, chunk.startTime);
+          result = await transcribeChunk({
+            filePath: chunk.filePath,
+            modelId: activeModel,
+            chunkIndex: chunk.index,
+            timeOffset: chunk.startTime,
+            aiProvider,
+            geminiApiKey,
+            gcpProjectId,
+            gcpLocation,
+            gcpCredentialsPath,
+          });
         } catch (chunkErr) {
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
           console.warn(`[transcribe] Chunk ${chunk.index} attempt ${chunkAttempts}/${maxChunkAttempts} failed: ${errMsg}`);
@@ -334,7 +370,17 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
           return;
         }
         try {
-          const result = await transcribeChunkWithGemini(chunk.filePath, geminiApiKey, activeModel, chunk.index, chunk.startTime);
+          const result = await transcribeChunk({
+            filePath: chunk.filePath,
+            modelId: activeModel,
+            chunkIndex: chunk.index,
+            timeOffset: chunk.startTime,
+            aiProvider,
+            geminiApiKey,
+            gcpProjectId,
+            gcpLocation,
+            gcpCredentialsPath,
+          });
           console.log(`[transcribe] Chunk ${chunk.index} recovered on retry: ${result.segments.length} segments`);
           completedChunkResults.push({ chunk, result });
           if (result.model) activeModel = result.model;
