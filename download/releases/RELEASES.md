@@ -2,85 +2,86 @@
 
 ## Version 2.0.1
 
-Built on: May 31, 2026
+**Released:** August 2026  
+**Electron:** 33  
+**electron-builder:** 25
 
-### macOS
+---
 
-#### Intel (x64)
-- **autoScriber-2.0.1.dmg** (94 MB) - DMG installer for Intel Macs
-- **autoScriber-2.0.1-mac.zip** (91 MB) - ZIP archive for Intel Macs
+### 🍎 macOS
 
-#### Apple Silicon (arm64)
-- **autoScriber-2.0.1-arm64.dmg** (89 MB) - DMG installer for M series Macs
-- **autoScriber-2.0.1-arm64-mac.zip** (86 MB) - ZIP archive for M series Macs
+| Chip | File | Size |
+|------|------|------|
+| Intel (x64) | `autoScriber-2.0.1.dmg` | 94 MB |
+| Intel (x64) | `autoScriber-2.0.1-mac.zip` | 91 MB |
+| Apple Silicon (arm64) | `autoScriber-2.0.1-arm64.dmg` | 89 MB |
+| Apple Silicon (arm64) | `autoScriber-2.0.1-arm64-mac.zip` | 86 MB |
 
 **Installation:**
-1. Download the appropriate DMG or ZIP for your Mac
-2. Open the DMG and drag AutoScribe to Applications, or extract the ZIP
-3. First launch: Right-click → Open (to bypass Gatekeeper since the app is not signed)
+1. Download the DMG or ZIP for your chip
+2. Open DMG → drag AutoScribe to Applications (or extract the ZIP)
+3. First launch: right-click → **Open** (bypasses Gatekeeper — app is unsigned)
 
 **System Requirements:** macOS 10.13 or later
 
 ---
 
-### Windows
+### 🪟 Windows
 
-#### Installers
-- **autoScriber-2.0.1.exe** (136 MB) - Universal installer (includes both x64 and ia32)
-- **autoScriber-2.0.1-x64.exe** (72 MB) - 64-bit installer
-- **autoScriber-2.0.1-ia32.exe** (64 MB) - 32-bit installer
+| Edition | File | Size |
+|---------|------|------|
+| Universal (Recommended) | `autoScriber-2.0.1.exe` | 136 MB |
+| 64-bit | `autoScriber-2.0.1-x64.exe` | 72 MB |
+| 32-bit | `autoScriber-2.0.1-ia32.exe` | 64 MB |
+| Portable (64-bit) | `autoScriber-2.0.1-x64-portable.exe` | — |
 
 **Installation:**
 1. Download the appropriate installer
-2. Run the .exe file
+2. Run the `.exe` file
 3. Follow the installation wizard
-4. Choose installation directory (default: C:\Users\YourName\AppData\Local\Programs\AutoScribe)
 
 **System Requirements:** Windows 7 or later
 
 ---
 
-### Linux (Ubuntu)
+### 🐧 Linux
 
-#### AppImage
-- **autoScriber-2.0.1.AppImage** (99 MB) - Universal Linux application
+| Format | File | Size |
+|--------|------|------|
+| AppImage (Universal) | `autoScriber-2.0.1.AppImage` | 99 MB |
 
 **Installation:**
-1. Download the AppImage
-2. Make it executable: `chmod +x autoScriber-2.0.1.AppImage`
-3. Run: `./autoScriber-2.0.1.AppImage`
+```bash
+chmod +x autoScriber-2.0.1.AppImage
+./autoScriber-2.0.1.AppImage
+```
 
-**System Requirements:** Ubuntu 18.04 or later (works on most modern Linux distributions)
-
-**Note:** DEB packages were not included in this release due to build issues on macOS. AppImage is the recommended format for Linux users as it works across all distributions.
+**System Requirements:** Ubuntu 18.04+ or equivalent (any modern Linux distribution)
 
 ---
 
-## Build Information
-
-- **Electron Version:** 28.3.3
-- **Builder:** electron-builder 24.13.3
-- **Build Platform:** macOS (darwin)
-- **Node.js:** Compatible with Node 16+
-
 ## Checksums
 
-To verify the integrity of your download, you can generate checksums:
+To verify file integrity:
 
 ```bash
-# macOS/Linux
+# macOS / Linux
 shasum -a 256 autoScriber-2.0.1.dmg
 
 # Windows (PowerShell)
 Get-FileHash autoScriber-2.0.1.exe -Algorithm SHA256
 ```
 
+---
+
 ## Known Issues
 
-1. **macOS:** App is not code-signed, so you need to right-click → Open on first launch
-2. **Windows:** Windows Defender may show a warning since the app is not signed
-3. **Linux:** DEB packages are not available in this release; use AppImage instead
+1. **macOS:** App is not code-signed — right-click → Open on first launch
+2. **Windows:** Windows Defender may warn about an unsigned app — click More info → Run anyway
+3. **Linux DEB:** Not included in this release; use AppImage (works on all distributions)
+
+---
 
 ## Support
 
-For issues, questions, or feature requests, please visit the main repository.
+For issues, questions, or feature requests, visit the [main repository](https://github.com/divyo-argha/AutoScriber).

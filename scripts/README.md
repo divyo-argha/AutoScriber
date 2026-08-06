@@ -1,38 +1,33 @@
 # Database Maintenance Scripts
 
-## Fix Transcriptions Script
+## `fix-transcriptions.ts`
 
-This script fixes malformed transcription data in your database.
+Scans all completed transcription jobs and repairs malformed result data in the database.
 
-### What it does:
+### What it fixes
 
-1. ✅ Scans all completed transcription jobs
-2. ✅ Validates JSON structure
-3. ✅ Cleans up text (removes extra whitespace, fixes encoding)
-4. ✅ Validates segment data (speaker, text, timestamps)
-5. ✅ Removes empty or invalid segments
-6. ✅ Rebuilds fullText from cleaned segments
-7. ✅ Updates database with fixed data
+| Issue | Action |
+|-------|--------|
+| Excessive whitespace | Collapses multiple spaces to one |
+| Encoding problems | Corrects common UTF-8 issues |
+| Missing fields | Adds default values for missing speaker / timestamps |
+| Empty segments | Removes segments with no text |
+| Malformed JSON | Attempts structural repair |
+| Incorrect `fullText` | Rebuilds from cleaned segments |
 
-### How to run:
+### How to run
 
 ```bash
-# Install tsx if you haven't already
-npm install -g tsx
+cd AutoScriber
 
-# Run the script
+# Using bun (recommended)
+bunx tsx scripts/fix-transcriptions.ts
+
+# Or with npx
 npx tsx scripts/fix-transcriptions.ts
 ```
 
-### What gets fixed:
-
-- **Excessive whitespace**: Multiple spaces reduced to single space
-- **Encoding issues**: Common UTF-8 encoding problems
-- **Missing fields**: Adds default values for missing speaker/timestamps
-- **Empty segments**: Removes segments with no text
-- **Invalid JSON**: Attempts to repair malformed JSON structures
-
-### Example output:
+### Example output
 
 ```
 🔍 Scanning database for transcription jobs...
@@ -59,33 +54,27 @@ Found 5 completed jobs
 ==================================================
 ```
 
-### Safety:
-
-- ✅ Only updates jobs that need fixing
-- ✅ Validates data before updating
-- ✅ Logs all changes
-- ✅ Non-destructive (keeps original data structure)
-
-### When to run:
+### When to run
 
 - After importing old transcriptions
-- If you see raw JSON in the UI
+- If the UI shows raw JSON instead of formatted text
 - After database migrations
 - When segments appear malformed
 
-### Troubleshooting:
+### Troubleshooting
 
-**Error: Cannot find module '@prisma/client'**
+**`Cannot find module '@prisma/client'`**
 ```bash
-npm install
-npx prisma generate
+cd AutoScriber
+bun install
+bun run db:generate
 ```
 
-**Error: Database connection failed**
-- Check that `prisma/dev.db` exists
-- Run `npx prisma migrate dev` if needed
+**`Database connection failed`**
+- Ensure `prisma/dev.db` exists
+- Run `bun run db:push` to initialise the schema
 
-**Error: Permission denied**
+**`Permission denied`**
 ```bash
 chmod +x scripts/fix-transcriptions.ts
 ```

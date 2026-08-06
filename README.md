@@ -15,7 +15,7 @@
     <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
     <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind" /></a>
     <a href="https://prisma.io"><img src="https://img.shields.io/badge/Prisma-6-2D3748?style=flat-square&logo=prisma&logoColor=white" alt="Prisma" /></a>
-    <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/Gemini-2.0_Flash-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini" /></a>
+    <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini" /></a>
     <a href="https://bun.sh"><img src="https://img.shields.io/badge/Bun-runtime-black?style=flat-square&logo=bun" alt="Bun" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square" alt="MIT" /></a>
   </p>
@@ -54,22 +54,26 @@ Built for **researchers, journalists, and linguists** working with Bangla-Englis
 
 ### macOS
 
-| Intel (x64) | Apple Silicon (M1/M2/M3) |
-|-------------|--------------------------|
-| [Download DMG](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.dmg) (94 MB) | [Download DMG](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-arm64.dmg) (89 MB) |
-| [Download ZIP](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-mac.zip) (91 MB) | [Download ZIP](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-arm64-mac.zip) (86 MB) |
+| Chip | Format | Download | Size |
+|------|--------|----------|------|
+| Intel (x64) | DMG | [autoScriber-2.0.1.dmg](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.dmg) | 94 MB |
+| Intel (x64) | ZIP | [autoScriber-2.0.1-mac.zip](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-mac.zip) | 91 MB |
+| Apple Silicon (arm64) | DMG | [autoScriber-2.0.1-arm64.dmg](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-arm64.dmg) | 89 MB |
+| Apple Silicon (arm64) | ZIP | [autoScriber-2.0.1-arm64-mac.zip](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-arm64-mac.zip) | 86 MB |
 
 ### Windows
 
-| 64-bit (x64) | 32-bit (ia32) | Universal Installer |
-|--------------|---------------|---------------------|
-| [Download Installer](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-x64.exe) (72 MB) | [Download Installer](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-ia32.exe) (64 MB) | [Download Installer](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.exe) (136 MB) |
+| Edition | Download | Size |
+|---------|----------|------|
+| Universal (Recommended) | [autoScriber-2.0.1.exe](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.exe) | 136 MB |
+| 64-bit | [autoScriber-2.0.1-x64.exe](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-x64.exe) | 72 MB |
+| 32-bit | [autoScriber-2.0.1-ia32.exe](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-ia32.exe) | 64 MB |
 
-### Linux (Ubuntu)
+### Linux
 
-| Format | Download |
-|--------|----------|
-| **AppImage** (Recommended) | [Download AppImage](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage) (99 MB) |
+| Format | Download | Size |
+|--------|----------|------|
+| AppImage (Universal) | [autoScriber-2.0.1.AppImage](https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage) | 99 MB |
 
 <sub>AppImage works on most Linux distributions. Make it executable: `chmod +x autoScriber-2.0.1.AppImage`</sub>
 
@@ -107,7 +111,7 @@ Audio files are retained in `data/audio/` so you can replay past transcriptions 
 <td width="50%" valign="top">
 
 ### Transcription Engine
-- Gemini 2.5 Flash, 2.0 Flash, 2.5 Pro
+- Gemini 2.5 Flash, 2.5 Pro, 2.0 Flash
 - Local Ollama model support
 - Bangla, English, code-switched audio
 - Configurable chunk size + overlap
@@ -404,19 +408,29 @@ Open **Settings** (gear icon in the header) to configure:
 
 ## Desktop App (Electron)
 
-[![Electron](https://img.shields.io/badge/Electron-desktop_app-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org)
+[![Electron](https://img.shields.io/badge/Electron-33-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org)
 
-An Electron wrapper is included for running AutoScribe as a native desktop application.
+The Electron desktop wrapper lives in the `electron/` directory. It bundles the Next.js standalone build and runs it in-process.
 
 ```bash
-# Build the Next.js app first
+# 1. Build the Next.js app
 bun run build
 
-# Then run via Electron
+# 2. Install Electron dependencies
 cd electron
 npm install
-npm start
+
+# 3. Run in development mode (points at bun run dev)
+npm run start:dev
+
+# 4. Package for distribution
+npm run dist:mac    # macOS (DMG + ZIP)
+npm run dist:win    # Windows (NSIS + Portable)
+npm run dist:linux  # Linux (AppImage + DEB)
+npm run dist        # All platforms
 ```
+
+Built installers are written to `electron/dist-electron/`.
 
 ---
 
