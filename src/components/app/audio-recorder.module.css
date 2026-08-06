@@ -27,7 +27,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-med);
   background-color: color-mix(in oklab, var(--muted) 50%, transparent);
 }
 
@@ -42,8 +42,8 @@
 .bar {
   flex: 1;
   min-width: 3px;
-  border-radius: 9999px;
-  background-color: #10b981;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-500);
   height: var(--bar-height, 4px);
   opacity: var(--bar-opacity, 0.4);
   transition: all 0.075s;
@@ -53,14 +53,14 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 .savedDot {
   width: 0.75rem;
   height: 0.75rem;
-  border-radius: 9999px;
-  background-color: #10b981;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-500);
 }
 
 .savedText {
@@ -100,8 +100,8 @@
 .recDot {
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 9999px;
-  background-color: #ef4444;
+  border-radius: var(--radius-full);
+  background-color: var(--red-500);
   animation: recPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -109,7 +109,7 @@
   font-size: 0.75rem;
   line-height: 1rem;
   font-weight: 500;
-  color: #ef4444;
+  color: var(--red-500);
 }
 
 @keyframes recPulse {
@@ -121,15 +121,15 @@
 .pauseDot {
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 9999px;
-  background-color: #f59e0b;
+  border-radius: var(--radius-full);
+  background-color: var(--amber-500);
 }
 
 .pauseText {
   font-size: 0.75rem;
   line-height: 1rem;
   font-weight: 500;
-  color: #f59e0b;
+  color: var(--amber-500);
 }
 
 .timerCenter {
@@ -137,7 +137,7 @@
 }
 
 .timer {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-mono-stack);
   font-size: 1.875rem;
   line-height: 2.25rem;
   font-weight: 700;
@@ -168,7 +168,7 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-small);
   background-color: color-mix(in oklab, var(--destructive) 10%, transparent);
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -193,11 +193,11 @@
   gap: 0.5rem;
   height: 3rem;
   padding-inline: 1.5rem;
-  background-color: #059669;
+  background-color: var(--brand-600);
 }
 
 .recordBtn:hover {
-  background-color: #047857;
+  background-color: var(--brand-700);
 }
 
 .micIcon {
@@ -208,13 +208,13 @@
 .roundBtn {
   width: 3rem;
   height: 3rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 .stopBtn {
   width: 3.5rem;
   height: 3.5rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 .tip {

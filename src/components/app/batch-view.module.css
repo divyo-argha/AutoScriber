@@ -40,26 +40,26 @@
 }
 
 .primaryBtn {
-  background-color: #059669;
+  background-color: var(--brand-600);
 }
 
 .primaryBtn:hover {
-  background-color: #047857;
+  background-color: var(--brand-700);
 }
 
 .iconSm {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 .iconXs {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: var(--icon-xs);
+  height: var(--icon-xs);
 }
 
 .iconMd {
-  width: 1rem;
-  height: 1rem;
+  width: var(--icon-md);
+  height: var(--icon-md);
 }
 
 .overallBar {
@@ -76,7 +76,7 @@
 }
 
 .jobCardDone {
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: color-mix(in oklab, var(--brand-500) 30%, transparent);
 }
 
 .jobCardFailed {
@@ -84,7 +84,7 @@
 }
 
 .jobCardProcessing {
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: color-mix(in oklab, var(--blue-500) 30%, transparent);
 }
 
 .jobInner {
@@ -104,15 +104,15 @@
   height: 2.25rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-small);
 }
 
 .statusIconDone {
-  background-color: #ecfdf5;
+  background-color: var(--brand-50);
 }
 
 :global(.dark) .statusIconDone {
-  background-color: color-mix(in oklab, #022c22 30%, transparent);
+  background-color: color-mix(in oklab, var(--brand-950) 30%, transparent);
 }
 
 .statusIconFailed {
@@ -120,11 +120,11 @@
 }
 
 .statusIconProcessing {
-  background-color: #eff6ff;
+  background-color: var(--blue-50);
 }
 
 :global(.dark) .statusIconProcessing {
-  background-color: color-mix(in oklab, #172554 30%, transparent);
+  background-color: color-mix(in oklab, var(--blue-900) 30%, transparent);
 }
 
 .statusIconQueued {
@@ -134,7 +134,7 @@
 .statusIcon {
   width: 1.125rem;
   height: 1.125rem;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 .statusIconDestructive {
@@ -142,7 +142,7 @@
 }
 
 .statusIconProcessingIcon {
-  color: #3b82f6;
+  color: var(--blue-500);
   animation: batchSpin 1s linear infinite;
 }
 
@@ -225,11 +225,11 @@
   gap: 0.25rem;
   margin-top: 0.25rem;
   font-size: 11px;
-  color: #d97706;
+  color: var(--amber-600);
 }
 
 :global(.dark) .skipWarn {
-  color: #fbbf24;
+  color: var(--amber-400);
 }
 
 .skipWarnIcon {
@@ -268,12 +268,12 @@
 
 .doneBanner {
   padding: 1rem;
-  border-color: rgba(16, 185, 129, 0.3);
-  background-color: color-mix(in oklab, #ecfdf5 20%, transparent);
+  border-color: color-mix(in oklab, var(--brand-500) 30%, transparent);
+  background-color: color-mix(in oklab, var(--brand-50) 20%, transparent);
 }
 
 :global(.dark) .doneBanner {
-  background-color: color-mix(in oklab, #022c22 10%, transparent);
+  background-color: color-mix(in oklab, var(--brand-950) 10%, transparent);
 }
 
 .doneBannerRow {

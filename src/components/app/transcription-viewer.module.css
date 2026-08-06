@@ -23,7 +23,7 @@
   height: 4rem;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   background-color: var(--muted);
 }
 
@@ -57,7 +57,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem;
-  border-radius: 1rem;
+  border-radius: var(--radius-card);
   border: 1px solid color-mix(in oklab, var(--border) 40%, transparent);
   background-color: color-mix(in oklab, var(--secondary) 20%, transparent);
   backdrop-filter: blur(4px);
@@ -80,20 +80,20 @@
 .statIcon {
   width: 0.75rem;
   height: 0.75rem;
-  color: #10b981;
+  color: var(--brand-500);
 }
 
 .savedBadge {
   gap: 0.25rem;
   font-size: 0.75rem;
   line-height: 1rem;
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  border-color: rgba(16, 185, 129, 0.2);
+  background-color: color-mix(in oklab, var(--brand-500) 10%, transparent);
+  color: var(--brand-600);
+  border-color: color-mix(in oklab, var(--brand-500) 20%, transparent);
 }
 
 :global(.dark) .savedBadge {
-  color: #34d399;
+  color: var(--brand-400);
 }
 
 .spacer {
@@ -104,7 +104,7 @@
   display: flex;
   align-items: center;
   padding: 0.25rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   border: 1px solid color-mix(in oklab, var(--border) 40%, transparent);
   background-color: color-mix(in oklab, var(--muted) 65%, transparent);
 }
@@ -116,7 +116,7 @@
   gap: 0.375rem;
   height: 2rem;
   padding-inline: 0.875rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
   line-height: 1rem;
   transition: all 0.2s;
@@ -124,13 +124,13 @@
 
 .modeBtnActive {
   background-color: var(--background);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--black) 5%, transparent);
   font-weight: 600;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 :global(.dark) .modeBtnActive {
-  color: #34d399;
+  color: var(--brand-400);
 }
 
 .modeBtnInactive {
@@ -150,18 +150,18 @@
 
 .actionBtn {
   height: 2rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   gap: 0.375rem;
   border-color: color-mix(in oklab, var(--border) 40%, transparent);
 }
 
 .actionBtn:hover {
-  background-color: #ecfdf5;
-  color: #059669;
+  background-color: var(--brand-50);
+  color: var(--brand-600);
 }
 
 :global(.dark) .actionBtn:hover {
-  background-color: color-mix(in oklab, #022c22 20%, transparent);
+  background-color: color-mix(in oklab, var(--brand-950) 20%, transparent);
 }
 
 .btnGap {
@@ -171,12 +171,12 @@
 .copyIcon {
   width: 0.875rem;
   height: 0.875rem;
-  color: #10b981;
+  color: var(--brand-500);
 }
 
 .iconSm {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 .warnBox {
@@ -184,14 +184,14 @@
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  background-color: color-mix(in oklab, #fffbeb 70%, transparent);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  border-radius: var(--radius-card);
+  border: 1px solid color-mix(in oklab, var(--amber-500) 30%, transparent);
+  background-color: color-mix(in oklab, var(--amber-50) 70%, transparent);
+  box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--black) 5%, transparent);
 }
 
 :global(.dark) .warnBox {
-  background-color: color-mix(in oklab, #451a03 25%, transparent);
+  background-color: color-mix(in oklab, var(--amber-950) 25%, transparent);
 }
 
 .warnIcon {
@@ -199,11 +199,11 @@
   flex-shrink: 0;
   width: 1.25rem;
   height: 1.25rem;
-  color: #d97706;
+  color: var(--amber-600);
 }
 
 :global(.dark) .warnIcon {
-  color: #fbbf24;
+  color: var(--amber-400);
 }
 
 .warnInner {
@@ -218,25 +218,25 @@
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 600;
-  color: #92400e;
+  color: var(--amber-800);
 }
 
 :global(.dark) .warnTitle {
-  color: #fcd34d;
+  color: var(--amber-300);
 }
 
 .warnText {
   font-size: 0.75rem;
   line-height: 1.625;
-  color: color-mix(in oklab, #b45309 80%, transparent);
+  color: color-mix(in oklab, var(--amber-700) 80%, transparent);
 }
 
 :global(.dark) .warnText {
-  color: color-mix(in oklab, #fbbf24 80%, transparent);
+  color: color-mix(in oklab, var(--amber-400) 80%, transparent);
 }
 
 .warnRange {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-mono-stack);
   font-weight: 500;
 }
 
@@ -250,9 +250,9 @@
 .legendBadge {
   border: 1px solid var(--speaker-border, var(--border));
   padding: 0.125rem 0.625rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   font-size: 10px;
-  box-shadow: 0 1px 2px 0 rgb(16 185 129 / 0.05);
+  box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--brand-500) 5%, transparent);
 }
 
 .panelWrap {
@@ -265,10 +265,10 @@
 
 .listCard {
   overflow: hidden;
-  border-radius: 1rem;
-  border: 1px solid rgba(16, 185, 129, 0.1);
+  border-radius: var(--radius-card);
+  border: 1px solid color-mix(in oklab, var(--brand-500) 10%, transparent);
   background-color: color-mix(in oklab, var(--card) 65%, transparent);
-  box-shadow: 0 10px 15px -3px rgb(16 185 129 / 0.05), 0 4px 6px -4px rgb(16 185 129 / 0.05);
+  box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--brand-500) 5%, transparent), 0 4px 6px -4px color-mix(in oklab, var(--brand-500) 5%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -303,18 +303,18 @@
   align-items: flex-start;
   gap: 1rem;
   padding: 0.75rem 0.875rem;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-med);
   transition: all 0.3s;
 }
 
 .rowActive {
-  border-left: 4px solid #10b981;
-  background-color: color-mix(in oklab, #ecfdf5 60%, transparent);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  border-left: 4px solid var(--brand-500);
+  background-color: color-mix(in oklab, var(--brand-50) 60%, transparent);
+  box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--black) 5%, transparent);
 }
 
 :global(.dark) .rowActive {
-  background-color: color-mix(in oklab, #022c22 30%, transparent);
+  background-color: color-mix(in oklab, var(--brand-950) 30%, transparent);
 }
 
 .rowPast {
@@ -338,19 +338,19 @@
 }
 
 .timeText {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-mono-stack);
   font-size: 0.75rem;
   line-height: 1;
   font-weight: 500;
 }
 
 .timeActive {
-  color: #059669;
+  color: var(--brand-600);
   font-weight: 700;
 }
 
 :global(.dark) .timeActive {
-  color: #34d399;
+  color: var(--brand-400);
 }
 
 .timeInactive {
@@ -377,7 +377,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   font-size: 10px;
   font-weight: 600;
 }
@@ -405,21 +405,21 @@
   margin-right: 0.25rem;
   cursor: pointer;
   padding: 0 0.25rem;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-tiny);
   transition: all 0.1s;
 }
 
 .wordCurrent {
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  background-color: color-mix(in oklab, #d1fae5 70%, transparent);
-  color: #047857;
+  border: 1px solid color-mix(in oklab, var(--brand-500) 30%, transparent);
+  background-color: color-mix(in oklab, var(--brand-100) 70%, transparent);
+  color: var(--brand-700);
   font-weight: 700;
   transform: scale(1.03);
 }
 
 :global(.dark) .wordCurrent {
-  background-color: color-mix(in oklab, #022c22 50%, transparent);
-  color: #6ee7b7;
+  background-color: color-mix(in oklab, var(--brand-950) 50%, transparent);
+  color: var(--brand-300);
 }
 
 .wordPast {
@@ -462,16 +462,16 @@
   position: relative;
   overflow: hidden;
   padding: 1.25rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(16, 185, 129, 0.1);
+  border-radius: var(--radius-card);
+  border: 1px solid color-mix(in oklab, var(--brand-500) 10%, transparent);
   background-image: linear-gradient(135deg, color-mix(in oklab, var(--card) 90%, transparent), color-mix(in oklab, var(--card) 60%, transparent));
-  box-shadow: 0 10px 15px -3px rgb(16 185 129 / 0.05), 0 4px 6px -4px rgb(16 185 129 / 0.05);
+  box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--brand-500) 5%, transparent), 0 4px 6px -4px color-mix(in oklab, var(--brand-500) 5%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 :global(.dark) .exportCard {
-  background-image: linear-gradient(135deg, color-mix(in oklab, #18181b 90%, transparent), color-mix(in oklab, #09090b 60%, transparent));
+  background-image: linear-gradient(135deg, color-mix(in oklab, var(--zinc-900) 90%, transparent), color-mix(in oklab, var(--zinc-950) 60%, transparent));
 }
 
 .exportInner > * + * {
@@ -490,15 +490,15 @@
   height: 2.25rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.75rem;
-  background-image: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.1));
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.1);
-  box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  border-radius: var(--radius-med);
+  background-image: linear-gradient(135deg, color-mix(in oklab, var(--brand-500) 10%, transparent), color-mix(in oklab, var(--teal-500) 10%, transparent));
+  color: var(--brand-600);
+  border: 1px solid color-mix(in oklab, var(--brand-500) 10%, transparent);
+  box-shadow: inset 0 2px 4px 0 color-mix(in oklab, var(--black) 5%, transparent);
 }
 
 :global(.dark) .exportIconWrap {
-  color: #34d399;
+  color: var(--brand-400);
 }
 
 .exportIcon {
@@ -538,10 +538,10 @@
 .exportBtn {
   gap: 0.5rem;
   padding-block: 0.5rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   border-color: color-mix(in oklab, var(--border) 40%, transparent);
   background-color: color-mix(in oklab, var(--background) 50%, transparent);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--black) 5%, transparent);
   font-size: 0.75rem;
   line-height: 1rem;
   font-weight: 500;
@@ -549,9 +549,9 @@
 }
 
 .exportBtn:hover {
-  background-color: #ecfdf5;
-  color: #059669;
-  border-color: rgba(16, 185, 129, 0.35);
+  background-color: var(--brand-50);
+  color: var(--brand-600);
+  border-color: color-mix(in oklab, var(--brand-500) 35%, transparent);
   transform: translateY(-0.125rem);
 }
 
@@ -560,7 +560,7 @@
 }
 
 :global(.dark) .exportBtn:hover {
-  background-color: color-mix(in oklab, #022c22 20%, transparent);
+  background-color: color-mix(in oklab, var(--brand-950) 20%, transparent);
 }
 
 .exportBtnIcon {
@@ -570,7 +570,7 @@
 .exportSpinner {
   width: 0.875rem;
   height: 0.875rem;
-  color: #10b981;
+  color: var(--brand-500);
   animation: viewerSpin 1s linear infinite;
 }
 

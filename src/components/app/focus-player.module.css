@@ -38,9 +38,9 @@
   overflow: hidden;
   padding: 1.5rem;
   background-color: color-mix(in oklab, var(--card) 40%, transparent);
-  border: 1px solid rgba(16, 185, 129, 0.1);
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--brand-500) 10%, transparent);
+  box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--black) 10%, transparent), 0 4px 6px -4px color-mix(in oklab, var(--black) 10%, transparent);
+  border-radius: var(--radius-card);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   transition: all 0.5s;
@@ -72,8 +72,8 @@
   left: -30%;
   width: 100%;
   height: 100%;
-  border-radius: 9999px;
-  background-image: linear-gradient(135deg, rgba(52, 211, 153, 0.25), rgba(16, 185, 129, 0.05), transparent);
+  border-radius: var(--radius-full);
+  background-image: linear-gradient(135deg, color-mix(in oklab, var(--brand-400) 25%, transparent), color-mix(in oklab, var(--brand-500) 5%, transparent), transparent);
   filter: blur(64px);
 }
 
@@ -83,8 +83,8 @@
   bottom: -50%;
   width: 100%;
   height: 100%;
-  border-radius: 9999px;
-  background-image: linear-gradient(135deg, rgba(45, 212, 191, 0.2), rgba(14, 165, 233, 0.05), transparent);
+  border-radius: var(--radius-full);
+  background-image: linear-gradient(135deg, color-mix(in oklab, var(--teal-400) 20%, transparent), color-mix(in oklab, var(--sky-500) 5%, transparent), transparent);
   filter: blur(64px);
 }
 
@@ -95,11 +95,11 @@
   z-index: 0;
   pointer-events: none;
   user-select: none;
-  color: rgba(16, 185, 129, 0.05);
+  color: color-mix(in oklab, var(--brand-500) 5%, transparent);
 }
 
 :global(.dark) .watermark {
-  color: rgba(52, 211, 153, 0.05);
+  color: color-mix(in oklab, var(--brand-400) 5%, transparent);
 }
 
 .watermarkIcon {
@@ -137,19 +137,19 @@
 .speakerPill {
   border: 0;
   padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
   line-height: 1rem;
   font-weight: 600;
   letter-spacing: 0.025em;
-  box-shadow: 0 1px 2px 0 rgb(16 185 129 / 0.05);
+  box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--brand-500) 5%, transparent);
 }
 
 .timePill {
   padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   background-color: color-mix(in oklab, var(--muted) 40%, transparent);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-mono-stack);
   font-size: 10px;
   color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
 }
@@ -198,24 +198,24 @@
   margin: 0.375rem;
   cursor: pointer;
   padding: 0.125rem 0.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-small);
   transition: all 0.15s;
 }
 
 .wordCurrent {
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  background-color: color-mix(in oklab, #d1fae5 60%, transparent);
-  color: #047857;
+  border: 1px solid color-mix(in oklab, var(--brand-500) 25%, transparent);
+  background-color: color-mix(in oklab, var(--brand-100) 60%, transparent);
+  color: var(--brand-700);
   font-weight: 900;
-  box-shadow: 0 4px 6px -1px rgb(16 185 129 / 0.1), 0 2px 4px -2px rgb(16 185 129 / 0.1);
+  box-shadow: 0 4px 6px -1px color-mix(in oklab, var(--brand-500) 10%, transparent), 0 2px 4px -2px color-mix(in oklab, var(--brand-500) 10%, transparent);
   transform: scale(1.05);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
 
 :global(.dark) .wordCurrent {
-  background-color: rgba(2, 44, 34, 0.4);
-  color: #6ee7b7;
+  background-color: color-mix(in oklab, var(--brand-950) 40%, transparent);
+  color: var(--brand-300);
 }
 
 .wordPast {
@@ -237,8 +237,8 @@
   position: absolute;
   inset: 0;
   z-index: -10;
-  border-radius: 0.5rem;
-  background-color: rgba(16, 185, 129, 0.05);
+  border-radius: var(--radius-small);
+  background-color: color-mix(in oklab, var(--brand-500) 5%, transparent);
   filter: blur(4px);
 }
 

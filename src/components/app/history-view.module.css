@@ -26,7 +26,7 @@
 .titleIcon {
   width: 1.5rem;
   height: 1.5rem;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 .subtitle {
@@ -41,13 +41,13 @@
 }
 
 .iconSm {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 .iconXs {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: var(--icon-xs);
+  height: var(--icon-xs);
 }
 
 .spinIcon {
@@ -142,7 +142,7 @@
 }
 
 .jobCard:hover {
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: color-mix(in oklab, var(--brand-500) 30%, transparent);
 }
 
 .jobHeader {
@@ -163,12 +163,12 @@
   height: 2.5rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
-  background-color: #ecfdf5;
+  border-radius: var(--radius-small);
+  background-color: var(--brand-50);
 }
 
 :global(.dark) .jobIconWrap {
-  background-color: color-mix(in oklab, #022c22 30%, transparent);
+  background-color: color-mix(in oklab, var(--brand-950) 30%, transparent);
 }
 
 .jobIconWrapMuted {
@@ -178,7 +178,7 @@
 .jobIcon {
   width: 1.25rem;
   height: 1.25rem;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 .jobIconDestructive {
@@ -186,7 +186,7 @@
 }
 
 .jobIconAmber {
-  color: #f59e0b;
+  color: var(--amber-500);
 }
 
 .jobBody {
@@ -289,7 +289,7 @@
 
 .previewTime {
   flex-shrink: 0;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-mono-stack);
   color: var(--muted-foreground);
 }
 

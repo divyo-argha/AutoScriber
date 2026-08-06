@@ -8,12 +8,12 @@
 }
 
 .uploadCard {
-  border: 1px solid color-mix(in oklab, #10b981 50%, transparent);
-  background-color: color-mix(in oklab, #ecfdf5 30%, transparent);
+  border: 1px solid color-mix(in oklab, var(--brand-500) 50%, transparent);
+  background-color: color-mix(in oklab, var(--brand-50) 30%, transparent);
 }
 
 :global(.dark) .uploadCard {
-  background-color: color-mix(in oklab, #022c22 10%, transparent);
+  background-color: color-mix(in oklab, var(--brand-950) 10%, transparent);
 }
 
 .uploadCardInner {
@@ -38,22 +38,22 @@
   height: 3.5rem;
   align-items: center;
   justify-content: center;
-  border-radius: 1rem;
-  background-color: #d1fae5;
+  border-radius: var(--radius-card);
+  background-color: var(--brand-100);
 }
 
 :global(.dark) .fileIconWrap {
-  background-color: color-mix(in oklab, #064e3b 30%, transparent);
+  background-color: color-mix(in oklab, var(--brand-900) 30%, transparent);
 }
 
 .fileIcon {
   width: 1.75rem;
   height: 1.75rem;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 :global(.dark) .fileIcon {
-  color: #34d399;
+  color: var(--brand-400);
 }
 
 .fileName {
@@ -80,11 +80,11 @@
 
 .primaryBtn {
   gap: 0.375rem;
-  background-color: #059669;
+  background-color: var(--brand-600);
 }
 
 .primaryBtn:hover {
-  background-color: #047857;
+  background-color: var(--brand-700);
 }
 
 .btnGap {
@@ -106,16 +106,16 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.75rem;
-  border-radius: 0.5rem;
-  background-color: #fffbeb;
+  border-radius: var(--radius-small);
+  background-color: var(--amber-50);
   font-size: 0.875rem;
   line-height: 1.25rem;
-  color: #b45309;
+  color: var(--amber-700);
 }
 
 :global(.dark) .warningBox {
-  background-color: color-mix(in oklab, #451a03 20%, transparent);
-  color: #fbbf24;
+  background-color: color-mix(in oklab, var(--amber-950) 20%, transparent);
+  color: var(--amber-400);
 }
 
 .warningIcon {
@@ -147,7 +147,7 @@
 .pendingTitleIcon {
   width: 1rem;
   height: 1rem;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 .clearBtn {
@@ -170,7 +170,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-small);
   background-color: color-mix(in oklab, var(--muted) 50%, transparent);
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -180,7 +180,7 @@
   flex-shrink: 0;
   width: 0.875rem;
   height: 0.875rem;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 .fileRowName {
@@ -229,7 +229,7 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-small);
   background-color: color-mix(in oklab, var(--destructive) 10%, transparent);
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -307,7 +307,7 @@
   height: 3.5rem;
   align-items: center;
   justify-content: center;
-  border-radius: 1rem;
+  border-radius: var(--radius-card);
   background-color: var(--muted);
 }
 
@@ -386,7 +386,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-small);
 }
 
 .driveRow:hover {
@@ -409,26 +409,26 @@
 
 .downloadBtn {
   flex: 1;
-  background-color: #059669;
+  background-color: var(--brand-600);
 }
 
 .downloadBtn:hover {
-  background-color: #047857;
+  background-color: var(--brand-700);
 }
 
 .iconXs {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: var(--icon-xs);
+  height: var(--icon-xs);
 }
 
 .iconSm {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 .iconMd {
-  width: 1rem;
-  height: 1rem;
+  width: var(--icon-md);
+  height: var(--icon-md);
 }
 
 .spinner {
@@ -471,7 +471,7 @@
   font-size: 1.25rem;
   line-height: 1.75rem;
   font-weight: 700;
-  color: #059669;
+  color: var(--brand-600);
 }
 
 @media (min-width: 640px) {
