@@ -107,27 +107,35 @@ export function Header() {
                   Processing ({processingProgress}%)
                 </Button>
               )}
-              {currentView !== 'upload' && currentView !== 'history' && !isProcessing && (
-                <Button variant="outline" size="sm" onClick={() => { reset(); setCurrentView('upload'); }} className={styles.actionBtn}>
-                  <RotateCcw className={styles.iconSm} />
-                  <span className={styles.hiddenSmInline}>New</span>
-                </Button>
-              )}
+              <Button
+                variant={currentView === 'upload' || currentView === 'processing' || currentView === 'result' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  if (isProcessing) setCurrentView('processing');
+                  else setCurrentView('upload');
+                }}
+                className={styles.actionBtn}
+              >
+                <Mic className={styles.iconSm} />
+                <span className={styles.hiddenSmInline}>Studio</span>
+              </Button>
               <Button
                 variant={currentView === 'history' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => setCurrentView(currentView === 'history' ? 'upload' : 'history')}
+                onClick={() => setCurrentView('history')}
                 className={styles.actionBtn}
               >
-                <History className={styles.iconMd} />
+                <History className={styles.iconSm} />
                 <span className={styles.hiddenSmInline}>History</span>
               </Button>
               <Button
                 variant={currentView === 'settings' ? 'secondary' : 'ghost'}
-                size="icon"
+                size="sm"
                 onClick={() => setCurrentView('settings')}
+                className={styles.actionBtn}
               >
-                <Settings className={styles.iconLg} />
+                <Settings className={styles.iconSm} />
+                <span className={styles.hiddenSmInline}>Settings</span>
               </Button>
             </div>
           </div>

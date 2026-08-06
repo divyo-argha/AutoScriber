@@ -33,6 +33,8 @@ import {
   Radio,
   Zap,
   AlertTriangle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AVAILABLE_MODELS, VERTEX_MODELS } from '@/lib/transcriber/types';
@@ -86,6 +88,7 @@ export function SettingsView() {
   const [vertexSuccess, setVertexSuccess] = useState<{ projectId: string; location: string; model: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [cleaningStorage, setCleaningStorage] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const handleCleanupStorage = async () => {
     setCleaningStorage(true);
@@ -709,13 +712,34 @@ export function SettingsView() {
                 <div className={styles.geminiField}>
                   <Label className={styles.advLabel}>API Key</Label>
                   <div className={styles.keyRow}>
-                    <Input
-                      type="password"
-                      placeholder="AIzaSy..."
-                      value={localGeminiKey}
-                      onChange={e => setLocalGeminiKey(e.target.value)}
-                      className={styles.keyInput}
-                    />
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Input
+                        type={showApiKey ? 'text' : 'password'}
+                        placeholder="AIzaSy..."
+                        value={localGeminiKey}
+                        onChange={e => setLocalGeminiKey(e.target.value)}
+                        className={styles.keyInput}
+                        style={{ paddingRight: '2.5rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        style={{
+                          position: 'absolute',
+                          right: '0.75rem',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--muted-foreground)',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        {showApiKey ? <EyeOff className={styles.iconSm} /> : <Eye className={styles.iconSm} />}
+                      </button>
+                    </div>
                     <Button variant="outline" size="sm" onClick={testGemini} disabled={geminiStatus === 'testing'} className={styles.testKeyBtn}>
                       {geminiStatus === 'testing' ? (
                         <>
@@ -796,7 +820,28 @@ export function SettingsView() {
                     <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} className={styles.advInput} />
                     <span className={styles.advUnit}>sec</span>
                   </div>
-                  <p className={styles.advHint}>Long audio is split into chunks of this size. Default: 300s (5 min).</p>
+                  <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.375rem', flexWrap: 'wrap' }}>
+                    {[{ label: '3 Min', val: '180' }, { label: '5 Min (Default)', val: '300' }, { label: '10 Min', val: '600' }].map(preset => (
+                      <button
+                        key={preset.val}
+                        type="button"
+                        onClick={() => setLocalChunkDuration(preset.val)}
+                        style={{
+                          fontSize: '10px',
+                          padding: '0.125rem 0.5rem',
+                          borderRadius: '9999px',
+                          border: localChunkDuration === preset.val ? '1px solid var(--brand-500)' : '1px solid color-mix(in oklab, var(--white) 10%, transparent)',
+                          backgroundColor: localChunkDuration === preset.val ? 'color-mix(in oklab, var(--brand-500) 15%, transparent)' : 'color-mix(in oklab, var(--muted) 40%, transparent)',
+                          color: localChunkDuration === preset.val ? 'var(--brand-400)' : 'var(--muted-foreground)',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={styles.advHint} style={{ marginTop: '0.375rem' }}>Long audio is split into chunks of this size for high accuracy.</p>
                 </div>
                 <div className={styles.advCol}>
                   <Label className={styles.advLabel}>Overlap Duration (seconds)</Label>
@@ -804,7 +849,28 @@ export function SettingsView() {
                     <Input type="number" min="0" max="60" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} className={styles.advInput} />
                     <span className={styles.advUnit}>sec</span>
                   </div>
-                  <p className={styles.advHint}>Overlap between chunks avoids cutting words mid-sentence. Default: 30s.</p>
+                  <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.375rem', flexWrap: 'wrap' }}>
+                    {[{ label: '15s', val: '15' }, { label: '30s (Default)', val: '30' }, { label: '45s', val: '45' }].map(preset => (
+                      <button
+                        key={preset.val}
+                        type="button"
+                        onClick={() => setLocalOverlapDuration(preset.val)}
+                        style={{
+                          fontSize: '10px',
+                          padding: '0.125rem 0.5rem',
+                          borderRadius: '9999px',
+                          border: localOverlapDuration === preset.val ? '1px solid var(--brand-500)' : '1px solid color-mix(in oklab, var(--white) 10%, transparent)',
+                          backgroundColor: localOverlapDuration === preset.val ? 'color-mix(in oklab, var(--brand-500) 15%, transparent)' : 'color-mix(in oklab, var(--muted) 40%, transparent)',
+                          color: localOverlapDuration === preset.val ? 'var(--brand-400)' : 'var(--muted-foreground)',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={styles.advHint} style={{ marginTop: '0.375rem' }}>Overlap between chunks avoids cutting words mid-sentence.</p>
                 </div>
               </div>
               <div className={styles.advFooter}>
