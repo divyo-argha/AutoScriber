@@ -79,33 +79,42 @@ export async function GET(request: NextRequest) {
     const hasQuotaError = attempts.some(a => a.error?.includes('quota') || a.error?.includes('429') || a.error?.includes('rate limit'));
 
     let errorType = 'unknown';
+    let error = 'Unable to connect to the Gemini API. Please try again later.';
     let suggestion = '';
 
     if (hasAuthError) {
       errorType = 'auth_failed';
-      suggestion = 'Your API key appears to be invalid. Please check your Gemini API key in Settings.';
+      error = 'Your Gemini API key is invalid or has been revoked. Please check the key in Settings.';
+      suggestion = 'Generate a new key at aistudio.google.com and paste it in Settings.';
     } else if (hasLocationError) {
       errorType = 'location_blocked';
-      suggestion = 'Gemini API is not available in your region. Set up a proxy URL in Settings if needed.';
+      error = 'Gemini API is not available in your region.';
+      suggestion = 'Set up a proxy URL in Settings if needed.';
     } else if (hasQuotaError) {
       errorType = 'quota_exceeded';
+      error = 'Gemini API rate limit (429) exceeded for your account.';
       suggestion = 'Free tier quota exhausted. Either wait for the daily reset (midnight Pacific Time), or upgrade to a paid plan at aistudio.google.com. Note: keys from GCP Cloud Console do NOT get free-tier quota — use Google AI Studio to generate your key instead.';
     } else {
       errorType = 'model_not_found';
-      suggestion = 'The requested models were not found or not supported on this account.';
+      error = 'The selected Gemini models are not available for your account.';
+      suggestion = 'Try a different model, or generate a new API key at aistudio.google.com.';
     }
+
+    // Raw provider details are logged server-side only — never sent to the UI.
+    console.error('[gemini-test] Connection failed. Raw error details:', errorDetails);
 
     return NextResponse.json({
       connected: false,
-      error: errorDetails,
+      error,
       errorType,
       suggestion,
     });
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('[gemini-test] Unexpected error (raw):', errMsg);
     return NextResponse.json({
       connected: false,
-      error: errMsg,
+      error: 'Unable to connect to the Gemini API. Please try again later.',
       errorType: 'unknown',
       suggestion: 'An unexpected connection error occurred.',
     });

@@ -91,9 +91,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ jobId: job.id, status: 'started' });
   } catch (err) {
-    console.error('[transcribe] Top-level error:', err);
+    console.error('[transcribe] Top-level error (raw):', err);
     return NextResponse.json({
-      error: err instanceof Error ? err.message : 'Internal server error',
+      error: 'Failed to start transcription. Please try again.',
     }, { status: 500 });
   }
 }

@@ -60,8 +60,8 @@ export function useTranscriptionJob() {
   const modelInfo = availableModels.find(m => m.id === selectedModel);
 
   // Parse the error type from the status message
-  const isLocationError = processingStatus.includes('location') && processingStatus.includes('not supported');
-  const isAuthError = processingStatus.includes('API key') && (processingStatus.includes('not valid') || processingStatus.includes('invalid'));
+  const isLocationError = processingStatus.includes('not available in your region') || (processingStatus.includes('location') && processingStatus.includes('not supported'));
+  const isAuthError = processingStatus.includes('API key') && (processingStatus.includes('not valid') || processingStatus.includes('invalid') || processingStatus.includes('revoked'));
   const isCancelled = !isProcessing && processingStatus.startsWith('Cancelled');
   const isFailed = !isProcessing && !isCancelled && (
     processingStatus.startsWith('Failed') || processingStatus.startsWith('Error')
@@ -173,10 +173,10 @@ export function useTranscriptionJob() {
         });
         return;
       }
-      console.error('Transcription error:', err);
+      console.error('Transcription error (raw):', err);
       setProcessingState({
         isProcessing: false,
-        processingStatus: `Error: ${err instanceof Error ? err.message : 'Network error. Please check your connection and try again.'}`,
+        processingStatus: 'Failed: could not start transcription. Please check your connection and try again.',
       });
     } finally {
       abortRef.current = null;

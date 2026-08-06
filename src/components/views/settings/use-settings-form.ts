@@ -179,12 +179,13 @@ export function useSettingsForm() {
         }
       } else {
         const errMsg = data.error || data.suggestion || 'Connection failed';
+        const suggestionMsg = data.suggestion && data.error ? ` ${data.suggestion}` : '';
         setGeminiStatus('error');
         setGeminiError(errMsg);
         toast({
           variant: 'destructive',
           title: 'Connection Error',
-          description: errMsg,
+          description: `${errMsg}${suggestionMsg}`,
         });
       }
     } catch {
@@ -230,10 +231,9 @@ export function useSettingsForm() {
           description: data.error || 'Failed to verify GCP Vertex AI credentials.',
         });
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Network error';
+    } catch {
       setVertexStatus('error');
-      setVertexError(message);
+      setVertexError('Network error communicating with the Vertex AI API.');
       toast({
         variant: 'destructive',
         title: 'Vertex AI Connection Failed',

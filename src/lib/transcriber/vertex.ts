@@ -226,7 +226,8 @@ export function explainVertexError(err: any): string {
     return 'Quota exceeded (429) for the Vertex AI Gemini model on this project. You can retry later or choose a different model/region.';
   }
 
-  return errMsg;
+  console.error('[vertex] Unclassified error (raw):', err);
+  return 'Failed to connect to Vertex AI with the provided credentials. Please verify the project ID, region, and service account permissions, then try again.';
 }
 
 export async function testVertexConnection(options?: VertexOptions, modelId?: string): Promise<{ success: boolean; projectId: string; location: string; model?: string; error?: string }> {

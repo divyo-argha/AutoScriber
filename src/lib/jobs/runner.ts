@@ -253,11 +253,12 @@ export async function processTranscriptionJob(params: TranscriptionJobParams) {
     console.log(`[transcribe] Job ${jobId} completed. ${merged.length} segments total after overlap deduplication. Fallback used: ${fallbackUsed}. Skipped: ${skippedChunks.length}`);
   } catch (processErr) {
     const classified = classifyGeminiError(processErr);
-    const errorMessage = classified.isLocationError
-      ? `${classified.message} ${classified.suggestion}`
-      : processErr instanceof Error ? processErr.message : 'Unknown error';
 
-    console.error('[transcribe] Processing error:', errorMessage);
+    console.error('[transcribe] Processing error (raw):', classified.raw);
+
+    const errorMessage = classified.suggestion
+      ? `${classified.message} ${classified.suggestion}`
+      : classified.message;
 
     await db.transcriptionJob.update({
       where: { id: jobId },

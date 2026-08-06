@@ -81,10 +81,11 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (err: any) {
+    console.error('[vertex-test] Unexpected error (raw):', err);
     return NextResponse.json(
       {
         success: false,
-        error: `Vertex test error: ${err?.message || String(err)}`,
+        error: 'Failed to verify Vertex AI credentials. Please try again.',
       },
       { status: 500 }
     );

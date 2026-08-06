@@ -24,9 +24,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unsupported format' }, { status: 400 });
     }
   } catch (err) {
-    console.error('Export error:', err);
+    console.error('Export error (raw):', err);
     return NextResponse.json({
-      error: err instanceof Error ? err.message : 'Export failed',
+      error: 'Failed to generate the export. Please try again.',
     }, { status: 500 });
   }
 }

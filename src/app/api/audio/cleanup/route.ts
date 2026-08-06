@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
       formattedFreed: (bytesFreed / (1024 * 1024)).toFixed(2) + ' MB',
     });
   } catch (err) {
-    console.error('[cleanup] Storage cleanup error:', err);
+    console.error('[cleanup] Storage cleanup error (raw):', err);
     return NextResponse.json({
-      error: err instanceof Error ? err.message : 'Storage cleanup failed',
+      error: 'Storage cleanup failed. Please try again.',
     }, { status: 500 });
   }
 }
