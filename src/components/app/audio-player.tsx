@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { formatTimeShort } from '@/lib/format-utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import styles from './audio-player.module.css';
 
 type LoopMode = 'none' | 'all' | 'segment';
 
@@ -446,17 +447,15 @@ export function AudioPlayer() {
 
   if (!audioUrl) return null;
 
-  const loopIcon = loopMode === 'segment' ? <Repeat1 className="w-3.5 h-3.5" /> : <Repeat className="w-3.5 h-3.5" />;
-  const loopColor = loopMode === 'none' 
-    ? 'text-muted-foreground' 
-    : 'text-emerald-600 dark:text-emerald-400';
+const loopIcon = loopMode === 'segment' ? <Repeat1 className={styles.loopIcon} /> : <Repeat className={styles.loopIcon} />;
+  const loopColor = loopMode === 'none' ? '' : styles.loopActive;
 
   return (
     <>
-      <Card className={`relative overflow-hidden bg-gradient-to-br from-card/90 via-card/80 to-card/50 dark:from-zinc-900/90 dark:to-zinc-950/60 border border-emerald-500/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] backdrop-blur-md rounded-2xl transition-all duration-300 ${isExpanded ? 'p-8 sm:p-10' : 'p-5 sm:p-6'}`}>
+      <Card className={`${styles.playerCard} ${isExpanded ? styles.playerCardExpanded : styles.playerCardCompact}`}>
         {/* Decorative ambient gradient background inside player card */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className={styles.ambientBlobTop} />
+        <div className={styles.ambientBlobBottom} />
 
         {/* Buffering indicator */}
         <AnimatePresence>
@@ -465,71 +464,71 @@ export function AudioPlayer() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute top-4 right-4 z-20"
+              className={styles.bufferingWrap}
             >
-              <div className="flex items-center gap-2 bg-emerald-500/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-emerald-500/20">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Loading...</span>
+              <div className={styles.bufferingBadge}>
+                <div className={styles.bufferingDot} />
+                <span className={styles.bufferingText}>Loading...</span>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="relative space-y-4">
+        <div className={styles.mainContent}>
           {/* Top Controls Bar */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
+          <div className={styles.topBar}>
+            <div className={styles.topBarLeft}>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowKeyboardShortcuts(true)}
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                className={styles.iconBtn}
                 title="Keyboard shortcuts (?)"
               >
-                <Keyboard className="w-4 h-4" />
+                <Keyboard className={styles.iconMd} />
               </Button>
               {transcriptionSegments && transcriptionSegments.length > 0 && (
-                <Badge variant="outline" className="text-xs font-mono">
+                <Badge variant="outline" className={styles.segmentsBadge}>
                   {transcriptionSegments.length} segments
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className={styles.topBarRight}>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={shareTimestamp}
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                className={styles.iconBtn}
                 title="Share timestamp"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className={styles.iconMd} />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={downloadAudio}
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                className={styles.iconBtn}
                 title="Download audio"
               >
-                <Download className="w-4 h-4" />
+                <Download className={styles.iconMd} />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsExpanded(prev => !prev)}
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                className={styles.iconBtn}
                 title="Toggle expanded view (F)"
               >
-                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                {isExpanded ? <Minimize2 className={styles.iconMd} /> : <Maximize2 className={styles.iconMd} />}
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowSettings(prev => !prev)}
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                className={styles.iconBtn}
                 title="Settings"
               >
-                <Settings className="w-4 h-4" />
+                <Settings className={styles.iconMd} />
               </Button>
             </div>
           </div>
@@ -541,19 +540,19 @@ export function AudioPlayer() {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
+                className={styles.settingsPanel}
               >
-                <Card className="p-4 bg-secondary/30 border-border/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Skip Interval</span>
-                    <div className="flex gap-2">
+                <Card className={styles.settingsCard}>
+                  <div className={styles.settingsRow}>
+                    <span className={styles.settingsLabel}>Skip Interval</span>
+                    <div className={styles.skipBtns}>
                       {[5, 10, 15, 30].map(interval => (
                         <Button
                           key={interval}
                           variant={skipInterval === interval ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setSkipInterval(interval)}
-                          className="h-7 px-2 text-xs"
+                          className={styles.skipBtn}
                         >
                           {interval}s
                         </Button>
@@ -566,18 +565,18 @@ export function AudioPlayer() {
           </AnimatePresence>
 
           {/* Progress Bar Container */}
-          <div className="space-y-1.5">
+          <div className={styles.progressWrap}>
             <Slider
               value={[currentTime]}
               min={0}
               max={audioDuration || 100}
               step={0.1}
               onValueChange={handleSliderChange}
-              className="cursor-pointer py-1"
+              className={styles.sliderTrack}
             />
-            <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground/80 px-0.5">
-              <span className="bg-muted/40 px-1.5 py-0.5 rounded text-foreground/80">{formatTimeShort(currentTime)}</span>
-              <span className="bg-muted/40 px-1.5 py-0.5 rounded text-foreground/80">
+            <div className={styles.timeRow}>
+              <span className={styles.timeChip}>{formatTimeShort(currentTime)}</span>
+              <span className={styles.timeChip}>
                 {audioDuration && isFinite(audioDuration) && audioDuration > 0
                   ? `-${formatTimeShort(Math.max(0, audioDuration - currentTime))}`
                   : '00:00'}
@@ -586,15 +585,15 @@ export function AudioPlayer() {
           </div>
 
           {/* Controls Layout */}
-          <div className="flex items-center justify-between gap-4 pt-1">
+          <div className={styles.controlsRow}>
             
             {/* Left Block: Speed & Loop */}
-            <div className="flex-1 flex justify-start gap-2">
+            <div className={styles.controlsLeft}>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={cyclePlaybackRate}
-                className="text-xs font-mono font-medium h-8 px-2.5 rounded-full border-border/50 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 hover:border-emerald-500/20 active:scale-95 transition-all duration-200"
+                className={styles.speedBtn}
                 title="Playback speed (S)"
               >
                 {playbackRate}x
@@ -603,7 +602,7 @@ export function AudioPlayer() {
                 variant="ghost"
                 size="icon"
                 onClick={cycleLoopMode}
-                className={`h-8 w-8 rounded-full hover:bg-secondary/50 active:scale-90 transition-all ${loopColor}`}
+                className={`${styles.loopBtn} ${loopColor}`}
                 title={`Loop: ${loopMode} (L)`}
               >
                 {loopIcon}
@@ -611,16 +610,16 @@ export function AudioPlayer() {
             </div>
 
             {/* Center Block: Playback controls */}
-            <div className="flex items-center justify-center gap-3">
+            <div className={styles.controlsCenter}>
               {transcriptionSegments && transcriptionSegments.length > 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={previousSegment}
-                  className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 active:scale-90 transition-all"
+                  className={styles.ctrlBtn}
                   title="Previous segment (Shift+←)"
                 >
-                  <SkipBack className="w-4.5 h-4.5 fill-current" />
+                  <SkipBack className={styles.ctrlIconFill} />
                 </Button>
               )}
 
@@ -628,23 +627,23 @@ export function AudioPlayer() {
                 variant="ghost"
                 size="icon"
                 onClick={skipBackward}
-                className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 active:scale-90 transition-all"
+                className={styles.ctrlBtn}
                 title={`Skip back ${skipInterval}s (←)`}
               >
-                <SkipBack className="w-4.5 h-4.5" />
+                <SkipBack className={styles.ctrlIcon} />
               </Button>
 
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   onClick={togglePlay}
-                  className="h-14 w-14 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 dark:shadow-emerald-500/10 hover:shadow-emerald-500/35 transition-all border border-emerald-400/20"
+                  className={styles.playBtn}
                   size="icon"
                   title="Play/Pause (Space or K)"
                 >
                   {isPlaying ? (
-                    <Pause className="w-6 h-6 fill-white" />
+                    <Pause className={styles.playIcon} />
                   ) : (
-                    <Play className="w-6 h-6 fill-white ml-1" />
+                    <Play className={styles.playIconOffset} />
                   )}
                 </Button>
               </motion.div>
@@ -653,10 +652,10 @@ export function AudioPlayer() {
                 variant="ghost"
                 size="icon"
                 onClick={skipForward}
-                className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 active:scale-90 transition-all"
+                className={styles.ctrlBtn}
                 title={`Skip forward ${skipInterval}s (→)`}
               >
-                <SkipForward className="w-4.5 h-4.5" />
+                <SkipForward className={styles.ctrlIcon} />
               </Button>
 
               {transcriptionSegments && transcriptionSegments.length > 0 && (
@@ -664,25 +663,25 @@ export function AudioPlayer() {
                   variant="ghost"
                   size="icon"
                   onClick={nextSegment}
-                  className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 active:scale-90 transition-all"
+                  className={styles.ctrlBtn}
                   title="Next segment (Shift+→)"
                 >
-                  <SkipForward className="w-4.5 h-4.5 fill-current" />
+                  <SkipForward className={styles.ctrlIconFill} />
                 </Button>
               )}
             </div>
 
             {/* Right Block: Volume slider wrapped in pill */}
-            <div className="flex-1 flex justify-end">
-              <div className="hidden sm:flex items-center gap-2 bg-secondary/35 hover:bg-secondary/60 transition-all px-3 py-1.5 rounded-full border border-border/40 backdrop-blur-sm group">
+            <div className={styles.controlsRight}>
+              <div className={styles.volumePill}>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={toggleMute}
-                  className="h-5 w-5 hover:bg-transparent text-muted-foreground group-hover:text-foreground hover:text-foreground p-0"
+                  className={styles.volumeBtn}
                   title="Mute (M)"
                 >
-                  {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  {isMuted || volume === 0 ? <VolumeX className={styles.volumeIcon} /> : <Volume2 className={styles.volumeIcon} />}
                 </Button>
                 <Slider
                   value={[isMuted ? 0 : volume]}
@@ -690,7 +689,7 @@ export function AudioPlayer() {
                   max={1}
                   step={0.02}
                   onValueChange={handleVolumeChange}
-                  className="w-16 sm:w-20 cursor-pointer"
+                  className={styles.volumeSlider}
                   title="Volume (↑/↓)"
                 />
               </div>
@@ -707,7 +706,7 @@ export function AudioPlayer() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            className={styles.overlay}
             onClick={() => setShowKeyboardShortcuts(false)}
           >
             <motion.div
@@ -715,71 +714,71 @@ export function AudioPlayer() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-card border border-border rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+              className={styles.modalCard}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold flex items-center gap-2">
-                  <Keyboard className="w-5 h-5" />
+              <div className={styles.modalHeader}>
+                <h3 className={styles.modalTitle}>
+                  <Keyboard className={styles.modalTitleIcon} />
                   Keyboard Shortcuts
                 </h3>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowKeyboardShortcuts(false)}
-                  className="h-8 w-8 p-0"
+                  className={styles.modalCloseBtn}
                 >
                   ✕
                 </Button>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Play/Pause</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Space</kbd>
+              <div className={styles.modalBody}>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Play/Pause</span>
+                  <kbd className={styles.kbd}>Space</kbd>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Skip Forward/Back</span>
-                  <div className="flex gap-1">
-                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">←</kbd>
-                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">→</kbd>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Skip Forward/Back</span>
+                  <div className={styles.shortcutKeys}>
+                    <kbd className={styles.kbd}>←</kbd>
+                    <kbd className={styles.kbd}>→</kbd>
                   </div>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Previous/Next Segment</span>
-                  <div className="flex gap-1">
-                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Shift+←</kbd>
-                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">Shift+→</kbd>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Previous/Next Segment</span>
+                  <div className={styles.shortcutKeys}>
+                    <kbd className={styles.kbd}>Shift+←</kbd>
+                    <kbd className={styles.kbd}>Shift+→</kbd>
                   </div>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Volume Up/Down</span>
-                  <div className="flex gap-1">
-                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">↑</kbd>
-                    <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">↓</kbd>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Volume Up/Down</span>
+                  <div className={styles.shortcutKeys}>
+                    <kbd className={styles.kbd}>↑</kbd>
+                    <kbd className={styles.kbd}>↓</kbd>
                   </div>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Mute</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">M</kbd>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Mute</span>
+                  <kbd className={styles.kbd}>M</kbd>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Cycle Loop Mode</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">L</kbd>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Cycle Loop Mode</span>
+                  <kbd className={styles.kbd}>L</kbd>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Cycle Speed</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">S</kbd>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Cycle Speed</span>
+                  <kbd className={styles.kbd}>S</kbd>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Toggle Expanded</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">F</kbd>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Toggle Expanded</span>
+                  <kbd className={styles.kbd}>F</kbd>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Restart</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">0</kbd>
+                <div className={styles.shortcutRow}>
+                  <span className={styles.shortcutLabel}>Restart</span>
+                  <kbd className={styles.kbd}>0</kbd>
                 </div>
-                <div className="flex justify-between py-1.5">
-                  <span className="text-muted-foreground">Show Shortcuts</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono">?</kbd>
+                <div className={styles.shortcutRowNoBorder}>
+                  <span className={styles.shortcutLabel}>Show Shortcuts</span>
+                  <kbd className={styles.kbd}>?</kbd>
                 </div>
               </div>
             </motion.div>

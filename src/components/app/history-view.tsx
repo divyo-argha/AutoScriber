@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionResult, TranscriptionSegment } from '@/lib/transcriber/types';
 import { formatTime, formatTimeSRT } from '@/lib/format-utils';
+import styles from './history-view.module.css';
 
 interface HistoryJobFull {
   id: string;
@@ -185,54 +186,54 @@ export function HistoryView() {
   const otherJobs = jobs.filter(j => j.status !== 'completed');
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className={styles.root}>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex items-center justify-between"
+        className={styles.header}
       >
         <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <History className="w-6 h-6 text-emerald-600" />
+          <h2 className={styles.title}>
+            <History className={styles.titleIcon} />
             Transcription History
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className={styles.subtitle}>
             {completedJobs.length} completed transcription{completedJobs.length !== 1 ? 's' : ''} saved
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadJobs} className="gap-1.5">
-          <Loader2 className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : 'hidden'}`} />
+        <Button variant="outline" size="sm" onClick={loadJobs} className={styles.btnGap}>
+          <Loader2 className={`${styles.iconSm} ${loading ? styles.spinIcon : styles.hidden}`} />
           {!loading && 'Refresh'}
         </Button>
       </motion.div>
 
       {loading && jobs.length === 0 ? (
-        <div className="text-center py-16">
-          <Loader2 className="w-8 h-8 mx-auto text-muted-foreground animate-spin" />
-          <p className="text-sm text-muted-foreground mt-3">Loading history...</p>
+        <div className={styles.loadingWrap}>
+          <Loader2 className={styles.loadingIcon} />
+          <p className={styles.loadingText}>Loading history...</p>
         </div>
       ) : jobs.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-16 space-y-4"
+          className={styles.emptyWrap}
         >
-          <FileAudio className="w-12 h-12 mx-auto text-muted-foreground" />
-          <p className="text-muted-foreground">No transcriptions yet.</p>
-          <p className="text-xs text-muted-foreground">Your completed transcriptions will appear here.</p>
-          <Button variant="outline" onClick={() => setCurrentView('upload')} className="gap-1.5">
-            <Play className="w-3.5 h-3.5" />
+          <FileAudio className={styles.emptyIcon} />
+          <p className={styles.emptyText}>No transcriptions yet.</p>
+          <p className={styles.emptyHint}>Your completed transcriptions will appear here.</p>
+          <Button variant="outline" onClick={() => setCurrentView('upload')} className={styles.btnGap}>
+            <Play className={styles.iconSm} />
             Start Your First Transcription
           </Button>
         </motion.div>
       ) : (
-        <div className="space-y-3">
+        <div className={styles.jobsGroup}>
           {/* Completed Jobs */}
           {completedJobs.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Completed</h3>
+            <div className={styles.groupInner}>
+              <h3 className={styles.groupTitle}>Completed</h3>
               <AnimatePresence>
                 {completedJobs.map((job, i) => {
                   const resultData = job.result ? (() => {
@@ -253,59 +254,59 @@ export function HistoryView() {
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ delay: i * 0.03 }}
                     >
-                      <Card className="overflow-hidden hover:border-emerald-500/30 transition-colors">
+                      <Card className={styles.jobCard}>
                         <div
-                          className="p-4 cursor-pointer"
+                          className={styles.jobHeader}
                           onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
                         >
-                          <div className="flex items-start gap-4">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 shrink-0">
-                              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                          <div className={styles.jobRow}>
+                            <div className={styles.jobIconWrap}>
+                              <CheckCircle2 className={styles.jobIcon} />
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-medium text-sm truncate">{job.fileName}</p>
-                                <Badge variant="outline" className="text-[10px]">
+                            <div className={styles.jobBody}>
+                              <div className={styles.jobTitleRow}>
+                                <p className={styles.jobName}>{job.fileName}</p>
+                                <Badge variant="outline" className={styles.jobModelBadge}>
                                   {job.model}
                                 </Badge>
                               </div>
-                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
+                              <div className={styles.jobMeta}>
+                                <span className={styles.metaItem}>
+                                  <Clock className={styles.iconXs} />
                                   {formatDuration(job.duration)}
                                 </span>
                                 <span>{formatFileSize(job.fileSize)}</span>
                                 <span>{segmentsCount} segments</span>
-                                <span className="flex items-center gap-1">
-                                  <User className="w-3 h-3" />
+                                <span className={styles.metaItem}>
+                                  <User className={styles.iconXs} />
                                   {speakersCount} speaker{speakersCount !== 1 ? 's' : ''}
                                 </span>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-1">
+                              <p className={styles.jobDate}>
                                 {formatDate(job.createdAt)}
                               </p>
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
+                            <div className={styles.jobActions}>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={(e) => { e.stopPropagation(); loadJob(job.id); }}
-                                className="gap-1 text-xs"
+                                className={styles.viewBtn}
                               >
-                                <Play className="w-3 h-3" />
+                                <Play className={styles.iconXs} />
                                 View
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                className={styles.iconBtnDanger}
                                 onClick={(e) => { e.stopPropagation(); deleteJob(job.id); }}
                                 disabled={deleting === job.id}
                               >
                                 {deleting === job.id ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <Loader2 className={`${styles.iconSm} ${styles.spinIcon}`} />
                                 ) : (
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className={styles.iconSm} />
                                 )}
                               </Button>
                             </div>
@@ -320,37 +321,37 @@ export function HistoryView() {
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
                               transition={{ duration: 0.2 }}
-                              className="overflow-hidden"
+                              className={styles.previewWrap}
                             >
-                              <div className="border-t px-4 py-3 space-y-3 bg-muted/30">
-                                <div className="max-h-200px overflow-y-auto">
+                              <div className={styles.previewInner}>
+                                <div className={styles.previewList}>
                                   {resultData.segments.slice(0, 10).map((seg: Record<string, unknown>, idx: number) => (
-                                    <div key={idx} className="flex gap-2 py-1 text-xs">
-                                      <span className="text-muted-foreground font-mono shrink-0">
+                                    <div key={idx} className={styles.previewRow}>
+                                      <span className={styles.previewTime}>
                                         {typeof seg.startTime === 'number'
                                           ? `${Math.floor(seg.startTime / 60)}:${Math.floor(seg.startTime % 60).toString().padStart(2, '0')}`
                                           : '0:00'}
                                       </span>
-                                      <span className="font-medium shrink-0">{String(seg.speaker)}:</span>
-                                      <span className="text-muted-foreground truncate">{seg.text as string}</span>
+                                      <span className={styles.previewSpeaker}>{String(seg.speaker)}:</span>
+                                      <span className={styles.previewText}>{seg.text as string}</span>
                                     </div>
                                   ))}
                                   {resultData.segments.length > 10 && (
-                                    <p className="text-xs text-muted-foreground mt-1 italic">
+                                    <p className={styles.previewMore}>
                                       ...and {resultData.segments.length - 10} more segments. Click "View" to see full transcription.
                                     </p>
                                   )}
                                 </div>
                                 {/* Quick export from history */}
-                                <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Download className="w-3 h-3" />
+                                <div className={styles.exportRow}>
+                                  <span className={styles.exportLabel}>
+                                    <Download className={styles.iconXs} />
                                     Quick export:
                                   </span>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 text-[10px] gap-1"
+                                    className={styles.exportBtn}
                                     onClick={(e) => { e.stopPropagation(); exportFromHistory(job.id, 'txt'); }}
                                   >
                                     TXT
@@ -358,7 +359,7 @@ export function HistoryView() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 text-[10px] gap-1"
+                                    className={styles.exportBtn}
                                     onClick={(e) => { e.stopPropagation(); exportFromHistory(job.id, 'md'); }}
                                   >
                                     MD
@@ -366,7 +367,7 @@ export function HistoryView() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 text-[10px] gap-1"
+                                    className={styles.exportBtn}
                                     onClick={(e) => { e.stopPropagation(); exportFromHistory(job.id, 'srt'); }}
                                   >
                                     SRT
@@ -386,36 +387,36 @@ export function HistoryView() {
 
           {/* Failed / Other Jobs */}
           {otherJobs.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Other</h3>
+            <div className={styles.groupInner}>
+              <h3 className={styles.groupTitle}>Other</h3>
               {otherJobs.map((job) => (
-                <Card key={job.id} className="p-4 opacity-60">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted shrink-0">
+                <Card key={job.id} className={styles.fadedCard}>
+                  <div className={styles.otherRow}>
+                    <div className={`${styles.jobIconWrap} ${styles.jobIconWrapMuted}`}>
                       {job.status === 'failed' ? (
-                        <XCircle className="w-5 h-5 text-destructive" />
+                        <XCircle className={`${styles.jobIcon} ${styles.jobIconDestructive}`} />
                       ) : (
-                        <AlertTriangle className="w-5 h-5 text-amber-500" />
+                        <AlertTriangle className={`${styles.jobIcon} ${styles.jobIconAmber}`} />
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{job.fileName}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="outline" className="text-[10px]">{job.status}</Badge>
-                        <span className="text-xs text-muted-foreground">{formatDate(job.createdAt)}</span>
+                    <div className={styles.jobBody}>
+                      <p className={styles.jobName}>{job.fileName}</p>
+                      <div className={styles.otherMeta}>
+                        <Badge variant="outline" className={styles.otherStatus}>{job.status}</Badge>
+                        <span className={styles.otherDate}>{formatDate(job.createdAt)}</span>
                       </div>
                       {job.errorMessage && (
-                        <p className="text-xs text-destructive mt-0.5 truncate">{job.errorMessage}</p>
+                        <p className={styles.otherError}>{job.errorMessage}</p>
                       )}
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                      className={`${styles.iconBtnDanger} ${styles.shrink}`}
                       onClick={() => deleteJob(job.id)}
                       disabled={deleting === job.id}
                     >
-                      {deleting === job.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      {deleting === job.id ? <Loader2 className={`${styles.iconSm} ${styles.spinIcon}`} /> : <Trash2 className={styles.iconSm} />}
                     </Button>
                   </div>
                 </Card>

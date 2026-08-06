@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Loader2, CheckCircle2, XCircle, FileAudio, Cpu, Cloud, Clock, AlertTriangle, Globe, Settings, Wifi, Pause, Play, Ban } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TranscriptionResult } from '@/lib/transcriber/types';
+import styles from './processing-view.module.css';
 
 export function ProcessingView() {
   const {
@@ -287,75 +288,75 @@ export function ProcessingView() {
   }, [jobId, pollJobStatus]);
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <Card className="p-6 sm:p-8">
-        <div className="space-y-6">
+    <div className={styles.root}>
+      <Card className={styles.card}>
+        <div className={styles.inner}>
           {/* Status Icon */}
-          <div className="flex items-center justify-center">
+          <div className={styles.iconWrap}>
             {isProcessing ? (
-              <div className="relative flex items-center justify-center w-24 h-24">
-                <div className="absolute inset-0 rounded-full bg-emerald-50 dark:bg-emerald-950/30 animate-pulse" />
-                <Loader2 className="relative w-10 h-10 text-emerald-600 animate-spin" />
+              <div className={styles.spinnerWrap}>
+                <div className={styles.pulseRing} />
+                <Loader2 className={`${styles.bigIcon} ${styles.iconGreen} ${styles.spinner}`} />
               </div>
             ) : processingProgress === 100 ? (
-              <div className="flex items-center justify-center w-24 h-24 rounded-full bg-emerald-50 dark:bg-emerald-950/30">
-                <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+              <div className={`${styles.iconBox} ${styles.iconBoxGreen}`}>
+                <CheckCircle2 className={`${styles.bigIcon} ${styles.iconGreen}`} />
               </div>
             ) : isCancelled ? (
-              <div className="flex items-center justify-center w-24 h-24 rounded-full bg-amber-50 dark:bg-amber-950/30">
-                <Ban className="w-10 h-10 text-amber-600" />
+              <div className={`${styles.iconBox} ${styles.iconBoxAmber}`}>
+                <Ban className={`${styles.bigIcon} ${styles.iconAmber}`} />
               </div>
             ) : isFailed ? (
-              <div className="flex items-center justify-center w-24 h-24 rounded-full bg-destructive/10">
-                <XCircle className="w-10 h-10 text-destructive" />
+              <div className={`${styles.iconBox} ${styles.iconBoxDestructive}`}>
+                <XCircle className={`${styles.bigIcon} ${styles.iconDestructive}`} />
               </div>
             ) : (
-              <div className="flex items-center justify-center w-24 h-24 rounded-full bg-muted">
-                <Loader2 className="w-10 h-10 text-muted-foreground animate-spin" />
+              <div className={`${styles.iconBox} ${styles.iconBoxMuted}`}>
+                <Loader2 className={`${styles.bigIcon} ${styles.iconMuted} ${styles.spinner}`} />
               </div>
             )}
           </div>
 
           {/* Status Text */}
-          <div className="text-center space-y-2">
-            <h2 className="text-lg font-semibold">
+          <div className={styles.statusCenter}>
+            <h2 className={styles.statusTitle}>
               {isProcessing ? 'Transcribing Audio' : processingProgress === 100 ? 'Complete!' : isCancelled ? 'Transcription Cancelled' : isFailed ? 'Transcription Failed' : 'Processing'}
             </h2>
             {!isFailed && !isCancelled && (
-              <p className="text-sm text-muted-foreground">
+              <p className={styles.statusText}>
                 {processingStatus}
               </p>
             )}
             {isProcessing && estimatedTime && (
-              <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
+              <div className={styles.etaRow}>
+                <Clock className={styles.iconXs} />
                 {estimatedTime}
               </div>
             )}
           </div>
 
           {/* Single Unified Progress Bar */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-xs font-medium text-foreground">
+          <div className={styles.progressGroup}>
+            <div className={styles.progressHeader}>
               <span>Progress</span>
               <span>
                 {processingProgress}%
                 {chunksTotal > 0 && (
-                  <span className="text-muted-foreground ml-1.5 font-normal">
+                  <span className={styles.chunkMeta}>
                     ({Math.min(chunksDone, chunksTotal)}/{chunksTotal} Chunks)
                   </span>
                 )}
               </span>
             </div>
-            <Progress value={processingProgress} className="h-2.5" />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span className="truncate pr-2">Status: {processingStatus}</span>
+            <Progress value={processingProgress} className={styles.progressBar} />
+            <div className={styles.statusRow}>
+              <span className={styles.statusRowText}>Status: {processingStatus}</span>
             </div>
           </div>
 
           {/* Pause / Resume / Cancel controls */}
           {isProcessing && (
-            <div className="flex items-center justify-center gap-3">
+            <div className={styles.controls}>
               <Button
                 variant={paused ? 'default' : 'outline'}
                 size="sm"
@@ -367,9 +368,9 @@ export function ProcessingView() {
                   }
                 }}
                 disabled={cancelling}
-                className={`gap-1.5 min-w-[110px] ${paused ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                className={`${styles.controlBtn} ${paused ? styles.pauseResumeActive : ''}`}
               >
-                {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                {paused ? <Play className={styles.iconSm} /> : <Pause className={styles.iconSm} />}
                 {paused ? 'Resume' : 'Pause'}
               </Button>
               <Button
@@ -377,37 +378,37 @@ export function ProcessingView() {
                 size="sm"
                 onClick={() => setConfirmCancelOpen(true)}
                 disabled={cancelling}
-                className="gap-1.5 min-w-[110px]"
+                className={styles.controlBtn}
               >
-                {cancelling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                {cancelling ? <Loader2 className={`${styles.iconSm} ${styles.spinner}`} /> : <Ban className={styles.iconSm} />}
                 {cancelling ? 'Cancelling...' : 'Cancel'}
               </Button>
             </div>
           )}
           {paused && isProcessing && (
-            <p className="text-xs text-muted-foreground text-center">
+            <p className={styles.pausedHint}>
               Paused — the current chunk finishes, then transcription holds until you press Resume.
             </p>
           )}
 
           {/* File & Model Info */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-              <FileAudio className="w-4 h-4 text-muted-foreground shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-medium truncate">{uploadedFileName}</p>
-                <p className="text-[10px] text-muted-foreground">Audio File</p>
+          <div className={styles.infoGrid}>
+            <div className={styles.infoItem}>
+              <FileAudio className={styles.infoIcon} />
+              <div className={styles.infoInner}>
+                <p className={styles.infoName}>{uploadedFileName}</p>
+                <p className={styles.infoLabel}>Audio File</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+            <div className={styles.infoItem}>
               {modelInfo?.provider === 'gemini' ? (
-                <Cloud className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Cloud className={styles.infoIcon} />
               ) : (
-                <Cpu className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Cpu className={styles.infoIcon} />
               )}
-              <div className="min-w-0">
-                <p className="text-xs font-medium truncate">{modelInfo?.name || selectedModel}</p>
-                <p className="text-[10px] text-muted-foreground">
+              <div className={styles.infoInner}>
+                <p className={styles.infoName}>{modelInfo?.name || selectedModel}</p>
+                <p className={styles.infoLabel}>
                   {modelInfo?.provider === 'gemini' ? 'Cloud API' : 'Local Model'}
                 </p>
               </div>
@@ -416,33 +417,33 @@ export function ProcessingView() {
 
           {/* Live Per-Segment Transcription Results */}
           {liveChunkResults && liveChunkResults.length > 0 && (
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <div className={styles.liveSection}>
+              <div className={styles.liveHeader}>
+                <h3 className={styles.liveTitle}>
+                  <CheckCircle2 className={styles.liveTitleIcon} />
                   Live Segment Transcriptions ({liveChunkResults.length} Ready)
                 </h3>
               </div>
-              <div className="max-h-56 overflow-y-auto space-y-2 pr-1 divide-y divide-border/20">
+              <div className={styles.liveList}>
                 {liveChunkResults.map((chunkRes, idx) => (
-                  <div key={idx} className="pt-2 text-xs space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  <div key={idx} className={styles.liveItem}>
+                    <div className={styles.liveMeta}>
+                      <span className={styles.liveSegName}>
                         Segment {chunkRes.chunkIndex + 1}
                       </span>
                       <span>{chunkRes.segments.length} dialogue turns</span>
                     </div>
-                    <div className="space-y-1 bg-muted/30 p-2.5 rounded-md text-foreground">
+                    <div className={styles.liveSegBlock}>
                       {chunkRes.segments.slice(0, 3).map((seg, sIdx) => (
-                        <p key={sIdx} className="truncate text-[11.5px]">
-                          <span className="font-medium text-muted-foreground mr-1">
+                        <p key={sIdx} className={styles.liveSegLine}>
+                          <span className={styles.liveSegSpeaker}>
                             [{Math.floor(seg.startTime / 60)}m{Math.floor(seg.startTime % 60)}s] {seg.speaker}:
                           </span>
                           {seg.text}
                         </p>
                       ))}
                       {chunkRes.segments.length > 3 && (
-                        <p className="text-[10px] text-muted-foreground italic">
+                        <p className={styles.liveMore}>
                           + {chunkRes.segments.length - 3} more segments in this {chunkDuration}s chunk...
                         </p>
                       )}
@@ -461,7 +462,7 @@ export function ProcessingView() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.25 }}
-                className="space-y-2 overflow-hidden"
+                className={styles.steps}
               >
                 {[
                   { label: 'Upload audio', done: processingProgress > 0 },
@@ -474,7 +475,7 @@ export function ProcessingView() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.08 }}
-                    className="flex items-center gap-2 text-xs"
+                    className={styles.stepRow}
                   >
                     <motion.div
                       animate={{
@@ -482,9 +483,9 @@ export function ProcessingView() {
                         scale: step.done ? [1, 1.3, 1] : 1,
                       }}
                       transition={{ duration: 0.3 }}
-                      className="w-2 h-2 rounded-full"
+                      className={styles.stepDot}
                     />
-                    <span className={step.done ? 'text-foreground' : 'text-muted-foreground'}>{step.label}</span>
+                    <span className={step.done ? styles.stepDone : styles.stepPending}>{step.label}</span>
                   </motion.div>
                 ))}
               </motion.div>
@@ -492,20 +493,20 @@ export function ProcessingView() {
           </AnimatePresence>
           {/* Cancelled Actions */}
           {isCancelled && (
-            <div className="space-y-3">
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
-                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-medium">Transcription Cancelled</p>
-                  <p className="text-xs mt-1 opacity-80">The job was cancelled. {chunksDone > 0 ? `${chunksDone} of ${chunksTotal} chunk(s) had been transcribed.` : 'No chunks were transcribed.'} No result was saved.</p>
+            <div className={styles.actionBox}>
+              <div className={styles.warningBox}>
+                <AlertTriangle className={styles.warningIcon} />
+                <div className={styles.messageInner}>
+                  <p className={styles.messageTitle}>Transcription Cancelled</p>
+                  <p className={styles.messageSub}>The job was cancelled. {chunksDone > 0 ? `${chunksDone} of ${chunksTotal} chunk(s) had been transcribed.` : 'No chunks were transcribed.'} No result was saved.</p>
                 </div>
               </div>
-              <div className="flex justify-center gap-3">
+              <div className={styles.actionRow}>
                 <Button variant="outline" onClick={goBackToUpload}>
                   Go Back
                 </Button>
                 <Button
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className={styles.primaryBtn}
                   onClick={() => {
                     hasStarted.current = false;
                     startTranscription();
@@ -519,36 +520,36 @@ export function ProcessingView() {
 
           {/* Error Actions */}
           {isFailed && (
-            <div className="space-y-3">
+            <div className={styles.actionBox}>
               {/* Location-specific error */}
               {isLocationError ? (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-2 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
-                    <Globe className="w-5 h-5 mt-0.5 shrink-0" />
-                    <div className="min-w-0 space-y-2">
-                      <p className="font-semibold">Gemini API is not available in your region</p>
-                      <p className="text-xs opacity-80">
+                <div className={styles.actionBox}>
+                  <div className={styles.locationBox}>
+                    <Globe className={styles.locationIcon} />
+                    <div className={styles.locationInner}>
+                      <p className={styles.messageTitle}>Gemini API is not available in your region</p>
+                      <p className={styles.messageSub}>
                         Google restricts the Gemini API in certain countries. You have two options to fix this:
                       </p>
-                      <div className="space-y-2 mt-2">
-                        <div className="flex items-start gap-2 p-2 rounded bg-amber-100/50 dark:bg-amber-900/20">
-                          <Wifi className="w-4 h-4 mt-0.5 shrink-0" />
+                      <div className={styles.actionBox}>
+                        <div className={styles.optionRow}>
+                          <Wifi className={styles.optionIcon} />
                           <div>
-                            <p className="text-xs font-medium">Option 1: Use a Proxy</p>
-                            <p className="text-xs opacity-70">Set up a proxy URL in Settings → Cloud → API Base URL to route through a supported region.</p>
+                            <p className={styles.optionTitle}>Option 1: Use a Proxy</p>
+                            <p className={styles.optionSub}>Set up a proxy URL in Settings → Cloud → API Base URL to route through a supported region.</p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-2 p-2 rounded bg-amber-100/50 dark:bg-amber-900/20">
-                          <Cpu className="w-4 h-4 mt-0.5 shrink-0" />
+                        <div className={styles.optionRow}>
+                          <Cpu className={styles.optionIcon} />
                           <div>
-                            <p className="text-xs font-medium">Option 2: Use Local Model</p>
-                            <p className="text-xs opacity-70">Check your API key in Settings.</p>
+                            <p className={styles.optionTitle}>Option 2: Use Local Model</p>
+                            <p className={styles.optionSub}>Check your API key in Settings.</p>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div className="flex justify-center gap-3">
+                  <div className={styles.actionRow}>
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -559,7 +560,7 @@ export function ProcessingView() {
                       Go Back
                     </Button>
                     <Button
-                      className="bg-emerald-600 hover:bg-emerald-700 gap-1.5"
+                      className={`${styles.primaryBtn} ${styles.btnGap}`}
                       onClick={() => {
                         hasStarted.current = false;
                         setCurrentView('upload');
@@ -567,21 +568,21 @@ export function ProcessingView() {
                         window.dispatchEvent(new CustomEvent('open-settings'));
                       }}
                     >
-                      <Settings className="w-3.5 h-3.5" />
+                      <Settings className={styles.iconSm} />
                       Open Settings
                     </Button>
                   </div>
                 </div>
               ) : isAuthError ? (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium">Invalid API Key</p>
-                      <p className="text-xs mt-1 opacity-80">Your Gemini API key appears to be invalid. Please check your key in Settings and try again.</p>
+                <div className={styles.actionBox}>
+                  <div className={styles.errorBox}>
+                    <AlertTriangle className={styles.errorIcon} />
+                    <div className={styles.messageInner}>
+                      <p className={styles.messageTitle}>Invalid API Key</p>
+                      <p className={styles.messageSub}>Your Gemini API key appears to be invalid. Please check your key in Settings and try again.</p>
                     </div>
                   </div>
-                  <div className="flex justify-center gap-3">
+                  <div className={styles.actionRow}>
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -592,28 +593,28 @@ export function ProcessingView() {
                       Go Back
                     </Button>
                     <Button
-                      className="bg-emerald-600 hover:bg-emerald-700 gap-1.5"
+                      className={`${styles.primaryBtn} ${styles.btnGap}`}
                       onClick={() => {
                         hasStarted.current = false;
                         setCurrentView('upload');
                         window.dispatchEvent(new CustomEvent('open-settings'));
                       }}
                     >
-                      <Settings className="w-3.5 h-3.5" />
+                      <Settings className={styles.iconSm} />
                       Open Settings
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium">Transcription Failed</p>
-                      <p className="text-xs mt-1 opacity-80 break-words">{processingStatus.replace(/^(Failed|Error):\s*/, '')}</p>
+                <div className={styles.actionBox}>
+                  <div className={styles.errorBox}>
+                    <AlertTriangle className={styles.errorIcon} />
+                    <div className={styles.messageInner}>
+                      <p className={styles.messageTitle}>Transcription Failed</p>
+                      <p className={styles.messageSub}>{processingStatus.replace(/^(Failed|Error):\s*/, '')}</p>
                     </div>
                   </div>
-                  <div className="flex justify-center gap-3">
+                  <div className={styles.actionRow}>
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -624,7 +625,7 @@ export function ProcessingView() {
                       Go Back
                     </Button>
                     <Button
-                      className="bg-emerald-600 hover:bg-emerald-700"
+                      className={styles.primaryBtn}
                       onClick={() => {
                         hasStarted.current = false;
                         startTranscription();
@@ -642,17 +643,17 @@ export function ProcessingView() {
 
       {/* Cancel Confirmation Modal */}
       <Dialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={styles.dialogContentSm}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Ban className="w-5 h-5" />
+            <DialogTitle className={styles.dialogTitleDestructive}>
+              <Ban className={styles.dialogTitleIcon} />
               Cancel Transcription?
             </DialogTitle>
-            <DialogDescription className="pt-2 text-sm text-muted-foreground">
+            <DialogDescription className={styles.dialogDesc}>
               Are you sure you want to stop transcribing <strong>{uploadedFileName || 'this audio file'}</strong>? Progress for this job will be cancelled immediately.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0 pt-4 flex-col-reverse sm:flex-row">
+          <DialogFooter className={styles.dialogFooter}>
             <Button variant="outline" onClick={() => setConfirmCancelOpen(false)}>
               Keep Transcribing
             </Button>
@@ -671,22 +672,22 @@ export function ProcessingView() {
 
       {/* Pause Confirmation Modal */}
       <Dialog open={confirmPauseOpen} onOpenChange={setConfirmPauseOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={styles.dialogContentSm}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Pause className="w-5 h-5 text-amber-500" />
+            <DialogTitle className={styles.dialogTitle}>
+              <Pause className={styles.dialogTitleIconAmber} />
               Pause Transcription?
             </DialogTitle>
-            <DialogDescription className="pt-2 text-sm text-muted-foreground">
+            <DialogDescription className={styles.dialogDesc}>
               Pause processing at the current segment? You can resume transcription at any time without losing completed progress.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0 pt-4 flex-col-reverse sm:flex-row">
+          <DialogFooter className={styles.dialogFooter}>
             <Button variant="outline" onClick={() => setConfirmPauseOpen(false)}>
               Continue Transcribing
             </Button>
             <Button
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className={styles.amberPrimary}
               onClick={() => {
                 setConfirmPauseOpen(false);
                 sendControl('pause');

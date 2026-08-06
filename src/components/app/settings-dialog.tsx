@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Key,
   Server,
@@ -33,6 +32,7 @@ import {
   Code2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import styles from './settings-dialog.module.css';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -317,108 +317,96 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[620px] max-h-[92vh] overflow-y-auto border-0 bg-background/95 dark:bg-zinc-950/95 backdrop-blur-2xl shadow-2xl rounded-2xl p-0 overflow-hidden ring-1 ring-white/10">
+      <DialogContent className={styles.content}>
         {/* Glowing Top Gradient Header */}
-        <div className="relative p-6 pb-4 bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-emerald-600/10 border-b border-white/10">
-          <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-500 shadow-inner">
-                <Cpu className="w-5 h-5 animate-pulse" />
+        <div className={styles.header}>
+          <div className={styles.glowBlob} />
+          <div className={styles.headerRow}>
+            <div className={styles.headerLeft}>
+              <div className={styles.headerIconWrap}>
+                <Cpu className={styles.headerIcon} />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold tracking-tight flex items-center gap-2">
+                <DialogTitle className={styles.titleRow}>
                   AI Provider & GCP Credentials
-                  <Badge variant="outline" className="text-[10px] bg-blue-500/10 border-blue-500/30 text-blue-500">
+                  <Badge variant="outline" className={styles.vertexBadge}>
                     Vertex AI Ready
                   </Badge>
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  Configure Google Cloud Vertex AI (<code className="text-foreground">gcp-credentials.json</code>) or Gemini API key
+                <DialogDescription className={styles.dialogDesc}>
+                  Configure Google Cloud Vertex AI (<code className={styles.dialogDescCode}>gcp-credentials.json</code>) or Gemini API key
                 </DialogDescription>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="p-6 pt-4 space-y-6">
-          <Tabs defaultValue="vertex" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 p-1 bg-muted/60 dark:bg-zinc-900/80 rounded-xl border border-white/5">
-              <TabsTrigger value="vertex" className="gap-2 text-xs font-semibold py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white shadow-md transition-all">
-                <Cloud className="w-3.5 h-3.5" />
+        <div className={styles.body}>
+          <Tabs defaultValue="vertex" className={styles.tabsWrap}>
+            <TabsList className={styles.tabsList}>
+              <TabsTrigger value="vertex" className={`${styles.tabTrigger} ${styles.tabTriggerVertex}`}>
+                <Cloud className={styles.iconSm} />
                 Option B: Vertex AI & GCP
               </TabsTrigger>
-              <TabsTrigger value="gemini" className="gap-2 text-xs font-semibold py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white shadow-md transition-all">
-                <Sparkles className="w-3.5 h-3.5" />
+              <TabsTrigger value="gemini" className={`${styles.tabTrigger} ${styles.tabTriggerGemini}`}>
+                <Sparkles className={styles.iconSm} />
                 Google AI Studio (API Key)
               </TabsTrigger>
             </TabsList>
 
             {/* TAB 1: GCP VERTEX AI (OPTION B) */}
-            <TabsContent value="vertex" className="space-y-5 mt-5 focus-visible:outline-none">
+            <TabsContent value="vertex" className={styles.tabContent}>
 
               {/* Mode Selector Pill cards */}
-              <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              <div className={styles.fieldGroup}>
+                <Label className={styles.fieldLabel}>
                   <span>Routing Strategy</span>
-                  <span className="text-[10px] text-blue-500 font-medium">Vertex AI Primary</span>
+                  <span className={styles.fieldLabelRight}>Vertex AI Primary</span>
                 </Label>
 
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className={styles.modeGrid}>
                   <button
                     type="button"
                     onClick={() => setAiProvider('auto')}
-                    className={`relative p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between space-y-2 ${
-                      aiProvider === 'auto'
-                        ? 'border-blue-500/50 bg-blue-500/10 text-foreground ring-1 ring-blue-500/40 shadow-lg shadow-blue-500/5'
-                        : 'border-white/10 bg-muted/30 hover:bg-muted/60 text-muted-foreground'
-                    }`}
+                    className={`${styles.modeCard} ${aiProvider === 'auto' ? `${styles.modeCardAutoActive} ${styles.modeCardActiveRingBlue}` : styles.modeCardIdle}`}
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <Zap className={`w-4 h-4 ${aiProvider === 'auto' ? 'text-blue-400' : ''}`} />
-                      {aiProvider === 'auto' && <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />}
+                    <div className={styles.modeIconRow}>
+                      <Zap className={`${styles.modeIcon} ${aiProvider === 'auto' ? styles.modeIconBlue : ''}`} />
+                      {aiProvider === 'auto' && <span className={styles.pingDot} />}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">Auto Route</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight">Prefers Vertex JSON if detected</p>
+                      <p className={styles.modeTitle}>Auto Route</p>
+                      <p className={styles.modeSub}>Prefers Vertex JSON if detected</p>
                     </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setAiProvider('vertex')}
-                    className={`relative p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between space-y-2 ${
-                      aiProvider === 'vertex'
-                        ? 'border-blue-500/50 bg-blue-500/10 text-foreground ring-1 ring-blue-500/40 shadow-lg shadow-blue-500/5'
-                        : 'border-white/10 bg-muted/30 hover:bg-muted/60 text-muted-foreground'
-                    }`}
+                    className={`${styles.modeCard} ${aiProvider === 'vertex' ? `${styles.modeCardVertexActive} ${styles.modeCardActiveRingBlue}` : styles.modeCardIdle}`}
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <Cloud className={`w-4 h-4 ${aiProvider === 'vertex' ? 'text-blue-400' : ''}`} />
-                      {aiProvider === 'vertex' && <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />}
+                    <div className={styles.modeIconRow}>
+                      <Cloud className={`${styles.modeIcon} ${aiProvider === 'vertex' ? styles.modeIconBlue : ''}`} />
+                      {aiProvider === 'vertex' && <CheckCircle2 className={styles.modeCheck} />}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">Vertex AI</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight">Enforces Service Account JSON</p>
+                      <p className={styles.modeTitle}>Vertex AI</p>
+                      <p className={styles.modeSub}>Enforces Service Account JSON</p>
                     </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setAiProvider('gemini')}
-                    className={`relative p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between space-y-2 ${
-                      aiProvider === 'gemini'
-                        ? 'border-emerald-500/50 bg-emerald-500/10 text-foreground ring-1 ring-emerald-500/40 shadow-lg shadow-emerald-500/5'
-                        : 'border-white/10 bg-muted/30 hover:bg-muted/60 text-muted-foreground'
-                    }`}
+                    className={`${styles.modeCard} ${aiProvider === 'gemini' ? `${styles.modeCardGeminiActive} ${styles.modeCardActiveRingEmerald}` : styles.modeCardIdle}`}
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <Key className={`w-4 h-4 ${aiProvider === 'gemini' ? 'text-emerald-400' : ''}`} />
-                      {aiProvider === 'gemini' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                    <div className={styles.modeIconRow}>
+                      <Key className={`${styles.modeIcon} ${aiProvider === 'gemini' ? styles.modeIconEmerald : ''}`} />
+                      {aiProvider === 'gemini' && <CheckCircle2 className={styles.modeCheckEmerald} />}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-foreground">AI Studio</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight">Uses API Key only</p>
+                      <p className={styles.modeTitle}>AI Studio</p>
+                      <p className={styles.modeSub}>Uses API Key only</p>
                     </div>
                   </button>
                 </div>
@@ -426,29 +414,29 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
               {/* Detected Credentials Pill Banner */}
               {(gcpStatus?.exists || jsonParsedMeta) && (
-                <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-blue-500/15 p-4 shadow-sm backdrop-blur-md">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30 mt-0.5">
-                        <ShieldCheck className="w-4 h-4" />
+                <div className={styles.credBanner}>
+                  <div className={styles.credInner}>
+                    <div className={styles.credLeft}>
+                      <div className={styles.credIconWrap}>
+                        <ShieldCheck className={styles.credIcon} />
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs font-bold text-emerald-400 dark:text-emerald-300">
+                      <div className={styles.credBody}>
+                        <div className={styles.credTitleRow}>
+                          <p className={styles.credTitle}>
                             Service Account Credentials Active
                           </p>
-                          <Badge variant="outline" className="text-[9px] bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+                          <Badge variant="outline" className={styles.credBadge}>
                             GCP Validated
                           </Badge>
                         </div>
                         {(gcpStatus?.projectId || jsonParsedMeta?.projectId) && (
-                          <p className="text-xs text-muted-foreground">
-                            Project ID: <code className="px-1.5 py-0.5 rounded bg-black/30 text-emerald-200 font-mono text-[11px] font-semibold">{gcpStatus?.projectId || jsonParsedMeta?.projectId}</code>
+                          <p className={styles.credMeta}>
+                            Project ID: <code className={styles.credCode}>{gcpStatus?.projectId || jsonParsedMeta?.projectId}</code>
                           </p>
                         )}
                         {(gcpStatus?.clientEmail || jsonParsedMeta?.clientEmail) && (
-                          <p className="text-[11px] text-muted-foreground truncate max-w-[400px]">
-                            Account: <code className="text-foreground font-mono">{gcpStatus?.clientEmail || jsonParsedMeta?.clientEmail}</code>
+                          <p className={styles.credAccount}>
+                            Account: <code className={styles.credAccountCode}>{gcpStatus?.clientEmail || jsonParsedMeta?.clientEmail}</code>
                           </p>
                         )}
                       </div>
@@ -458,19 +446,19 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               )}
 
               {/* Drag and Drop Zone for gcp-credentials.json */}
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <FileJson className="w-4 h-4 text-blue-400" />
-                    Upload / Drop <code className="text-xs text-blue-400 font-mono">gcp-credentials.json</code>
+              <div className={styles.fieldGroup}>
+                <Label className={styles.jsonLabel}>
+                  <span className={styles.jsonLabelLeft}>
+                    <FileJson className={styles.jsonLabelIcon} />
+                    Upload / Drop <code className={styles.jsonCode}>gcp-credentials.json</code>
                   </span>
                   {gcpCredentialsJson && (
                     <button
                       type="button"
                       onClick={() => { setGcpCredentialsJson(''); setJsonParsedMeta(null); }}
-                      className="text-[11px] text-destructive hover:underline flex items-center gap-1"
+                      className={styles.clearBtn}
                     >
-                      <Trash2 className="w-3 h-3" /> Clear JSON
+                      <Trash2 className={styles.iconXs} /> Clear JSON
                     </button>
                   )}
                 </Label>
@@ -480,12 +468,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-all duration-300 flex flex-col items-center justify-center gap-3 ${
+                  className={`${styles.dropZone} ${
                     isDragging
-                      ? 'border-blue-500 bg-blue-500/15 scale-[1.01] shadow-xl shadow-blue-500/10'
+                      ? styles.dropZoneActive
                       : gcpCredentialsJson
-                      ? 'border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10'
-                      : 'border-white/15 bg-muted/20 hover:border-blue-500/40 hover:bg-muted/40'
+                      ? styles.dropZoneLoaded
+                      : styles.dropZoneIdle
                   }`}
                 >
                   <input
@@ -493,18 +481,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     type="file"
                     accept=".json"
                     onChange={handleFileUpload}
-                    className="hidden"
+                    className={styles.dropInput}
                   />
 
-                  <div className="p-3 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-inner group-hover:scale-110 transition-transform">
-                    <Upload className="w-5 h-5" />
+                  <div className={styles.dropIconWrap}>
+                    <Upload className={styles.dropIcon} />
                   </div>
 
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-foreground">
+                  <div className={styles.dropText}>
+                    <p className={styles.dropTitle}>
                       {isDragging ? 'Drop gcp-credentials.json here' : 'Click to browse or drag & drop gcp-credentials.json'}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className={styles.dropSub}>
                       Supports official Google Cloud Service Account key JSON files
                     </p>
                   </div>
@@ -512,100 +500,100 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </div>
 
               {/* Paste Textarea Fallback */}
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                  <Code2 className="w-3.5 h-3.5 text-blue-400" />
+              <div className={styles.pasteGroup}>
+                <Label className={styles.pasteLabel}>
+                  <Code2 className={styles.pasteIcon} />
                   Or paste Service Account JSON content directly:
                 </Label>
                 <Textarea
                   placeholder={`{\n  "type": "service_account",\n  "project_id": "my-gcp-project-123",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\n..."\n}`}
                   value={gcpCredentialsJson}
                   onChange={(e) => setGcpCredentialsJson(e.target.value)}
-                  className="font-mono text-[11px] h-24 resize-none bg-black/30 border-white/10 rounded-xl focus:ring-blue-500/50"
+                  className={styles.pasteTextarea}
                 />
               </div>
 
               {/* Project ID & Region Grid */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-blue-400" /> GCP Project ID
+              <div className={styles.projGrid}>
+                <div className={styles.projCol}>
+                  <Label className={styles.projLabel}>
+                    <Globe className={styles.projLabelIcon} /> GCP Project ID
                   </Label>
                   <Input
                     placeholder="e.g. my-gcp-project-123"
                     value={gcpProjectId}
                     onChange={(e) => setGcpProjectId(e.target.value)}
-                    className="h-9 text-xs bg-black/20 border-white/10 rounded-xl"
+                    className={styles.projInput}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1.5">
-                    <Server className="w-3.5 h-3.5 text-blue-400" /> GCP Region
+                <div className={styles.projCol}>
+                  <Label className={styles.projLabel}>
+                    <Server className={styles.projLabelIcon} /> GCP Region
                   </Label>
                   <Input
                     placeholder="us-central1"
                     value={gcpLocation}
                     onChange={(e) => setGcpLocation(e.target.value)}
-                    className="h-9 text-xs bg-black/20 border-white/10 rounded-xl"
+                    className={styles.projInput}
                   />
                 </div>
               </div>
 
               {/* Test Connection Button & Status */}
-              <div className="flex items-center justify-between pt-3 border-t border-white/10">
+              <div className={styles.testRow}>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={testVertex}
                   disabled={vertexStatus === 'testing'}
-                  className="gap-2 text-xs h-9 rounded-xl border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-all shadow-sm"
+                  className={styles.testBtn}
                 >
-                  {vertexStatus === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wifi className="w-3.5 h-3.5" />}
+                  {vertexStatus === 'testing' ? <Loader2 className={`${styles.iconSm} ${styles.spin}`} /> : <Wifi className={styles.iconSm} />}
                   Test Vertex AI Connection
                 </Button>
 
                 {vertexStatus === 'connected' && (
-                  <Badge variant="outline" className="text-emerald-400 bg-emerald-500/10 border-emerald-500/40 text-xs py-1 px-2.5 rounded-lg gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Connected
+                  <Badge variant="outline" className={styles.statusBadgeOk}>
+                    <CheckCircle2 className={styles.statusBadgeIcon} /> Connected
                   </Badge>
                 )}
                 {vertexStatus === 'error' && (
-                  <Badge variant="outline" className="text-destructive bg-destructive/10 border-destructive/30 text-xs py-1 px-2.5 rounded-lg gap-1.5">
-                    <XCircle className="w-3.5 h-3.5 text-destructive" /> Failed
+                  <Badge variant="outline" className={styles.statusBadgeErr}>
+                    <XCircle className={styles.statusBadgeIconErr} /> Failed
                   </Badge>
                 )}
               </div>
 
               {vertexStatus === 'error' && (
-                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1">
-                  <p className="font-semibold">Connection Error:</p>
-                  <p className="text-[11px] opacity-90">{vertexError}</p>
+                <div className={styles.errorCard}>
+                  <p className={styles.errorTitle}>Connection Error:</p>
+                  <p className={styles.errorBody}>{vertexError}</p>
                 </div>
               )}
 
               {/* 100% LOCAL PRIVACY GUARANTEE CARD */}
-              <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                    <Lock className="w-4 h-4 text-emerald-400" />
+              <div className={styles.privacyCard}>
+                <div className={styles.privacyHeader}>
+                  <div className={styles.privacyTitle}>
+                    <Lock className={styles.privacyIcon} />
                     <span>Privacy & 100% Local Data Sovereignty</span>
                   </div>
-                  <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                  <Badge variant="outline" className={styles.privacyBadge}>
                     Local Only
                   </Badge>
                 </div>
-                <div className="grid grid-cols-1 gap-2 text-[11px] text-muted-foreground">
-                  <div className="flex items-start gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                    <span><strong>100% Local File & DB Storage:</strong> All recordings, transcribed text, SQLite database (<code className="text-foreground">dev.db</code>), and settings stay on your machine.</span>
+                <div className={styles.privacyList}>
+                  <div className={styles.privacyItem}>
+                    <Check className={styles.privacyCheck} />
+                    <span><strong>100% Local File & DB Storage:</strong> All recordings, transcribed text, SQLite database (<code className={styles.dialogDescCode}>dev.db</code>), and settings stay on your machine.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className={styles.privacyItem}>
+                    <Check className={styles.privacyCheck} />
                     <span><strong>Zero Google Model Training:</strong> Under Google Cloud Vertex AI terms, your audio & transcripts are <strong>NEVER used to train models</strong> or stored by Google.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className={styles.privacyItem}>
+                    <Check className={styles.privacyCheck} />
                     <span><strong>Ephemeral In-Memory Transfer:</strong> Audio is sent in-memory over encrypted TLS during inference and discarded immediately. No GCP cloud buckets (GCS) are used.</span>
                   </div>
                 </div>
@@ -613,68 +601,68 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </TabsContent>
 
             {/* TAB 2: GEMINI API KEY */}
-            <TabsContent value="gemini" className="space-y-5 mt-5 focus-visible:outline-none">
-              <div className="p-4 rounded-xl border border-white/10 bg-card space-y-3">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Key className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm font-semibold">Google AI Studio (Gemini API Key)</span>
+            <TabsContent value="gemini" className={styles.tabContent}>
+              <div className={styles.geminiCard}>
+                <div className={styles.geminiHeader}>
+                  <div className={styles.geminiTitle}>
+                    <Key className={styles.geminiTitleIcon} />
+                    <span className={styles.geminiTitleText}>Google AI Studio (Gemini API Key)</span>
                   </div>
-                  <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
+                  <Badge variant="outline" className={styles.geminiModeBadge}>
                     API Key Mode
                   </Badge>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs">API Key</Label>
-                  <div className="flex gap-2 items-center">
+                <div className={styles.geminiField}>
+                  <Label className={styles.advLabel}>API Key</Label>
+                  <div className={styles.keyRow}>
                     <Input
                       type="password"
                       placeholder="AIzaSy..."
                       value={localGeminiKey}
                       onChange={e => setLocalGeminiKey(e.target.value)}
-                      className="flex-1 h-9 text-xs bg-black/20 border-white/10 rounded-xl"
+                      className={styles.keyInput}
                     />
-                    <Button variant="outline" size="sm" onClick={testGemini} disabled={geminiStatus === 'testing'} className="h-9 gap-1.5 text-xs rounded-xl border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20">
-                      {geminiStatus === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wifi className="w-3.5 h-3.5" />}
+                    <Button variant="outline" size="sm" onClick={testGemini} disabled={geminiStatus === 'testing'} className={styles.testKeyBtn}>
+                      {geminiStatus === 'testing' ? <Loader2 className={`${styles.iconSm} ${styles.spin}`} /> : <Wifi className={styles.iconSm} />}
                       Test Key
                     </Button>
                   </div>
                 </div>
 
                 {geminiStatus === 'connected' && (
-                  <p className="text-xs text-emerald-400 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> API Key verified & ready!
+                  <p className={styles.geminiOk}>
+                    <CheckCircle2 className={styles.iconSm} /> API Key verified & ready!
                   </p>
                 )}
-                {geminiStatus === 'error' && <p className="text-xs text-destructive">{geminiError}</p>}
+                {geminiStatus === 'error' && <p className={styles.geminiErr}>{geminiError}</p>}
 
-                <p className="text-[11px] text-muted-foreground pt-1">
-                  Get your free API key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline inline-flex items-center gap-0.5">aistudio.google.com <ArrowRight className="w-3 h-3" /></a>
+                <p className={styles.geminiHint}>
+                  Get your free API key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className={styles.geminiLink}>aistudio.google.com <ArrowRight className={styles.linkArrow} /></a>
                 </p>
               </div>
             </TabsContent>
           </Tabs>
 
           {/* Advanced Chunking & Limits Accordion Section */}
-          <div className="pt-2 border-t border-white/10 space-y-3">
-            <details className="group">
-              <summary className="text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer flex items-center justify-between py-1 transition-colors select-none">
-                <span className="flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5" /> Advanced Audio Slicing & Chunk Settings
+          <div className={styles.advSection}>
+            <details className={styles.advDetails}>
+              <summary className={styles.advSummary}>
+                <span className={styles.advSummaryLeft}>
+                  <Server className={styles.advSummaryIcon} /> Advanced Audio Slicing & Chunk Settings
                 </span>
-                <span className="text-[10px] text-primary group-open:rotate-180 transition-transform">▼</span>
+                <span className={styles.advChevron}>▼</span>
               </summary>
-              <div className="grid grid-cols-2 gap-3 pt-3">
-                <div className="space-y-1">
-                  <Label className="text-[11px]">Chunk Duration (seconds)</Label>
-                  <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} className="h-8 text-xs bg-black/20 border-white/10 rounded-xl" />
-                  <p className="text-[10px] text-muted-foreground">Default: 300s (5 minutes)</p>
+              <div className={styles.advGrid}>
+                <div className={styles.advCol}>
+                  <Label className={styles.advLabel}>Chunk Duration (seconds)</Label>
+                  <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} className={styles.advInput} />
+                  <p className={styles.advHint}>Default: 300s (5 minutes)</p>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px]">Overlap Duration (seconds)</Label>
-                  <Input type="number" min="0" max="60" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} className="h-8 text-xs bg-black/20 border-white/10 rounded-xl" />
-                  <p className="text-[10px] text-muted-foreground">Default: 30s overlap</p>
+                <div className={styles.advCol}>
+                  <Label className={styles.advLabel}>Overlap Duration (seconds)</Label>
+                  <Input type="number" min="0" max="60" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} className={styles.advInput} />
+                  <p className={styles.advHint}>Default: 30s overlap</p>
                 </div>
               </div>
             </details>
@@ -682,21 +670,21 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between p-4 px-6 bg-muted/40 border-t border-white/10">
-          <p className="text-[11px] text-muted-foreground">
+        <div className={styles.footer}>
+          <p className={styles.footerHint}>
             Changes will take effect for all future transcription jobs.
           </p>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="rounded-xl text-xs">
+          <div className={styles.footerBtns}>
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className={styles.cancelBtn}>
               Cancel
             </Button>
             <Button
               size="sm"
               onClick={saveSettings}
               disabled={saving}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-600/25 rounded-xl text-xs font-semibold px-4 gap-1.5"
+              className={styles.saveBtn}
             >
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              {saving ? <Loader2 className={`${styles.iconSm} ${styles.spin}`} /> : <Check className={styles.iconSm} />}
               Save & Apply Settings
             </Button>
           </div>

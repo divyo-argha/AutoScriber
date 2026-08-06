@@ -1,0 +1,93 @@
+.sp0 {
+  background-color: #d1fae5;
+  color: #065f46;
+  --speaker-border: rgba(16, 185, 129, 0.2);
+}
+
+:global(.dark) .sp0 {
+  background-color: rgba(2, 44, 34, 0.4);
+  color: #34d399;
+}
+
+.sp1 {
+  background-color: #e0f2fe;
+  color: #075985;
+  --speaker-border: rgba(14, 165, 233, 0.2);
+}
+
+:global(.dark) .sp1 {
+  background-color: rgba(8, 47, 73, 0.4);
+  color: #38bdf8;
+}
+
+.sp2 {
+  background-color: #ede9fe;
+  color: #5b21b6;
+  --speaker-border: rgba(139, 92, 246, 0.2);
+}
+
+:global(.dark) .sp2 {
+  background-color: rgba(46, 16, 101, 0.4);
+  color: #a78bfa;
+}
+
+.sp3 {
+  background-color: #fef3c7;
+  color: #92400e;
+  --speaker-border: rgba(245, 158, 11, 0.2);
+}
+
+:global(.dark) .sp3 {
+  background-color: rgba(69, 26, 3, 0.4);
+  color: #fbbf24;
+}
+
+.sp4 {
+  background-color: #ffe4e6;
+  color: #9f1239;
+  --speaker-border: rgba(244, 63, 94, 0.2);
+}
+
+:global(.dark) .sp4 {
+  background-color: rgba(76, 5, 25, 0.4);
+  color: #fb7185;
+}
+
+.sp5 {
+  background-color: #ccfbf1;
+  color: #115e59;
+  --speaker-border: rgba(20, 184, 166, 0.2);
+}
+
+:global(.dark) .sp5 {
+  background-color: rgba(4, 47, 46, 0.4);
+  color: #2dd4bf;
+}
+
+.sp6 {
+  background-color: #ffedd5;
+  color: #9a3412;
+  --speaker-border: rgba(249, 115, 22, 0.2);
+}
+
+:global(.dark) .sp6 {
+  background-color: rgba(67, 20, 7, 0.4);
+  color: #fb923c;
+}
+
+.sp7 {
+  background-color: #cffafe;
+  color: #155e75;
+  --speaker-border: rgba(6, 182, 212, 0.2);
+}
+
+:global(.dark) .sp7 {
+  background-color: rgba(8, 51, 68, 0.4);
+  color: #22d3ee;
+}
+
+.fallback {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  --speaker-border: var(--border);
+}

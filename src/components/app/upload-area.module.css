@@ -1,0 +1,495 @@
+.wrapper {
+  margin-inline: auto;
+  max-width: 42rem;
+}
+
+.wrapper > * + * {
+  margin-top: 1rem;
+}
+
+.uploadCard {
+  border: 1px solid color-mix(in oklab, #10b981 50%, transparent);
+  background-color: color-mix(in oklab, #ecfdf5 30%, transparent);
+}
+
+:global(.dark) .uploadCard {
+  background-color: color-mix(in oklab, #022c22 10%, transparent);
+}
+
+.uploadCardInner {
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.uploadCardInner > * + * {
+  margin-top: 1rem;
+}
+
+@media (min-width: 640px) {
+  .uploadCardInner {
+    padding: 2rem;
+  }
+}
+
+.fileIconWrap {
+  margin-inline: auto;
+  display: flex;
+  width: 3.5rem;
+  height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background-color: #d1fae5;
+}
+
+:global(.dark) .fileIconWrap {
+  background-color: color-mix(in oklab, #064e3b 30%, transparent);
+}
+
+.fileIcon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #059669;
+}
+
+:global(.dark) .fileIcon {
+  color: #34d399;
+}
+
+.fileName {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.fileMeta {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.primaryBtn {
+  gap: 0.375rem;
+  background-color: #059669;
+}
+
+.primaryBtn:hover {
+  background-color: #047857;
+}
+
+.btnGap {
+  gap: 0.375rem;
+}
+
+.btnSmall {
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.gap2 {
+  gap: 0.5rem;
+}
+
+.warningBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #fffbeb;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #b45309;
+}
+
+:global(.dark) .warningBox {
+  background-color: color-mix(in oklab, #451a03 20%, transparent);
+  color: #fbbf24;
+}
+
+.warningIcon {
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.pendingInner > * + * {
+  margin-top: 0.75rem;
+}
+
+.pendingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pendingTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+}
+
+.pendingTitleIcon {
+  width: 1rem;
+  height: 1rem;
+  color: #059669;
+}
+
+.clearBtn {
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.fileList {
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.fileList > * + * {
+  margin-top: 0.375rem;
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.fileRowIcon {
+  flex-shrink: 0;
+  width: 0.875rem;
+  height: 0.875rem;
+  color: #059669;
+}
+
+.fileRowName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.fileRowSize {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+}
+
+.fileRowRemove {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.fileRowRemove:hover {
+  color: var(--destructive);
+}
+
+.fileFooter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.errorBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: color-mix(in oklab, var(--destructive) 10%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--destructive);
+}
+
+.errorIcon {
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.tabWrap {
+  width: 100%;
+}
+
+.tabsList {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.tabTrigger {
+  gap: 0.25rem;
+  font-size: 10px;
+}
+
+@media (min-width: 640px) {
+  .tabTrigger {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+}
+
+.hiddenSmInline {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .hiddenSmInline {
+    display: inline;
+  }
+}
+
+.dropZone {
+  border: 2px dashed color-mix(in oklab, var(--muted-foreground) 25%, transparent);
+  transition: all 0.2s;
+}
+
+.dropZone:hover {
+  border-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+}
+
+.dropInner {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.dropInner > * + * {
+  margin-top: 1rem;
+}
+
+@media (min-width: 640px) {
+  .dropInner {
+    padding: 3rem;
+  }
+}
+
+.dropIconWrap {
+  margin-inline: auto;
+  display: flex;
+  width: 3.5rem;
+  height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background-color: var(--muted);
+}
+
+@media (min-width: 640px) {
+  .dropIconWrap {
+    width: 4rem;
+    height: 4rem;
+  }
+}
+
+.dropIcon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--muted-foreground);
+}
+
+@media (min-width: 640px) {
+  .dropIcon {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+.dropTitle {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+}
+
+@media (min-width: 640px) {
+  .dropTitle {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}
+
+.dropSubtitle {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+}
+
+@media (min-width: 640px) {
+  .dropSubtitle {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+.hint {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+}
+
+.bigIcon {
+  margin-inline: auto;
+  width: 3rem;
+  height: 3rem;
+  color: var(--muted-foreground);
+}
+
+.driveList {
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.driveList > * + * {
+  margin-top: 0.5rem;
+}
+
+.driveRow {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.driveRow:hover {
+  background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+}
+
+.driveActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.driveBtn {
+  flex: 1;
+}
+
+.downloadBtn {
+  flex: 1;
+  background-color: #059669;
+}
+
+.downloadBtn:hover {
+  background-color: #047857;
+}
+
+.iconXs {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.iconSm {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.iconMd {
+  width: 1rem;
+  height: 1rem;
+}
+
+.spinner {
+  animation: uploadSpin 1s linear infinite;
+}
+
+@keyframes uploadSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .statsGrid {
+    gap: 0.75rem;
+  }
+}
+
+.statCard {
+  padding: 0.75rem;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .statCard {
+    padding: 1rem;
+  }
+}
+
+.statValue {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+@media (min-width: 640px) {
+  .statValue {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
+
+.statLabel {
+  margin-top: 0.25rem;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+
+@media (min-width: 640px) {
+  .statLabel {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+}

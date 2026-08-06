@@ -1,14 +1,16 @@
 'use client';
 
+import styles from './footer.module.css';
+
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-card/30 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">
+    <footer className={styles.footer}>
+      <div className={styles.inner}>
+        <div className={styles.row}>
+          <p className={styles.text}>
             autoScriber — Bangla Audio Transcription for Researchers
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className={styles.text}>
             Powered by Gemini &amp; Soniox
           </p>
         </div>

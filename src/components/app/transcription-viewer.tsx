@@ -31,33 +31,23 @@ const TranscriptRowItem = memo(function TranscriptRowItem({
       variants={fadeUp}
       transition={{ duration: 0.2 }}
       onClick={() => onClick(segment.startTime)}
-      className={`group flex items-start gap-4 py-3 px-3.5 rounded-xl transition-all duration-300 cursor-pointer ${
-        isActive
-          ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-l-4 border-emerald-500 shadow-sm rounded-r-xl'
-          : isPast
-          ? 'opacity-65 hover:opacity-100 hover:bg-muted/40'
-          : 'hover:bg-muted/50'
-      }`}
+      className={`${styles.row} ${isActive ? styles.rowActive : isPast ? styles.rowPast : styles.rowFuture}`}
     >
-      <div className="shrink-0 w-14 pt-1 select-none">
-        <span className={`text-xs font-mono font-medium leading-none ${
-          isActive ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-muted-foreground/60'
-        }`}>
+      <div className={styles.timeCol}>
+        <span className={`${styles.timeText} ${isActive ? styles.timeActive : styles.timeInactive}`}>
           {formatTime(segment.startTime).split('.')[0]}
         </span>
       </div>
 
-      <div className="shrink-0 w-20 sm:w-24 pt-0.5 select-none">
-        <Badge
-          className={`${speakerColor || 'bg-muted'} border-0 text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-full`}
-        >
+      <div className={styles.speakerCol}>
+        <Badge className={`${styles.speakerPill} ${speakerColor || speakerStyles.fallback}`}>
           {segment.speaker}
         </Badge>
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className={styles.body}>
         {isActive && segmentWordTimings.length > 0 ? (
-          <p className="text-[13.5px] sm:text-[14.5px] leading-relaxed text-foreground select-none">
+          <p className={styles.wordText}>
             {segmentWordTimings.map((wordTiming, wordIdx) => {
               const isCurrentWord = currentTime >= wordTiming.startTime && currentTime <= wordTiming.endTime;
               const isWordPast = currentTime > wordTiming.endTime;
@@ -69,13 +59,7 @@ const TranscriptRowItem = memo(function TranscriptRowItem({
                     e.stopPropagation();
                     onClick(wordTiming.startTime);
                   }}
-                  className={`inline-block mr-1 rounded px-1 transition-all duration-100 cursor-pointer ${
-                    isCurrentWord
-                      ? 'font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-500/30 scale-[1.03]'
-                      : isWordPast
-                      ? 'text-foreground font-semibold opacity-90'
-                      : 'text-muted-foreground/50 font-normal'
-                  }`}
+                  className={`${styles.word} ${isCurrentWord ? styles.wordCurrent : isWordPast ? styles.wordPast : styles.wordFuture}`}
                 >
                   {wordTiming.word}
                 </span>
@@ -83,9 +67,7 @@ const TranscriptRowItem = memo(function TranscriptRowItem({
             })}
           </p>
         ) : (
-          <p className={`text-[13.5px] sm:text-[14.5px] leading-relaxed transition-all duration-200 ${
-            isActive ? 'font-semibold text-foreground' : isPast ? 'text-muted-foreground/80' : 'text-foreground/95'
-          }`}>
+          <p className={`${styles.segText} ${isActive ? styles.segActive : isPast ? styles.segPast : styles.segFuture}`}>
             {segment.text}
           </p>
         )}
@@ -120,6 +102,8 @@ import { formatTime, formatTimeSRT } from '@/lib/format-utils';
 import { AudioPlayer } from './audio-player';
 import { FocusPlayer } from './focus-player';
 import { calculateWordTimings } from '@/lib/word-timing';
+import styles from './transcription-viewer.module.css';
+import speakerStyles from './speaker-colors.module.css';
 
 type ExportFormat = 'txt' | 'md' | 'srt' | 'docx' | 'pdf';
 type ViewMode = 'player' | 'list';
@@ -154,14 +138,14 @@ export function TranscriptionViewer() {
 
   const speakerColors = useMemo(() => {
     const colors = [
-      'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-500/20',
-      'bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-400 border border-sky-500/20',
-      'bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-500/20',
-      'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-500/20',
-      'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-500/20',
-      'bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-400 border border-teal-500/20',
-      'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-400 border border-orange-500/20',
-      'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-400 border border-cyan-500/20',
+      speakerStyles.sp0,
+      speakerStyles.sp1,
+      speakerStyles.sp2,
+      speakerStyles.sp3,
+      speakerStyles.sp4,
+      speakerStyles.sp5,
+      speakerStyles.sp6,
+      speakerStyles.sp7,
     ];
     const map: Record<string, string> = {};
     let colorIdx = 0;
@@ -293,19 +277,19 @@ export function TranscriptionViewer() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center py-12 space-y-4"
+        className={styles.emptyWrap}
       >
-        <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-muted">
-          <FileText className="w-8 h-8 text-muted-foreground" />
+        <div className={styles.emptyIconWrap}>
+          <FileText className={styles.emptyIcon} />
         </div>
-        <div className="space-y-2">
-          <p className="text-lg font-medium">No transcription results available</p>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+        <div className={styles.emptyInner}>
+          <p className={styles.emptyTitle}>No transcription results available</p>
+          <p className={styles.emptySub}>
             The transcription may have produced empty results. Try uploading a different audio file or check your audio quality.
           </p>
         </div>
-        <Button variant="outline" onClick={handleNewTranscription} className="gap-1.5">
-          <RotateCcw className="w-3.5 h-3.5" />
+        <Button variant="outline" onClick={handleNewTranscription} className={styles.btnGap}>
+          <RotateCcw className={styles.iconSm} />
           Start New Transcription
         </Button>
       </motion.div>
@@ -313,11 +297,11 @@ export function TranscriptionViewer() {
   }
 
   const exportFormats: { format: ExportFormat; label: string; icon: React.ReactNode }[] = [
-    { format: 'txt', label: 'TXT', icon: <FileText className="w-3.5 h-3.5" /> },
-    { format: 'md', label: 'Markdown', icon: <FileType2 className="w-3.5 h-3.5" /> },
-    { format: 'srt', label: 'SRT', icon: <FileText className="w-3.5 h-3.5" /> },
-    { format: 'docx', label: 'DOCX', icon: <FileDown className="w-3.5 h-3.5" /> },
-    { format: 'pdf', label: 'PDF', icon: <FileDown className="w-3.5 h-3.5" /> },
+    { format: 'txt', label: 'TXT', icon: <FileText className={styles.iconSm} /> },
+    { format: 'md', label: 'Markdown', icon: <FileType2 className={styles.iconSm} /> },
+    { format: 'srt', label: 'SRT', icon: <FileText className={styles.iconSm} /> },
+    { format: 'docx', label: 'DOCX', icon: <FileDown className={styles.iconSm} /> },
+    { format: 'pdf', label: 'PDF', icon: <FileDown className={styles.iconSm} /> },
   ];
 
   return (
@@ -325,66 +309,62 @@ export function TranscriptionViewer() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
-      className="max-w-4xl mx-auto space-y-5"
+      className={styles.root}
     >
       {/* Stats Bar */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex flex-wrap items-center gap-3 bg-secondary/20 p-2 rounded-2xl border border-border/40 backdrop-blur-sm"
+        className={styles.statsBar}
       >
-        <div className="flex items-center gap-2 px-1.5">
-          <Badge variant="outline" className="gap-1 bg-background/50 border-border/40">
-            <Clock className="w-3 h-3 text-emerald-500" />
+        <div className={styles.statGroup}>
+          <Badge variant="outline" className={styles.statBadge}>
+            <Clock className={styles.statIcon} />
             {transcriptionSegments.length} segments
           </Badge>
-          <Badge variant="outline" className="gap-1 bg-background/50 border-border/40">
-            <User className="w-3 h-3 text-emerald-500" />
+          <Badge variant="outline" className={styles.statBadge}>
+            <User className={styles.statIcon} />
             {uniqueSpeakers.length} speaker{uniqueSpeakers.length !== 1 ? 's' : ''}
           </Badge>
           {jobId && (
-            <Badge variant="outline" className="gap-1 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+            <Badge variant="outline" className={styles.savedBadge}>
               Saved in history
             </Badge>
           )}
         </div>
 
-        <div className="flex-1" />
+        <div className={styles.spacer} />
 
         {/* View Mode Tab Toggles */}
-        <div className="flex items-center bg-muted/65 p-1 rounded-full border border-border/40">
+        <div className={styles.modeSwitch}>
           <Button
             variant={viewMode === 'player' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setViewMode('player')}
-            className={`gap-1.5 h-8 text-xs rounded-full px-3.5 transition-all duration-200 ${
-              viewMode === 'player' ? 'bg-background shadow-sm font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={`${styles.modeBtn} ${viewMode === 'player' ? styles.modeBtnActive : styles.modeBtnInactive}`}
           >
-            <Headphones className="w-3.5 h-3.5" />
+            <Headphones className={styles.iconSm} />
             Focus view
           </Button>
           <Button
             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setViewMode('list')}
-            className={`gap-1.5 h-8 text-xs rounded-full px-3.5 transition-all duration-200 ${
-              viewMode === 'list' ? 'bg-background shadow-sm font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={`${styles.modeBtn} ${viewMode === 'list' ? styles.modeBtnActive : styles.modeBtnInactive}`}
           >
-            <List className="w-3.5 h-3.5" />
+            <List className={styles.iconSm} />
             Full Transcript
           </Button>
         </div>
 
-        <div className="flex items-center gap-1.5 pr-1">
-          <Button variant="outline" size="sm" onClick={copyToClipboard} className="h-8 rounded-full border-border/40 gap-1.5 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/20">
-            {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+        <div className={styles.actionsGroup}>
+          <Button variant="outline" size="sm" onClick={copyToClipboard} className={styles.actionBtn}>
+            {copied ? <CheckCircle2 className={styles.copyIcon} /> : <Copy className={styles.iconSm} />}
             {copied ? 'Copied' : 'Copy'}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleNewTranscription} className="h-8 rounded-full border-border/40 gap-1.5 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/20">
-            <RotateCcw className="w-3.5 h-3.5" />
+          <Button variant="outline" size="sm" onClick={handleNewTranscription} className={styles.actionBtn}>
+            <RotateCcw className={styles.iconSm} />
             New
           </Button>
         </div>
@@ -397,17 +377,17 @@ export function TranscriptionViewer() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="flex items-start gap-3 p-4 rounded-2xl border border-amber-500/30 bg-amber-50/70 dark:bg-amber-950/25 shadow-sm"
+            className={styles.warnBox}
           >
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="min-w-0 space-y-1">
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+            <AlertTriangle className={styles.warnIcon} />
+            <div className={styles.warnInner}>
+              <p className={styles.warnTitle}>
                 {transcriptionSkippedChunks.length} chunk{transcriptionSkippedChunks.length !== 1 ? 's' : ''} could not be transcribed
               </p>
-              <p className="text-xs text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
+              <p className={styles.warnText}>
                 The following time range{skippedRanges.length !== 1 ? 's' : ''} {skippedRanges.length !== 1 ? 'are' : 'is'} likely missing from this transcript
                 {skippedRanges.length > 0 && (
-                  <span className="font-mono font-medium">: {skippedRanges.map(([start, end]) => `[${formatTime(start)} – ${formatTime(end)}]`).join(', ')}</span>
+                  <span className={styles.warnRange}>: {skippedRanges.map(([start, end]) => `[${formatTime(start)} – ${formatTime(end)}]`).join(', ')}</span>
                 )}
                 . This usually happens when the free-tier API quota is exhausted mid-run. Try again later, use a different model, or split the file into smaller parts.
               </p>
@@ -423,7 +403,7 @@ export function TranscriptionViewer() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="flex flex-wrap gap-2 px-1.5"
+            className={styles.legend}
           >
             {uniqueSpeakers.map((speaker, i) => (
               <motion.div
@@ -432,7 +412,7 @@ export function TranscriptionViewer() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.04 }}
               >
-                <Badge className={`${speakerColors[speaker]} border-0 text-[10px] px-2.5 py-0.5 rounded-full shadow-sm shadow-emerald-500/5`}>
+                <Badge className={`${styles.legendBadge} ${speakerColors[speaker] || speakerStyles.fallback}`}>
                   🎙️ {speaker}
                 </Badge>
               </motion.div>
@@ -445,7 +425,7 @@ export function TranscriptionViewer() {
       <AudioPlayer />
 
       {/* Swappable Content Panels with elegant animations */}
-      <div className="relative">
+      <div className={styles.panelWrap}>
         <AnimatePresence mode="wait">
           {viewMode === 'player' ? (
             <motion.div
@@ -454,7 +434,7 @@ export function TranscriptionViewer() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.3 }}
-              className="w-full"
+              className={styles.panelFull}
             >
               <FocusPlayer segments={transcriptionSegments} speakerColors={speakerColors} />
             </motion.div>
@@ -465,18 +445,18 @@ export function TranscriptionViewer() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.3 }}
-              className="w-full"
+              className={styles.panelFull}
             >
-              <Card className="overflow-hidden border border-emerald-500/10 shadow-lg shadow-emerald-500/5 bg-card/65 backdrop-blur-md rounded-2xl">
-                <div 
-                  ref={listContainerRef} 
-                  className="max-h-[60vh] overflow-y-auto scroll-smooth divide-y divide-border/20"
+              <Card className={styles.listCard}>
+                <div
+                  ref={listContainerRef}
+                  className={styles.listContainer}
                 >
                   <motion.div
                     variants={stagger}
                     initial="initial"
                     animate="animate"
-                    className="p-3 sm:p-5 space-y-1.5"
+                    className={styles.listInner}
                   >
                     {transcriptionSegments.map((segment, idx) => (
                       <TranscriptRowItem
@@ -502,19 +482,19 @@ export function TranscriptionViewer() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.15 }}
       >
-        <Card className="relative overflow-hidden p-5 bg-gradient-to-br from-card/90 to-card/60 dark:from-zinc-900/90 dark:to-zinc-950/60 border border-emerald-500/10 shadow-lg shadow-emerald-500/5 backdrop-blur-md rounded-2xl">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10 shadow-inner">
-                <Sparkles className="w-4.5 h-4.5" />
+        <Card className={styles.exportCard}>
+          <div className={styles.exportInner}>
+            <div className={styles.exportHeader}>
+              <div className={styles.exportIconWrap}>
+                <Sparkles className={styles.exportIcon} />
               </div>
               <div>
-                <h3 className="text-sm font-bold tracking-tight">Export & Transcribe History</h3>
-                <p className="text-xs text-muted-foreground">Download formatted transcripts or sync options</p>
+                <h3 className={styles.exportTitle}>Export & Transcribe History</h3>
+                <p className={styles.exportSub}>Download formatted transcripts or sync options</p>
               </div>
             </div>
-            <Separator className="bg-border/30" />
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            <Separator className={styles.exportDivider} />
+            <div className={styles.exportGrid}>
               {exportFormats.map(({ format, label, icon }) => (
                 <Button
                   key={format}
@@ -522,12 +502,12 @@ export function TranscriptionViewer() {
                   size="sm"
                   onClick={() => handleExport(format)}
                   disabled={exportingFormat !== null}
-                  className="gap-2 font-medium text-xs py-2 rounded-full border-border/40 bg-background/50 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/20 hover:border-emerald-500/35 transition-all duration-200 active:scale-95 hover:-translate-y-0.5 shadow-sm"
+                  className={styles.exportBtn}
                 >
                   {exportingFormat === format ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+                    <Loader2 className={styles.exportSpinner} />
                   ) : (
-                    <span className="text-muted-foreground group-hover:text-emerald-500">{icon}</span>
+                    <span className={styles.exportBtnIcon}>{icon}</span>
                   )}
                   {label}
                 </Button>

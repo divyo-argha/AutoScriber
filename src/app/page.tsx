@@ -10,6 +10,7 @@ import { HistoryView } from '@/components/app/history-view';
 import { BatchView } from '@/components/app/batch-view';
 import { Footer } from '@/components/app/footer';
 import { motion, AnimatePresence } from 'framer-motion';
+import styles from './home.module.css';
 
 export default function Home() {
   const { currentView, setCurrentView, setSettings, setHistoryJobs, setProcessingState } = useAppStore();
@@ -78,10 +79,10 @@ export default function Home() {
   }, [setSettings, setHistoryJobs, setProcessingState, setCurrentView]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={styles.root}>
       <Header />
 
-      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+      <main className={styles.main}>
         <AnimatePresence mode="wait">
           {currentView === 'upload' && (
             <motion.div
@@ -90,18 +91,18 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-              className="space-y-8"
+              className={styles.uploadSection}
             >
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.05 }}
-                className="text-center space-y-3 max-w-2xl mx-auto"
+                className={styles.hero}
               >
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                <h2 className={styles.heroTitle}>
                   Transcribe Your Bangla Audio
                 </h2>
-                <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto">
+                <p className={styles.heroSub}>
                   Upload an audio file or record directly from your browser. Get accurate Bangla-English mixed transcriptions with
                   timestamps and speaker diarization. Built for researchers.
                 </p>

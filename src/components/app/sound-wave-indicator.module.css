@@ -1,0 +1,12 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 2rem;
+}
+
+.bar {
+  width: 0.25rem;
+  border-radius: 9999px;
+  background-color: var(--primary);
+}

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, type CSSProperties } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Mic, MicOff, Pause, Play, Square, AlertCircle } from 'lucide-react';
 import { SoundWaveIndicator } from './sound-wave-indicator';
 import { useToast } from '@/hooks/use-toast';
+import styles from './audio-recorder.module.css';
 
 type RecorderStatus = 'idle' | 'recording' | 'paused' | 'stopped';
 
@@ -274,85 +275,85 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
   const isActive = isRecording || isPaused;
   
   return (
-    <Card className="p-6 sm:p-8">
-      <div className="space-y-6">
+    <Card className={styles.container}>
+      <div className={styles.inner}>
         {/* Waveform / Status Display */}
-        <div className="flex items-center justify-center">
-          <div className="relative w-full max-w-md h-24 rounded-xl bg-muted/50 overflow-hidden flex items-center justify-center">
+        <div className={styles.centerRow}>
+          <div className={styles.waveBox}>
             {isActive ? (
-              <div className="flex items-center gap-[2px] h-full px-4 py-4">
+              <div className={styles.barsRow}>
                 {waveform.map((level, i) => (
                   <div
                     key={i}
-                    className="flex-1 min-w-[3px] rounded-full bg-emerald-500 transition-all duration-75"
+                    className={styles.bar}
                     style={{
-                      height: `${Math.max(4, level * 100)}%`,
-                      opacity: 0.4 + level * 0.6,
-                    }}
+                      '--bar-height': `${Math.max(4, level * 100)}%`,
+                      '--bar-opacity': `${0.4 + level * 0.6}`,
+                    } as CSSProperties}
                   />
                 ))}
               </div>
             ) : status === 'stopped' ? (
-              <div className="flex items-center gap-2 text-emerald-600">
-                <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-sm font-medium">Recording saved</span>
+              <div className={styles.savedBox}>
+                <div className={styles.savedDot} />
+                <span className={styles.savedText}>Recording saved</span>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-2">
-                <Mic className="w-8 h-8 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Ready to record</span>
+              <div className={styles.idleBox}>
+                <Mic className={styles.idleIcon} />
+                <span className={styles.idleText}>Ready to record</span>
               </div>
             )}
-            
+
             {/* Recording indicator */}
             {isRecording && (
-              <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-xs font-medium text-red-500">REC</span>
+              <div className={styles.indicator}>
+                <div className={styles.recDot} />
+                <span className={styles.recText}>REC</span>
               </div>
             )}
             {isPaused && (
-              <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="text-xs font-medium text-amber-500">PAUSED</span>
+              <div className={styles.indicator}>
+                <div className={styles.pauseDot} />
+                <span className={styles.pauseText}>PAUSED</span>
               </div>
             )}
           </div>
         </div>
-        
+
         {/* Timer */}
-        <div className="text-center">
-          <span className="text-3xl font-mono font-bold tracking-wider">
+        <div className={styles.timerCenter}>
+          <span className={styles.timer}>
             {formatTimer(duration)}
           </span>
         </div>
-        
+
         {/* Audio Level Indicator */}
         {isActive && (
-          <div className="flex items-center gap-3 justify-center">
-            <Mic className="w-4 h-4 text-muted-foreground" />
+          <div className={styles.levelRow}>
+            <Mic className={styles.levelIcon} />
             <SoundWaveIndicator audioLevel={audioLevel} isActive={isActive} />
-            <span className="text-xs text-muted-foreground">{Math.round(audioLevel * 100)}%</span>
+            <span className={styles.levelText}>{Math.round(audioLevel * 100)}%</span>
           </div>
         )}
-        
+
         {/* Error */}
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className={styles.errorBox}>
+            <AlertCircle className={styles.errorIcon} />
             <span>{error}</span>
           </div>
         )}
-        
+
         {/* Controls */}
-        <div className="flex items-center justify-center gap-3">
+        <div className={styles.controls}>
           {status === 'idle' && (
             <>
               <Button
                 onClick={startRecording}
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 h-12 px-6"
+                className={styles.recordBtn}
               >
-                <Mic className="w-5 h-5" />
+                <Mic className={styles.micIcon} />
                 Start Recording
               </Button>
               <Button variant="outline" onClick={onCancel}>
@@ -360,58 +361,58 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
               </Button>
             </>
           )}
-          
+
           {isRecording && (
             <>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={pauseRecording}
-                className="h-12 w-12 rounded-full"
+                className={styles.roundBtn}
               >
-                <Pause className="w-5 h-5" />
+                <Pause className={styles.micIcon} />
               </Button>
               <Button
                 onClick={stopRecording}
                 variant="destructive"
                 size="icon"
-                className="h-14 w-14 rounded-full"
+                className={styles.stopBtn}
               >
-                <Square className="w-5 h-5" />
+                <Square className={styles.micIcon} />
               </Button>
             </>
           )}
-          
+
           {isPaused && (
             <>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={resumeRecording}
-                className="h-12 w-12 rounded-full"
+                className={styles.roundBtn}
               >
-                <Play className="w-5 h-5" />
+                <Play className={styles.micIcon} />
               </Button>
               <Button
                 onClick={stopRecording}
                 variant="destructive"
                 size="icon"
-                className="h-14 w-14 rounded-full"
+                className={styles.stopBtn}
               >
-                <Square className="w-5 h-5" />
+                <Square className={styles.micIcon} />
               </Button>
             </>
           )}
         </div>
-        
+
         {/* Tip */}
         {status === 'idle' && (
-          <p className="text-xs text-center text-muted-foreground">
+          <p className={styles.tip}>
             Click &quot;Start Recording&quot; to begin. Your microphone will be used to capture audio directly.
           </p>
         )}
         {isActive && (
-          <p className="text-xs text-center text-muted-foreground">
+          <p className={styles.tip}>
             {isRecording ? 'Recording in progress...' : 'Recording paused.'} Click the stop button when you&apos;re done.
           </p>
         )}

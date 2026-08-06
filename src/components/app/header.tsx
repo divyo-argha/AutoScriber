@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
+import styles from './header.module.css';
 
 export function Header() {
   const {
@@ -48,11 +49,11 @@ export function Header() {
   const ModelOption = ({ model }: { model: typeof AVAILABLE_MODELS[number] }) => {
     const available = isModelAvailable(model);
     return (
-      <div className="flex items-center gap-2 w-full">
-        <span className={available ? '' : 'text-muted-foreground'}>{model.name}</span>
+      <div className={styles.modelOption}>
+        <span className={available ? undefined : styles.modelOptionMuted}>{model.name}</span>
         {!available && (
-          <span title="API key not set — configure in Settings" className="shrink-0 ml-auto flex items-center">
-            <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+          <span title="API key not set — configure in Settings" className={styles.warnIcon}>
+            <AlertTriangle className={styles.warnIcon} />
           </span>
         )}
       </div>
@@ -61,30 +62,30 @@ export function Header() {
 
   return (
     <>
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <header className={styles.header}>
+        <div className={styles.inner}>
+          <div className={styles.bar}>
             <div
-              className="flex items-center gap-3 cursor-pointer"
+              className={styles.logo}
               onClick={() => { if (!isProcessing) { reset(); } setCurrentView('upload'); }}
             >
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-                <Mic className="w-5 h-5" />
+              <div className={styles.logoIcon}>
+                <Mic className={styles.iconLg} />
               </div>
               <div>
-                <h1 className="text-lg font-bold tracking-tight">autoScriber</h1>
-                <p className="text-xs text-muted-foreground -mt-0.5">Bangla Audio Transcription</p>
+                <h1 className={styles.brand}>autoScriber</h1>
+                <p className={styles.tagline}>Bangla Audio Transcription</p>
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">Model:</span>
+            <div className={styles.modelGroup}>
+              <span className={styles.modelLabel}>Model:</span>
               <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="w-[220px]">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="truncate">{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
+                <SelectTrigger className={styles.modelTrigger}>
+                  <div className={styles.triggerContent}>
+                    <span className={styles.truncate}>{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
                     {!isModelAvailable(AVAILABLE_MODELS.find(m => m.id === selectedModel)) && (
-                      <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                      <AlertTriangle className={styles.warnIcon} />
                     )}
                   </div>
                 </SelectTrigger>
@@ -98,47 +99,47 @@ export function Header() {
               </Select>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className={styles.actions}>
               {isProcessing && currentView !== 'processing' && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentView('processing')}
-                  className="gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 animate-pulse font-medium"
+                  className={styles.processingBtn}
                 >
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className={styles.pingDot} />
                   Processing ({processingProgress}%)
                 </Button>
               )}
               {currentView !== 'upload' && currentView !== 'history' && !isProcessing && (
-                <Button variant="outline" size="sm" onClick={() => { reset(); setCurrentView('upload'); }} className="gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">New</span>
+                <Button variant="outline" size="sm" onClick={() => { reset(); setCurrentView('upload'); }} className={styles.actionBtn}>
+                  <RotateCcw className={styles.iconSm} />
+                  <span className={styles.hiddenSmInline}>New</span>
                 </Button>
               )}
               <Button
                 variant={currentView === 'history' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrentView(currentView === 'history' ? 'upload' : 'history')}
-                className="gap-1.5"
+                className={styles.actionBtn}
               >
-                <History className="w-4 h-4" />
-                <span className="hidden sm:inline">History</span>
+                <History className={styles.iconMd} />
+                <span className={styles.hiddenSmInline}>History</span>
               </Button>
               <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
-                <Settings className="w-4.5 h-4.5" />
+                <Settings className={styles.iconLg} />
               </Button>
             </div>
           </div>
 
           {/* Mobile model selector */}
-          <div className="sm:hidden pb-3">
+          <div className={styles.mobileSelectWrap}>
             <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isProcessing}>
-              <SelectTrigger className="w-full">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="truncate">{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
+              <SelectTrigger className={styles.modelTriggerFull}>
+                <div className={styles.triggerContent}>
+                  <span className={styles.truncate}>{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
                   {!isModelAvailable(AVAILABLE_MODELS.find(m => m.id === selectedModel)) && (
-                    <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                    <AlertTriangle className={styles.warnIcon} />
                   )}
                 </div>
               </SelectTrigger>

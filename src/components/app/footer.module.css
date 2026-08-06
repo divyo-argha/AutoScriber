@@ -1,0 +1,43 @@
+.footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  background-color: color-mix(in oklab, var(--card) 30%, transparent);
+}
+
+.inner {
+  margin-inline: auto;
+  max-width: 80rem;
+  padding: 1rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .inner {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .inner {
+    padding-inline: 2rem;
+  }
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .row {
+    flex-direction: row;
+  }
+}
+
+.text {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+}

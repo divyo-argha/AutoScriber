@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileAudio, X, Play, AlertCircle, Mic, FolderOpen, Globe, Loader2, Files, Archive, Cloud, Download } from 'lucide-react';
 import { AudioRecorder } from './audio-recorder';
 import { useToast } from '@/hooks/use-toast';
+import styles from './upload-area.module.css';
 
 const ACCEPTED_EXTENSIONS = '.mp3,.wav,.ogg,.flac,.m4a,.webm,.aac,.wma';
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
@@ -205,35 +206,35 @@ export function UploadArea() {
 
   if (uploadedFile && pendingFiles.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto space-y-4">
-        <Card className="border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/10">
-          <div className="p-5 sm:p-8 text-center space-y-4">
-            <div className="flex items-center justify-center w-14 h-14 mx-auto rounded-2xl bg-emerald-100 dark:bg-emerald-900/30">
-              <FileAudio className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+      <div className={styles.wrapper}>
+        <Card className={styles.uploadCard}>
+          <div className={styles.uploadCardInner}>
+            <div className={styles.fileIconWrap}>
+              <FileAudio className={styles.fileIcon} />
             </div>
             <div>
-              <p className="text-sm font-medium break-all">{uploadedFile.name}</p>
-              <p className="text-xs text-muted-foreground mt-1">{formatFileSize(uploadedFile.size)}</p>
+              <p className={styles.fileName}>{uploadedFile.name}</p>
+              <p className={styles.fileMeta}>{formatFileSize(uploadedFile.size)}</p>
             </div>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => { setUploadedFile(null); setPreflightWarning(null); }} className="gap-1.5">
-                <X className="w-3.5 h-3.5" /> Remove
+            <div className={styles.ctaRow}>
+              <Button variant="outline" size="sm" onClick={() => { setUploadedFile(null); setPreflightWarning(null); }} className={styles.btnGap}>
+                <X className={styles.iconSm} /> Remove
               </Button>
               <Button
                 size="sm"
                 onClick={() => startPreflight(() => setCurrentView('processing'))}
                 disabled={preflightChecking}
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                className={styles.primaryBtn}
               >
-                {preflightChecking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                {preflightChecking ? <Loader2 className={`${styles.iconSm} ${styles.spinner}`} /> : <Play className={styles.iconSm} />}
                 {preflightChecking ? 'Checking...' : 'Start Transcription'}
               </Button>
             </div>
           </div>
         </Card>
         {preflightWarning && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
-            <Globe className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className={styles.warningBox}>
+            <Globe className={styles.warningIcon} />
             <p>{preflightWarning}</p>
           </div>
         )}
@@ -260,57 +261,57 @@ export function UploadArea() {
     });
 
     return (
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className={styles.wrapper}>
         <Card>
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <Files className="w-4 h-4 text-emerald-600" />
+          <div className={styles.pendingInner}>
+            <div className={styles.pendingHeader}>
+              <p className={styles.pendingTitle}>
+                <Files className={styles.pendingTitleIcon} />
                 {pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''} selected
               </p>
-              <Button variant="ghost" size="sm" onClick={() => { setPendingFiles([]); setError(null); }} className="text-xs gap-1">
-                <X className="w-3 h-3" /> Clear all
+              <Button variant="ghost" size="sm" onClick={() => { setPendingFiles([]); setError(null); }} className={styles.clearBtn}>
+                <X className={styles.iconXs} /> Clear all
               </Button>
             </div>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            <div className={styles.fileList}>
               {pendingFiles.map((f, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 text-sm">
-                  <FileAudio className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span className="flex-1 truncate text-xs">{f.name}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">{formatFileSize(f.size)}</span>
-                  <button onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive shrink-0">
-                    <X className="w-3 h-3" />
+                <div key={i} className={styles.fileRow}>
+                  <FileAudio className={styles.fileRowIcon} />
+                  <span className={styles.fileRowName}>{f.name}</span>
+                  <span className={styles.fileRowSize}>{formatFileSize(f.size)}</span>
+                  <button onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))} className={styles.fileRowRemove}>
+                    <X className={styles.iconXs} />
                   </button>
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5 text-xs">
-                <FolderOpen className="w-3.5 h-3.5" /> Add more
+            <div className={styles.fileFooter}>
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className={styles.btnSmall}>
+                <FolderOpen className={styles.iconSm} /> Add more
               </Button>
-              <input ref={fileInputRef} type="file" accept={ACCEPTED_EXTENSIONS} multiple onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }} className="hidden" />
-              <div className="flex-1" />
+              <input ref={fileInputRef} type="file" accept={ACCEPTED_EXTENSIONS} multiple onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }} className={styles.hiddenInput} />
+              <div className={styles.spacer} />
               <Button
                 size="sm"
                 onClick={startBatch}
                 disabled={preflightChecking}
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                className={styles.primaryBtn}
               >
-                {preflightChecking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                {preflightChecking ? <Loader2 className={`${styles.iconSm} ${styles.spinner}`} /> : <Play className={styles.iconSm} />}
                 {preflightChecking ? 'Checking...' : `Transcribe ${pendingFiles.length} files`}
               </Button>
             </div>
           </div>
         </Card>
         {preflightWarning && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm">
-            <Globe className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className={styles.warningBox}>
+            <Globe className={styles.warningIcon} />
             <p>{preflightWarning}</p>
           </div>
         )}
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className={styles.errorBox}>
+            <AlertCircle className={styles.errorIcon} />
             <span>{error}</span>
           </div>
         )}
@@ -319,119 +320,119 @@ export function UploadArea() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-4">
-          <TabsTrigger value="upload" className="gap-1 text-[10px] sm:text-xs">
-            <FolderOpen className="w-3 h-3" /> <span className="hidden sm:inline">Upload</span>
+    <div className={styles.wrapper}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className={styles.tabWrap}>
+        <TabsList className={styles.tabsList}>
+          <TabsTrigger value="upload" className={styles.tabTrigger}>
+            <FolderOpen className={styles.iconXs} /> <span className={styles.hiddenSmInline}>Upload</span>
           </TabsTrigger>
-          <TabsTrigger value="zip" className="gap-1 text-[10px] sm:text-xs">
-            <Archive className="w-3 h-3" /> <span className="hidden sm:inline">ZIP</span>
+          <TabsTrigger value="zip" className={styles.tabTrigger}>
+            <Archive className={styles.iconXs} /> <span className={styles.hiddenSmInline}>ZIP</span>
           </TabsTrigger>
-          <TabsTrigger value="folder" className="gap-1 text-[10px] sm:text-xs">
-            <Files className="w-3 h-3" /> <span className="hidden sm:inline">Folder</span>
+          <TabsTrigger value="folder" className={styles.tabTrigger}>
+            <Files className={styles.iconXs} /> <span className={styles.hiddenSmInline}>Folder</span>
           </TabsTrigger>
-          <TabsTrigger value="drive" className="gap-1 text-[10px] sm:text-xs">
-            <Cloud className="w-3 h-3" /> <span className="hidden sm:inline">Drive</span>
+          <TabsTrigger value="drive" className={styles.tabTrigger}>
+            <Cloud className={styles.iconXs} /> <span className={styles.hiddenSmInline}>Drive</span>
           </TabsTrigger>
-          <TabsTrigger value="record" className="gap-1 text-[10px] sm:text-xs">
-            <Mic className="w-3 h-3" /> <span className="hidden sm:inline">Record</span>
+          <TabsTrigger value="record" className={styles.tabTrigger}>
+            <Mic className={styles.iconXs} /> <span className={styles.hiddenSmInline}>Record</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="upload">
-          <Card className="border-2 border-dashed transition-all duration-200 border-muted-foreground/25 hover:border-muted-foreground/40"
+          <Card className={styles.dropZone}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
             onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files.length > 0) { addFiles(e.dataTransfer.files); setActiveTab('upload'); } }}
           >
-            <div className="p-6 sm:p-12 text-center space-y-4">
-              <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-muted">
-                <Upload className="w-7 h-7 sm:w-8 sm:h-8 text-muted-foreground" />
+            <div className={styles.dropInner}>
+              <div className={styles.dropIconWrap}>
+                <Upload className={styles.dropIcon} />
               </div>
               <div>
-                <p className="text-sm sm:text-base font-medium">Drop audio files here</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Single or multiple files supported</p>
+                <p className={styles.dropTitle}>Drop audio files here</p>
+                <p className={styles.dropSubtitle}>Single or multiple files supported</p>
               </div>
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">
-                <FolderOpen className="w-4 h-4" /> Choose Files
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} className={styles.gap2}>
+                <FolderOpen className={styles.iconMd} /> Choose Files
               </Button>
-              <input ref={fileInputRef} type="file" accept={ACCEPTED_EXTENSIONS} multiple onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }} className="hidden" />
-              <p className="text-xs text-muted-foreground">MP3, WAV, OGG, FLAC, M4A, WEBM, AAC, WMA — up to 2GB each</p>
+              <input ref={fileInputRef} type="file" accept={ACCEPTED_EXTENSIONS} multiple onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ''; }} className={styles.hiddenInput} />
+              <p className={styles.hint}>MP3, WAV, OGG, FLAC, M4A, WEBM, AAC, WMA — up to 2GB each</p>
             </div>
           </Card>
         </TabsContent>
 
         <TabsContent value="zip">
-          <Card className="border-2 border-dashed">
-            <div className="p-6 sm:p-12 text-center space-y-4">
-              <Archive className="w-12 h-12 mx-auto text-muted-foreground" />
+          <Card className={styles.dropZone}>
+            <div className={styles.dropInner}>
+              <Archive className={styles.bigIcon} />
               <div>
-                <p className="text-sm sm:text-base font-medium">Upload ZIP file</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Extracts audio files recursively</p>
+                <p className={styles.dropTitle}>Upload ZIP file</p>
+                <p className={styles.dropSubtitle}>Extracts audio files recursively</p>
               </div>
-              <Button variant="outline" onClick={() => zipInputRef.current?.click()} className="gap-2">
-                <Archive className="w-4 h-4" /> Choose ZIP
+              <Button variant="outline" onClick={() => zipInputRef.current?.click()} className={styles.gap2}>
+                <Archive className={styles.iconMd} /> Choose ZIP
               </Button>
-              <input ref={zipInputRef} type="file" accept=".zip" onChange={handleZipUpload} className="hidden" />
+              <input ref={zipInputRef} type="file" accept=".zip" onChange={handleZipUpload} className={styles.hiddenInput} />
             </div>
           </Card>
         </TabsContent>
 
         <TabsContent value="folder">
-          <Card className="border-2 border-dashed">
-            <div className="p-6 sm:p-12 text-center space-y-4">
-              <Files className="w-12 h-12 mx-auto text-muted-foreground" />
+          <Card className={styles.dropZone}>
+            <div className={styles.dropInner}>
+              <Files className={styles.bigIcon} />
               <div>
-                <p className="text-sm sm:text-base font-medium">Select folder</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Scans recursively for audio files</p>
+                <p className={styles.dropTitle}>Select folder</p>
+                <p className={styles.dropSubtitle}>Scans recursively for audio files</p>
               </div>
-              <Button variant="outline" onClick={() => folderInputRef.current?.click()} className="gap-2">
-                <FolderOpen className="w-4 h-4" /> Choose Folder
+              <Button variant="outline" onClick={() => folderInputRef.current?.click()} className={styles.gap2}>
+                <FolderOpen className={styles.iconMd} /> Choose Folder
               </Button>
               {/* @ts-ignore: webkitdirectory is a browser-only folder selection attribute */}
-              <input ref={folderInputRef} type="file" webkitdirectory="" onChange={handleFolderUpload} className="hidden" />
+              <input ref={folderInputRef} type="file" webkitdirectory="" onChange={handleFolderUpload} className={styles.hiddenInput} />
             </div>
           </Card>
         </TabsContent>
 
         <TabsContent value="drive">
-          <Card className="border-2 border-dashed">
-            <div className="p-6 sm:p-12 text-center space-y-4">
-              <Cloud className="w-12 h-12 mx-auto text-muted-foreground" />
+          <Card className={styles.dropZone}>
+            <div className={styles.dropInner}>
+              <Cloud className={styles.bigIcon} />
               {driveFiles.length === 0 ? (
                 <>
                   <div>
-                    <p className="text-sm sm:text-base font-medium">Google Drive</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Connect and select audio files</p>
+                    <p className={styles.dropTitle}>Google Drive</p>
+                    <p className={styles.dropSubtitle}>Connect and select audio files</p>
                   </div>
-                  <Button onClick={handleGoogleDriveConnect} disabled={driveLoading} className="gap-2">
-                    {driveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
+                  <Button onClick={handleGoogleDriveConnect} disabled={driveLoading} className={styles.gap2}>
+                    {driveLoading ? <Loader2 className={`${styles.iconMd} ${styles.spinner}`} /> : <Cloud className={styles.iconMd} />}
                     {driveLoading ? 'Connecting...' : 'Connect Google Drive'}
                   </Button>
                 </>
               ) : (
                 <>
-                  <div className="max-h-48 overflow-y-auto space-y-2">
+                  <div className={styles.driveList}>
                     {driveFiles.map(f => (
-                      <label key={f.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
+                      <label key={f.id} className={styles.driveRow}>
                         <input type="checkbox" checked={driveSelected.has(f.id)} onChange={(e) => {
                           const s = new Set(driveSelected);
                           if (e.target.checked) s.add(f.id);
                           else s.delete(f.id);
                           setDriveSelected(s);
-                        }} className="w-4 h-4" />
-                        <FileAudio className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span className="flex-1 truncate text-xs">{f.name}</span>
+                        }} className={styles.checkbox} />
+                        <FileAudio className={styles.fileRowIcon} />
+                        <span className={styles.fileRowName}>{f.name}</span>
                       </label>
                     ))}
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => { setDriveFiles([]); setDriveSelected(new Set()); }} className="flex-1">
+                  <div className={styles.driveActions}>
+                    <Button variant="outline" size="sm" onClick={() => { setDriveFiles([]); setDriveSelected(new Set()); }} className={styles.driveBtn}>
                       Cancel
                     </Button>
-                    <Button size="sm" onClick={handleDriveDownload} disabled={driveLoading || driveSelected.size === 0} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-                      {driveLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                    <Button size="sm" onClick={handleDriveDownload} disabled={driveLoading || driveSelected.size === 0} className={styles.downloadBtn}>
+                      {driveLoading ? <Loader2 className={`${styles.iconSm} ${styles.spinner}`} /> : <Download className={styles.iconSm} />}
                       Download ({driveSelected.size})
                     </Button>
                   </div>
@@ -447,24 +448,24 @@ export function UploadArea() {
       </Tabs>
 
       {error && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+        <div className={styles.errorBox}>
+          <AlertCircle className={styles.errorIcon} />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <Card className="p-3 sm:p-4 text-center">
-          <p className="text-xl sm:text-2xl font-bold text-emerald-600">∞</p>
-          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Batch Files</p>
+      <div className={styles.statsGrid}>
+        <Card className={styles.statCard}>
+          <p className={styles.statValue}>∞</p>
+          <p className={styles.statLabel}>Batch Files</p>
         </Card>
-        <Card className="p-3 sm:p-4 text-center">
-          <p className="text-xl sm:text-2xl font-bold text-emerald-600">BN+EN</p>
-          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Bangla-English Mixed</p>
+        <Card className={styles.statCard}>
+          <p className={styles.statValue}>BN+EN</p>
+          <p className={styles.statLabel}>Bangla-English Mixed</p>
         </Card>
-        <Card className="p-3 sm:p-4 text-center">
-          <p className="text-xl sm:text-2xl font-bold text-emerald-600">5+</p>
-          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Export Formats</p>
+        <Card className={styles.statCard}>
+          <p className={styles.statValue}>5+</p>
+          <p className={styles.statLabel}>Export Formats</p>
         </Card>
       </div>
     </div>

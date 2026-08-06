@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatTime, formatTimeSRT } from '@/lib/format-utils';
 import type { TranscriptionSegment, TranscriptionResult } from '@/lib/transcriber/types';
 import type { BatchJob } from '@/lib/store';
+import styles from './batch-view.module.css';
 
 function buildTxt(segments: TranscriptionSegment[]): string {
   return segments.map(s => `[${formatTime(s.startTime)}] ${s.speaker}: ${s.text}`).join('\n');
@@ -175,25 +176,25 @@ export function BatchView() {
   const allFinished = batchJobs.every(j => j.status === 'done' || j.status === 'failed');
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
+    <div className={styles.root}>
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className={styles.header}>
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Batch Transcription</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h2 className={styles.title}>Batch Transcription</h2>
+          <p className={styles.subtitle}>
             {doneCount}/{totalCount} completed{failedCount > 0 ? ` · ${failedCount} failed` : ''}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className={styles.headerActions}>
           {doneCount > 1 && (
-            <Button onClick={downloadAll} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700" size="sm">
-              <Archive className="w-3.5 h-3.5" />
+            <Button onClick={downloadAll} className={`${styles.btnGap} ${styles.primaryBtn}`} size="sm">
+              <Archive className={styles.iconSm} />
               Download All ZIP
             </Button>
           )}
           {allFinished && (
-            <Button variant="outline" size="sm" onClick={() => { clearBatch(); setCurrentView('upload'); }} className="gap-1.5">
-              <RotateCcw className="w-3.5 h-3.5" /> New Batch
+            <Button variant="outline" size="sm" onClick={() => { clearBatch(); setCurrentView('upload'); }} className={styles.btnGap}>
+              <RotateCcw className={styles.iconSm} /> New Batch
             </Button>
           )}
         </div>
@@ -201,11 +202,11 @@ export function BatchView() {
 
       {/* Overall progress bar */}
       {!allFinished && (
-        <Progress value={Math.round((doneCount + failedCount) / totalCount * 100)} className="h-1.5" />
+        <Progress value={Math.round((doneCount + failedCount) / totalCount * 100)} className={styles.overallBar} />
       )}
 
       {/* Chat-history style job list */}
-      <div className="space-y-2">
+      <div className={styles.jobList}>
         <AnimatePresence initial={false}>
           {batchJobs.map((job, idx) => {
             const base = job.file.name.replace(/\.[^/.]+$/, '');
@@ -220,31 +221,31 @@ export function BatchView() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
               >
-                <Card className={`overflow-hidden transition-colors ${
-                  job.status === 'done' ? 'border-emerald-500/30' :
-                  job.status === 'failed' ? 'border-destructive/30' :
-                  job.status === 'processing' ? 'border-blue-500/30' : ''
+                <Card className={`${styles.jobCard} ${
+                  job.status === 'done' ? styles.jobCardDone :
+                  job.status === 'failed' ? styles.jobCardFailed :
+                  job.status === 'processing' ? styles.jobCardProcessing : ''
                 }`}>
-                  <div className="p-4">
-                    <div className="flex items-start gap-3">
+                  <div className={styles.jobInner}>
+                    <div className={styles.jobRow}>
                       {/* Status icon */}
-                      <div className={`flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ${
-                        job.status === 'done' ? 'bg-emerald-50 dark:bg-emerald-950/30' :
-                        job.status === 'failed' ? 'bg-destructive/10' :
-                        job.status === 'processing' ? 'bg-blue-50 dark:bg-blue-950/30' :
-                        'bg-muted'
+                      <div className={`${styles.statusIconWrap} ${
+                        job.status === 'done' ? styles.statusIconDone :
+                        job.status === 'failed' ? styles.statusIconFailed :
+                        job.status === 'processing' ? styles.statusIconProcessing :
+                        styles.statusIconQueued
                       }`}>
-                        {job.status === 'done' && <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />}
-                        {job.status === 'failed' && <XCircle className="w-4.5 h-4.5 text-destructive" />}
-                        {job.status === 'processing' && <Loader2 className="w-4.5 h-4.5 text-blue-500 animate-spin" />}
-                        {job.status === 'queued' && <FileAudio className="w-4.5 h-4.5 text-muted-foreground" />}
+                        {job.status === 'done' && <CheckCircle2 className={styles.statusIcon} />}
+                        {job.status === 'failed' && <XCircle className={`${styles.statusIcon} ${styles.statusIconDestructive}`} />}
+                        {job.status === 'processing' && <Loader2 className={styles.statusIconProcessingIcon} />}
+                        {job.status === 'queued' && <FileAudio className={`${styles.statusIcon} ${styles.statusIconMuted}`} />}
                       </div>
 
                       {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium truncate">{job.file.name}</p>
-                          <Badge variant="outline" className="text-[10px] shrink-0">
+                      <div className={styles.jobBody}>
+                        <div className={styles.jobTitleRow}>
+                          <p className={styles.jobName}>{job.file.name}</p>
+                          <Badge variant="outline" className={styles.jobStatusBadge}>
                             {job.status === 'queued' ? 'Queued' :
                              job.status === 'processing' ? 'Processing...' :
                              job.status === 'done' ? 'Done' : 'Failed'}
@@ -252,31 +253,31 @@ export function BatchView() {
                         </div>
 
                         {job.status === 'processing' && (
-                          <div className="mt-2">
-                            <Progress value={job.progress} className="h-1" />
+                          <div className={styles.jobProgressWrap}>
+                            <Progress value={job.progress} className={styles.jobProgress} />
                           </div>
                         )}
 
                         {job.status === 'done' && (
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                          <div className={styles.jobMeta}>
+                            <span className={styles.metaItem}>
+                              <Clock className={styles.iconXs} />
                               {job.segments.length} segments
                             </span>
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
+                            <span className={styles.metaItem}>
+                              <User className={styles.iconXs} />
                               {speakerCount} speaker{speakerCount !== 1 ? 's' : ''}
                             </span>
                           </div>
                         )}
 
                         {job.status === 'failed' && (
-                          <p className="text-xs text-destructive mt-1 truncate">{job.error}</p>
+                          <p className={styles.jobError}>{job.error}</p>
                         )}
 
                         {job.status === 'done' && job.skippedChunks.length > 0 && (
-                          <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3 shrink-0" />
+                          <p className={styles.skipWarn}>
+                            <AlertTriangle className={styles.skipWarnIcon} />
                             {job.skippedChunks.length} chunk{job.skippedChunks.length !== 1 ? 's' : ''} failed (likely quota) — audio at {job.skippedChunks
                               .sort((a, b) => a - b)
                               .map(i => `[${formatTime(i * chunkDuration)} – ${formatTime((i + 1) * chunkDuration)}]`)
@@ -286,7 +287,7 @@ export function BatchView() {
 
                         {/* Preview snippet */}
                         {job.status === 'done' && job.segments.length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 italic">
+                          <p className={styles.previewSnippet}>
                             &ldquo;{job.segments[0].text}&rdquo;
                           </p>
                         )}
@@ -294,16 +295,16 @@ export function BatchView() {
 
                       {/* Download buttons */}
                       {job.status === 'done' && (
-                        <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                        <div className={styles.downloadBtns}>
                           {(['txt', 'srt', 'md'] as const).map(fmt => (
                             <Button
                               key={fmt}
                               variant="ghost"
                               size="sm"
-                              className="h-7 text-[11px] px-2 gap-1"
+                              className={styles.downloadBtn}
                               onClick={() => downloadOne(job.id, fmt)}
                             >
-                              <Download className="w-3 h-3" />
+                              <Download className={styles.iconXs} />
                               {fmt.toUpperCase()}
                             </Button>
                           ))}
@@ -321,14 +322,14 @@ export function BatchView() {
       {/* Bottom Download All */}
       {allFinished && doneCount > 1 && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Card className="p-4 border-emerald-500/30 bg-emerald-50/20 dark:bg-emerald-950/10">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+          <Card className={styles.doneBanner}>
+            <div className={styles.doneBannerRow}>
               <div>
-                <p className="text-sm font-medium">{doneCount} transcriptions ready</p>
-                <p className="text-xs text-muted-foreground">Each file includes TXT, SRT, and Markdown</p>
+                <p className={styles.doneTitle}>{doneCount} transcriptions ready</p>
+                <p className={styles.doneSub}>Each file includes TXT, SRT, and Markdown</p>
               </div>
-              <Button onClick={downloadAll} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-                <Archive className="w-4 h-4" />
+              <Button onClick={downloadAll} className={`${styles.btnGap} ${styles.primaryBtn}`}>
+                <Archive className={styles.iconMd} />
                 Download All as ZIP
               </Button>
             </div>
