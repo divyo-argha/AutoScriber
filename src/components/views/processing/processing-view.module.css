@@ -548,6 +548,8 @@
 
 .dialogContentSm {
   max-width: 28rem;
+  max-height: 92vh;
+  overflow-y: auto;
 }
 
 @media (min-width: 640px) {
@@ -586,6 +588,7 @@
   font-size: 0.875rem;
   line-height: 1.25rem;
   color: var(--muted-foreground);
+  overflow-wrap: anywhere;
 }
 
 .dialogFooter {

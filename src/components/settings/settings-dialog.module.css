@@ -1,4 +1,6 @@
 .content {
+  display: flex;
+  flex-direction: column;
   max-height: 92vh;
   border: 0;
   padding: 0;
@@ -24,6 +26,7 @@
 
 .header {
   position: relative;
+  flex-shrink: 0;
   padding: 1.5rem 1.5rem 1rem;
   border-bottom: 1px solid color-mix(in oklab, var(--white) 10%, transparent);
   background-image: linear-gradient(to right, color-mix(in oklab, var(--blue-600) 10%, transparent), color-mix(in oklab, var(--indigo-500) 10%, transparent), color-mix(in oklab, var(--brand-600) 10%, transparent));
@@ -78,6 +81,7 @@
 .titleRow {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   font-size: 1.125rem;
   line-height: 1.75rem;
@@ -104,6 +108,10 @@
 }
 
 .body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1rem 1.5rem 1.5rem;
 }
 
@@ -552,13 +560,17 @@
 }
 
 .pasteTextarea {
-  height: 6rem;
-  resize: none;
+  height: 8rem;
+  max-height: 14rem;
+  resize: vertical;
+  overflow-y: auto;
+  field-sizing: fixed;
   border-radius: var(--radius-med);
   border-color: color-mix(in oklab, var(--white) 10%, transparent);
   background-color: color-mix(in oklab, var(--black) 30%, transparent);
   font-family: var(--font-mono-stack);
   font-size: 11px;
+  overflow-wrap: anywhere;
 }
 
 .projGrid {
@@ -936,6 +948,7 @@
 
 .footer {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
