@@ -488,7 +488,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     <Upload className={styles.dropIcon} />
                   </div>
 
-                  <div className={styles.dropText}>
+                  <div>
                     <p className={styles.dropTitle}>
                       {isDragging ? 'Drop gcp-credentials.json here' : 'Click to browse or drag & drop gcp-credentials.json'}
                     </p>
