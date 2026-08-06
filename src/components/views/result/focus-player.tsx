@@ -33,9 +33,7 @@ export function FocusPlayer({ segments, speakerColors }: FocusPlayerProps) {
 
   // Click handler to seek to a specific word
   const handleWordClick = (startTime: number) => {
-    if (typeof (window as any).__autoScribeSeek === 'function') {
-      (window as any).__autoScribeSeek(startTime);
-    }
+    useAppStore.getState().seekTo(startTime);
   };
 
   if (!segment) {

@@ -5,7 +5,7 @@ import { GEMINI_TRANSCRIPTION_PROMPT, GEMINI_CHUNK_PROMPT } from './types';
 import type { ChunkResult } from './types';
 import { getMimeType, parseTranscriptionResponse } from './parser';
 import { getGcpCredentialsInfo, getGcpCredentialsInfoFromJson } from './gcp-credentials';
-import { isQuotaError } from './error-utils';
+import { withTransientRetry } from './retry';
 
 export interface VertexOptions {
   projectId?: string | null;
@@ -58,74 +58,15 @@ export function createVertexClient(options?: VertexOptions): { client: VertexAI;
   return { client: vertexClient, projectId: projectId || 'unknown', location };
 }
 
-function isTransientVertexError(err: any): boolean {
-  if (!err) return false;
-  const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-
-  if (
-    isQuotaError(err) ||
-    errMsg.includes('429') ||
-    errMsg.includes('resource_exhausted') ||
-    errMsg.includes('quota') ||
-    errMsg.includes('too many requests')
-  ) {
-    return true;
-  }
-
-  if (
-    errMsg.includes('500') ||
-    errMsg.includes('502') ||
-    errMsg.includes('503') ||
-    errMsg.includes('504') ||
-    errMsg.includes('service unavailable') ||
-    errMsg.includes('internal error') ||
-    errMsg.includes('overloaded')
-  ) {
-    return true;
-  }
-
-  if (
-    errMsg.includes('fetch failed') ||
-    errMsg.includes('econnreset') ||
-    errMsg.includes('etimedout') ||
-    errMsg.includes('socket hang up') ||
-    errMsg.includes('network')
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-async function generateContentWithRetry(
+function generateContentWithRetry(
   generativeModel: any,
   requestPayload: any,
-  modelId: string,
-  maxRetries: number = 2,
-  initialDelayMs: number = 2000
+  modelId: string
 ): Promise<any> {
-  let attempt = 0;
-  while (true) {
-    try {
-      return await generativeModel.generateContent(requestPayload);
-    } catch (err: any) {
-      attempt++;
-      const errMsg = err instanceof Error ? err.message : String(err);
-      const isTransient = isTransientVertexError(err);
-      const isHardQuota = errMsg.includes('limit: 0') || errMsg.includes('per_day');
-
-      if (isTransient && !isHardQuota && attempt <= maxRetries) {
-        let delayMs = initialDelayMs * Math.pow(2, attempt - 1);
-        const jitter = Math.floor(Math.random() * 800);
-        delayMs += jitter;
-
-        console.warn(`[vertex] Transient error (${errMsg.substring(0, 80)}). Retrying attempt ${attempt}/${maxRetries} after ${Math.round(delayMs / 1000)}s...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      } else {
-        throw err;
-      }
-    }
-  }
+  return withTransientRetry(() => generativeModel.generateContent(requestPayload), {
+    modelId,
+    logPrefix: '[vertex]',
+  });
 }
 
 export async function transcribeChunkWithVertex(

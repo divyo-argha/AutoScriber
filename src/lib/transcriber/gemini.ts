@@ -2,8 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { GEMINI_TRANSCRIPTION_PROMPT, GEMINI_CHUNK_PROMPT } from './types';
 import type { ChunkResult } from './types';
-import { isQuotaError } from './error-utils';
 import { getMimeType, parseTranscriptionResponse } from './parser';
+import { withTransientRetry } from './retry';
 import fs from 'fs';
 import path from 'path';
 
@@ -16,110 +16,17 @@ function createGenAIClient(apiKey: string): GoogleGenerativeAI {
   return new GoogleGenerativeAI(apiKey);
 }
 
-function isTransientError(err: any): boolean {
-  if (!err) return false;
-  const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-
-  // Rate limits (429) & quota errors
-  if (
-    isQuotaError(err) ||
-    errMsg.includes('429') ||
-    errMsg.includes('too many requests') ||
-    errMsg.includes('quota') ||
-    errMsg.includes('resource_exhausted')
-  ) {
-    return true;
-  }
-
-  // Transient server errors (5xx)
-  if (
-    errMsg.includes('500') ||
-    errMsg.includes('502') ||
-    errMsg.includes('503') ||
-    errMsg.includes('504') ||
-    errMsg.includes('internal error') ||
-    errMsg.includes('bad gateway') ||
-    errMsg.includes('service unavailable') ||
-    errMsg.includes('overloaded')
-  ) {
-    return true;
-  }
-
-  // Network connection failures, timeouts, & Node fetch errors
-  if (
-    errMsg.includes('fetch failed') ||
-    errMsg.includes('econnreset') ||
-    errMsg.includes('etimedout') ||
-    errMsg.includes('enotfound') ||
-    errMsg.includes('socket hang up') ||
-    errMsg.includes('network') ||
-    errMsg.includes('und_err') ||
-    errMsg.includes('econnrefused') ||
-    errMsg.includes('aborted') ||
-    errMsg.includes('failed to fetch')
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Call generateContent with exponential backoff on rate limits (429), transient errors (5xx), or network issues (fetch failed).
- */
-async function generateContentWithRetry(
+/** Call generateContent with shared transient-error retry + model-aware pacing. */
+function generateContentWithRetry(
   model: any,
   contents: any[],
-  modelId: string = 'gemini-2.0-flash',
-  maxRetries: number = 2,
-  initialDelayMs: number = 2000
+  modelId: string = 'gemini-2.0-flash'
 ): Promise<any> {
-  // Model-aware pacing (e.g. 3s for Flash models, 30s for Pro models)
-  await enforceRateLimitPacing(modelId);
-  let attempt = 0;
-  while (true) {
-    try {
-      return await model.generateContent(contents);
-    } catch (err: any) {
-      attempt++;
-      const errMsg = err instanceof Error ? err.message : String(err);
-      const isTransient = isTransientError(err);
-
-      // A "limit: 0" quota means this model is permanently unavailable for
-      // this API key. Retrying is pointless — throw so caller uses fallback.
-      const isHardQuota = errMsg.includes('limit: 0') || errMsg.includes('per_day') || errMsg.includes('per-day');
-
-      if (isTransient && !isHardQuota && attempt <= maxRetries) {
-        let delayMs = initialDelayMs * Math.pow(2, attempt - 1);
-        
-        // Try to extract dynamic retry delay from error message or response headers if available
-        const retryDelayMatch = errMsg.match(/retryDelay["\s:]+(\d+)s/i) || errMsg.match(/retry in ([\d.]+)\s*s/i);
-        if (retryDelayMatch && retryDelayMatch[1]) {
-          const seconds = parseFloat(retryDelayMatch[1]);
-          if (!isNaN(seconds) && seconds > 0) {
-            delayMs = (seconds + 1) * 1000;
-          }
-        } else if (err?.status === 429 && err?.headers?.get?.('retry-after')) {
-          const retryAfter = parseInt(err.headers.get('retry-after'), 10);
-          if (!isNaN(retryAfter) && retryAfter > 0) {
-            delayMs = (retryAfter + 1) * 1000;
-          }
-        } else if (isQuotaError(err) || errMsg.includes('429')) {
-          // Mandatory minimum wait for 429 rate limit errors + random jitter
-          delayMs = Math.max(delayMs, 4000);
-        }
-        
-        // Add random jitter (0-800ms) to prevent burst concurrency
-        const jitter = Math.floor(Math.random() * 800);
-        delayMs += jitter;
-        
-        console.warn(`[gemini] Transient/Network error hit (${errMsg.substring(0, 80)}). Retrying attempt ${attempt}/${maxRetries} after ${Math.round(delayMs / 1000)}s...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      } else {
-        throw err;
-      }
-    }
-  }
+  return withTransientRetry(() => model.generateContent(contents), {
+    modelId,
+    enablePacing: true,
+    logPrefix: '[gemini]',
+  });
 }
 
 const GEMINI_FALLBACK_MODELS = [
@@ -130,25 +37,6 @@ const GEMINI_FALLBACK_MODELS = [
   'gemini-2.5-flash-lite',
   'gemini-2.5-pro',
 ];
-
-let lastRequestTimestamp = 0;
-
-/**
- * Ensures requests adhere strictly to Free Tier Rate Limits (Flash: ~3s pacing, Pro: ~30s pacing).
- */
-async function enforceRateLimitPacing(modelId: string = 'gemini-2.0-flash'): Promise<void> {
-  const isProModel = modelId.toLowerCase().includes('pro');
-  const minDelayMs = isProModel ? 30000 : 3000;
-
-  const now = Date.now();
-  const elapsed = now - lastRequestTimestamp;
-  if (lastRequestTimestamp > 0 && elapsed < minDelayMs) {
-    const waitTime = minDelayMs - elapsed;
-    console.log(`[gemini] Rate limit pacing (${modelId}): waiting ${Math.round(waitTime / 1000)}s before next request...`);
-    await new Promise(resolve => setTimeout(resolve, waitTime));
-  }
-  lastRequestTimestamp = Date.now();
-}
 
 export async function transcribeWithGemini(
   filePath: string,

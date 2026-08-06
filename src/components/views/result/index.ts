@@ -1,3 +1,3 @@
 export { TranscriptionViewer } from './transcription-viewer';
-export { AudioPlayer } from './audio-player';
+export { AudioPlayer } from '@/components/audio';
 export { FocusPlayer } from './focus-player';

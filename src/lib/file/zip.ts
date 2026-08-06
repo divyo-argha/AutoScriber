@@ -1,12 +1,7 @@
 import JSZip from 'jszip';
+import { isAudioFile } from './file-utils';
 
-const AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'flac', 'm4a', 'webm', 'aac', 'wma']);
-
-export function isAudioFile(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase();
-  return ext ? AUDIO_EXTENSIONS.has(ext) : false;
-}
-
+/** Recursively extracts supported audio files from a ZIP archive. */
 export async function extractAudioFilesFromZip(zipFile: File): Promise<File[]> {
   const zip = new JSZip();
   await zip.loadAsync(zipFile);
@@ -32,6 +27,7 @@ export async function extractAudioFilesFromZip(zipFile: File): Promise<File[]> {
   return audioFiles;
 }
 
+/** Recursively extracts supported audio files from directory entries. */
 export async function extractAudioFilesFromDirectory(entries: FileSystemEntry[]): Promise<File[]> {
   const audioFiles: File[] = [];
 
