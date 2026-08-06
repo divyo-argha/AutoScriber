@@ -456,58 +456,25 @@ export function SettingsView() {
             {/* TAB 1: VERTEX AI & GCP */}
             <TabsContent value="vertex" className={styles.tabContent}>
               <div className={styles.card}>
-                <div className={styles.cardHead}>
-                  <div className={styles.cardHeadIcon} style={{ color: 'var(--blue-400)' }}>
-                    <Globe className={styles.iconMd} />
-                  </div>
-                  <div>
-                    <p className={styles.cardTitle}>Google Cloud Project</p>
-                    <p className={styles.cardDesc}>Your project ID is read from the key JSON when you paste one; only the region needs typing.</p>
-                  </div>
-                </div>
-                <div className={styles.projGrid}>
-                  {!(jsonValidation?.valid && jsonValidation.projectId) ? (
-                    <div className={styles.projCol}>
-                      <Label className={styles.projLabel}>GCP Project ID</Label>
-                      <Input
-                        placeholder="e.g. my-gcp-project-123"
-                        value={gcpProjectId}
-                        onChange={e => setGcpProjectId(e.target.value)}
-                        className={styles.projInput}
-                      />
-                      <p className={styles.projHint}>Only needed if you don't paste a key JSON below.</p>
+                <div className={styles.cardHead} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
+                    <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
+                      <ShieldCheck className={styles.iconMd} />
                     </div>
-                  ) : (
-                    <div className={styles.projCol}>
-                      <Label className={styles.projLabel}>GCP Project ID</Label>
-                      <div className={styles.projAutoBox}>
-                        <CheckCircle2 className={styles.projAutoIcon} />
-                        <code className={styles.credCode}>{jsonValidation.projectId}</code>
-                        <span className={styles.projAutoTag}>from your key JSON</span>
-                      </div>
+                    <div>
+                      <p className={styles.cardTitle}>Service Account Key & Region</p>
+                      <p className={styles.cardDesc}>Paste your GCP Service Account JSON key. Project ID is auto-extracted.</p>
                     </div>
-                  )}
-                  <div className={styles.projCol}>
-                    <Label className={styles.projLabel}>GCP Region</Label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Label className={styles.projLabel} style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>GCP Region:</Label>
                     <Input
                       placeholder="us-central1"
                       value={gcpLocation}
                       onChange={e => setGcpLocation(e.target.value)}
                       className={styles.projInput}
+                      style={{ width: '130px', height: '2.1rem' }}
                     />
-                    <p className={styles.projHint}>Key files don't include a region — Vertex endpoints are per-region.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.card}>
-                <div className={styles.cardHead}>
-                  <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
-                    <ShieldCheck className={styles.iconMd} />
-                  </div>
-                  <div>
-                    <p className={styles.cardTitle}>Service Account Key</p>
-                    <p className={styles.cardDesc}>Paste the JSON key for a service account with Vertex AI access.</p>
                   </div>
                 </div>
 
