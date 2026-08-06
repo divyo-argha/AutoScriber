@@ -340,40 +340,6 @@ export function SettingsView() {
     ? VERTEX_MODELS.find(m => m.id === selectedVertexModel)
     : AVAILABLE_MODELS.find(m => m.id === selectedGeminiModel);
 
-  const renderModelCards = (models: ModelInfo[], selectedId: string, onSelect: (id: string) => void, activeClass: string) => (
-    <div className={styles.modelGrid}>
-      {models.map(model => {
-        const isActive = model.id === selectedId;
-        const tier = model.tierInfo?.startsWith('Paid') ? 'Paid' : model.tierInfo || 'Free';
-        return (
-          <button
-            key={model.id}
-            type="button"
-            onClick={() => onSelect(model.id)}
-            className={`${styles.modelCard} ${isActive ? `${activeClass} ${styles.modelCardActive}` : styles.modelCardIdle}`}
-          >
-            <div className={styles.modelCardRow}>
-              <span className={styles.modeTitle}>{model.name}</span>
-              {isActive && <Check className={styles.modelCheck} />}
-            </div>
-            <p className={styles.modeSub}>{model.description}</p>
-            <div className={styles.modelMetaRow}>
-              {model.recommended && (
-                <span className={styles.modelBadgeRec}>
-                  <Zap className={styles.modelBadgeIcon} /> Recommended
-                </span>
-              )}
-              <span className={styles.modelTier} title={model.tierInfo}>
-                <span className={styles.modelTierDot} />
-                {tier}
-              </span>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-
   return (
     <div className={styles.page}>
       {/* Sticky top toolbar */}
@@ -560,18 +526,7 @@ export function SettingsView() {
                 </div>
               </div>
 
-              <div className={styles.card}>
-                <div className={styles.cardHead}>
-                  <div className={styles.cardHeadIcon} style={{ color: 'var(--blue-400)' }}>
-                    <Cpu className={styles.iconMd} />
-                  </div>
-                  <div>
-                    <p className={styles.cardTitle}>Transcription Model</p>
-                    <p className={styles.cardDesc}>Picked model is used for every transcription job.</p>
-                  </div>
-                </div>
-                {renderModelCards(VERTEX_MODELS, selectedVertexModel, selectVertexModel, styles.modeCardVertexActive)}
-              </div>
+
 
               {/* Test Connection */}
               <div className={styles.testRow}>
@@ -756,18 +711,6 @@ export function SettingsView() {
                 </p>
               </div>
 
-              <div className={styles.card}>
-                <div className={styles.cardHead}>
-                  <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
-                    <Sparkles className={styles.iconMd} />
-                  </div>
-                  <div>
-                    <p className={styles.cardTitle}>Gemini Model</p>
-                    <p className={styles.cardDesc}>Picked model is used for every transcription job.</p>
-                  </div>
-                </div>
-                {renderModelCards(AVAILABLE_MODELS, selectedGeminiModel, selectGeminiModel, styles.modeCardGeminiActive)}
-              </div>
             </TabsContent>
           </Tabs>
 
