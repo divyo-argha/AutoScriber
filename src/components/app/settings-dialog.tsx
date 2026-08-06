@@ -346,7 +346,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <TabsList className={styles.tabsList}>
               <TabsTrigger value="vertex" className={`${styles.tabTrigger} ${styles.tabTriggerVertex}`}>
                 <Cloud className={styles.iconSm} />
-                Option B: Vertex AI & GCP
+                Vertex AI & GCP
               </TabsTrigger>
               <TabsTrigger value="gemini" className={`${styles.tabTrigger} ${styles.tabTriggerGemini}`}>
                 <Sparkles className={styles.iconSm} />
