@@ -26,7 +26,7 @@ export interface ChunkResult {
 export interface ModelInfo {
   id: string;
   name: string;
-  provider: 'gemini';
+  provider: 'gemini' | 'vertex';
   description: string;
   maxAudioLength: number;
   supportsDiarization: boolean;
@@ -117,6 +117,83 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     tierInfo: 'Paid (billing-enabled project required)',
   },
 ];
+
+
+export const VERTEX_MODELS: ModelInfo[] = [
+  {
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    provider: 'vertex',
+    description: 'Best overall Vertex model for transcription — fast, accurate, native audio understanding with diarization.',
+    maxAudioLength: 7200,
+    supportsDiarization: true,
+    supportsTimestamps: true,
+    tierInfo: 'Paid (billing-enabled project required)',
+    recommended: true,
+  },
+  {
+    id: 'gemini-2.5-flash-lite',
+    name: 'Gemini 2.5 Flash-Lite',
+    provider: 'vertex',
+    description: 'Fastest and most cost-efficient Vertex model. Good for high-volume, shorter audio files.',
+    maxAudioLength: 3600,
+    supportsDiarization: true,
+    supportsTimestamps: true,
+    tierInfo: 'Paid (billing-enabled project required)',
+  },
+  {
+    id: 'gemini-2.5-pro',
+    name: 'Gemini 2.5 Pro',
+    provider: 'vertex',
+    description: 'Most capable Vertex model — best for complex, long, or low-quality audio. Slower and more expensive.',
+    maxAudioLength: 7200,
+    supportsDiarization: true,
+    supportsTimestamps: true,
+    tierInfo: 'Paid (billing-enabled project required)',
+  },
+  {
+    id: 'gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    provider: 'vertex',
+    description: 'Mature, widely-deployed Vertex model with solid audio understanding and diarization.',
+    maxAudioLength: 7200,
+    supportsDiarization: true,
+    supportsTimestamps: true,
+    tierInfo: 'Paid (billing-enabled project required)',
+  },
+  {
+    id: 'gemini-2.0-flash-lite',
+    name: 'Gemini 2.0 Flash-Lite',
+    provider: 'vertex',
+    description: 'Budget-friendly Vertex model for shorter audio files where speed matters.',
+    maxAudioLength: 3600,
+    supportsDiarization: true,
+    supportsTimestamps: true,
+    tierInfo: 'Paid (billing-enabled project required)',
+  },
+  {
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    provider: 'vertex',
+    description: 'Fast and cost-effective previous-generation Vertex model. Good fallback for long recordings.',
+    maxAudioLength: 7200,
+    supportsDiarization: true,
+    supportsTimestamps: true,
+    tierInfo: 'Paid (billing-enabled project required)',
+  },
+  {
+    id: 'gemini-1.5-pro',
+    name: 'Gemini 1.5 Pro',
+    provider: 'vertex',
+    description: 'Powerful previous-generation Vertex model for difficult or noisy recordings.',
+    maxAudioLength: 7200,
+    supportsDiarization: true,
+    supportsTimestamps: true,
+    tierInfo: 'Paid (billing-enabled project required)',
+  },
+];
+
+export const ALL_MODELS: ModelInfo[] = [...AVAILABLE_MODELS, ...VERTEX_MODELS];
 
 
 export const GEMINI_TRANSCRIPTION_PROMPT = `You are a professional Bangla-English speech transcription engine. Your ONLY job is to output a valid JSON array of transcribed speech segments.

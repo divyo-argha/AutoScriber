@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -18,20 +18,19 @@ import {
   Wifi,
   Cpu,
   FileJson,
-  Upload,
   Check,
   ShieldCheck,
-  Zap,
   Sparkles,
   Cloud,
-  FileText,
   Trash2,
   Globe,
   Lock,
   ArrowRight,
-  Code2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AVAILABLE_MODELS, VERTEX_MODELS } from '@/lib/transcriber/types';
+import type { ModelInfo } from '@/lib/transcriber/types';
+import { validateGcpCredentialsJson } from '@/lib/transcriber/credentials-validate';
 import styles from './settings-dialog.module.css';
 
 interface SettingsDialogProps {
@@ -51,46 +50,63 @@ interface GcpStatus {
   error?: string;
 }
 
+type CredentialsValidation = ReturnType<typeof validateGcpCredentialsJson>;
+
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { toast } = useToast();
   const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setSettings } = useAppStore();
 
-  const [aiProvider, setAiProvider] = useState<'auto' | 'gemini' | 'vertex'>('auto');
+  const [activeTab, setActiveTab] = useState<'vertex' | 'gemini'>('vertex');
   const [localGeminiKey, setLocalGeminiKey] = useState(userGeminiApiKey);
   const [gcpProjectId, setGcpProjectId] = useState('');
   const [gcpLocation, setGcpLocation] = useState('us-central1');
   const [gcpCredentialsPath, setGcpCredentialsPath] = useState('');
   const [gcpCredentialsJson, setGcpCredentialsJson] = useState('');
   const [gcpStatus, setGcpStatus] = useState<GcpStatus | null>(null);
+  const [jsonValidation, setJsonValidation] = useState<CredentialsValidation | null>(null);
+
+  const [selectedVertexModel, setSelectedVertexModel] = useState(
+    VERTEX_MODELS.some(m => m.id === selectedModel) ? selectedModel : 'gemini-2.5-flash'
+  );
+  const [selectedGeminiModel, setSelectedGeminiModel] = useState(
+    AVAILABLE_MODELS.some(m => m.id === selectedModel) ? selectedModel : 'gemini-2.0-flash'
+  );
 
   const [localChunkDuration, setLocalChunkDuration] = useState(String(chunkDuration));
   const [localOverlapDuration, setLocalOverlapDuration] = useState(String(overlapDuration));
-  
+
   const [geminiStatus, setGeminiStatus] = useState<TestStatus>('idle');
   const [geminiError, setGeminiError] = useState('');
+  const [geminiSuccessModel, setGeminiSuccessModel] = useState('');
 
   const [vertexStatus, setVertexStatus] = useState<TestStatus>('idle');
   const [vertexError, setVertexError] = useState('');
+  const [vertexSuccess, setVertexSuccess] = useState<{ projectId: string; location: string; model: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [jsonParsedMeta, setJsonParsedMeta] = useState<{ projectId?: string; clientEmail?: string } | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
     fetch('/api/settings')
       .then(r => r.json())
       .then(data => {
-        if (data.aiProvider) setAiProvider(data.aiProvider);
-        if (data.userGeminiApiKey) {
-          setLocalGeminiKey(data.userGeminiApiKey);
-          setSettings({ userGeminiApiKey: data.userGeminiApiKey });
-        }
         if (data.gcpProjectId) setGcpProjectId(data.gcpProjectId);
         if (data.gcpLocation) setGcpLocation(data.gcpLocation);
         if (data.gcpCredentialsPath) setGcpCredentialsPath(data.gcpCredentialsPath);
         if (data.gcpCredentialsStatus) setGcpStatus(data.gcpCredentialsStatus);
+        if (data.userGeminiApiKey) {
+          setLocalGeminiKey(data.userGeminiApiKey);
+          setSettings({ userGeminiApiKey: data.userGeminiApiKey });
+        }
+
+        const provider = data.aiProvider || 'auto';
+        if (provider === 'vertex') {
+          setActiveTab('vertex');
+        } else if (provider === 'gemini') {
+          setActiveTab('gemini');
+        } else {
+          const hasVertex = data.gcpCredentialsStatus?.exists || !!data.gcpProjectId;
+          setActiveTab(hasVertex ? 'vertex' : 'gemini');
+        }
 
         if (typeof data.chunkDuration === 'number') {
           setLocalChunkDuration(String(data.chunkDuration));
@@ -105,37 +121,44 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     setGeminiStatus('idle');
     setVertexStatus('idle');
+    setGeminiError('');
+    setVertexError('');
+    setVertexSuccess(null);
+    setGeminiSuccessModel('');
   }, [open, setSettings]);
 
-  // Parse custom pasted JSON content live
+  // Live validation of the pasted service account JSON
   useEffect(() => {
     if (!gcpCredentialsJson.trim()) {
-      setJsonParsedMeta(null);
+      setJsonValidation(null);
       return;
     }
-    try {
-      const parsed = JSON.parse(gcpCredentialsJson);
-      setJsonParsedMeta({
-        projectId: parsed.project_id || undefined,
-        clientEmail: parsed.client_email || undefined,
-      });
-    } catch {
-      setJsonParsedMeta(null);
-    }
+    setJsonValidation(validateGcpCredentialsJson(gcpCredentialsJson));
   }, [gcpCredentialsJson]);
+
+  const selectVertexModel = (modelId: string) => {
+    setSelectedVertexModel(modelId);
+    setSelectedModel(modelId);
+  };
+
+  const selectGeminiModel = (modelId: string) => {
+    setSelectedGeminiModel(modelId);
+    setSelectedModel(modelId);
+  };
 
   const testGemini = async () => {
     setGeminiStatus('testing');
     setGeminiError('');
+    setGeminiSuccessModel('');
     try {
-      const params = new URLSearchParams({ model: selectedModel || 'gemini-2.0-flash' });
+      const params = new URLSearchParams({ model: selectedGeminiModel || 'gemini-2.0-flash' });
       if (localGeminiKey) params.set('apiKey', localGeminiKey);
       const res = await fetch(`/api/gemini-test?${params}`);
       const data = await res.json();
       if (data.connected) {
         setGeminiStatus('connected');
+        setGeminiSuccessModel(data.workingModel);
         if (data.fallbackUsed && data.workingModel) {
-          setSelectedModel(data.workingModel);
           toast({
             title: '⚡ Gemini AI Connected',
             description: `Model automatically optimized to ${data.workingModel}.`,
@@ -170,12 +193,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const testVertex = async () => {
     setVertexStatus('testing');
     setVertexError('');
+    setVertexSuccess(null);
     try {
       const body = {
         gcpProjectId,
         gcpLocation,
         gcpCredentialsPath,
         gcpCredentialsJson: gcpCredentialsJson.trim() || undefined,
+        modelId: selectedVertexModel,
       };
       const res = await fetch('/api/vertex-test', {
         method: 'POST',
@@ -185,9 +210,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       const data = await res.json();
       if (data.success) {
         setVertexStatus('connected');
+        setVertexSuccess({
+          projectId: data.projectId,
+          location: data.location,
+          model: data.model,
+        });
         toast({
           title: '🚀 Vertex AI Connected Successfully!',
-          description: `Project: ${data.projectId} • Region: ${data.location}`,
+          description: `Project: ${data.projectId} • Region: ${data.location} • Model: ${data.model}`,
         });
       } else {
         setVertexStatus('error');
@@ -209,71 +239,17 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   };
 
-  const processJsonFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      setGcpCredentialsJson(content);
-      try {
-        const parsed = JSON.parse(content);
-        if (parsed.project_id && !gcpProjectId) {
-          setGcpProjectId(parsed.project_id);
-        }
-        toast({
-          title: '📄 Credentials File Loaded',
-          description: `Successfully loaded "${file.name}" (Project: ${parsed.project_id || 'detected'})`,
-        });
-      } catch {
-        toast({
-          variant: 'destructive',
-          title: 'Invalid JSON File',
-          description: 'The uploaded file is not a valid JSON document.',
-        });
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processJsonFile(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.name.endsWith('.json')) {
-      processJsonFile(file);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid File',
-        description: 'Please upload a .json file (gcp-credentials.json).',
-      });
-    }
-  };
-
   const saveSettings = async () => {
     setSaving(true);
     try {
       const parsedChunk = parseInt(localChunkDuration);
       const parsedOverlap = parseInt(localOverlapDuration);
       const body = {
-        aiProvider,
+        aiProvider: activeTab,
         chunkDuration: isNaN(parsedChunk) ? 300 : parsedChunk,
         overlapDuration: isNaN(parsedOverlap) ? 30 : parsedOverlap,
         userGeminiApiKey: localGeminiKey,
+        defaultModel: activeTab === 'vertex' ? selectedVertexModel : selectedGeminiModel,
         gcpProjectId,
         gcpLocation,
         gcpCredentialsPath,
@@ -293,6 +269,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       });
 
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to save settings');
+      }
       if (data.gcpCredentialsStatus) {
         setGcpStatus(data.gcpCredentialsStatus);
       }
@@ -308,12 +287,35 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       toast({
         variant: 'destructive',
         title: 'Save Failed',
-        description: 'Failed to save settings.',
+        description: err instanceof Error ? err.message : 'Failed to save settings.',
       });
     } finally {
       setSaving(false);
     }
   };
+
+  const renderModelCards = (models: ModelInfo[], selectedId: string, onSelect: (id: string) => void, activeClass: string) => (
+    <div className={styles.modelGrid}>
+      {models.map(model => {
+        const isActive = model.id === selectedId;
+        return (
+          <button
+            key={model.id}
+            type="button"
+            onClick={() => onSelect(model.id)}
+            className={`${styles.modelCard} ${isActive ? `${activeClass} ${styles.modelCardActive}` : styles.modelCardIdle}`}
+          >
+            <div className={styles.modelCardRow}>
+              <span className={styles.modeTitle}>{model.name}</span>
+              {isActive && <Check className={styles.modelCheck} />}
+            </div>
+            <p className={styles.modeSub}>{model.description}</p>
+            <p className={styles.modelTier}>{model.tierInfo}</p>
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -334,7 +336,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   </Badge>
                 </DialogTitle>
                 <DialogDescription className={styles.dialogDesc}>
-                  Configure Google Cloud Vertex AI (<code className={styles.dialogDescCode}>gcp-credentials.json</code>) or Gemini API key
+                  Pick one engine below. Paste the credentials it asks for, then press Test to verify before saving.
                 </DialogDescription>
               </div>
             </div>
@@ -342,7 +344,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </div>
 
         <div className={styles.body}>
-          <Tabs defaultValue="vertex" className={styles.tabsWrap}>
+          <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'vertex' | 'gemini')} className={styles.tabsWrap}>
             <TabsList className={styles.tabsList}>
               <TabsTrigger value="vertex" className={`${styles.tabTrigger} ${styles.tabTriggerVertex}`}>
                 <Cloud className={styles.iconSm} />
@@ -350,170 +352,40 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </TabsTrigger>
               <TabsTrigger value="gemini" className={`${styles.tabTrigger} ${styles.tabTriggerGemini}`}>
                 <Sparkles className={styles.iconSm} />
-                Google AI Studio (API Key)
+                Google AI Studio
               </TabsTrigger>
             </TabsList>
 
-            {/* TAB 1: GCP VERTEX AI (OPTION B) */}
+            {/* TAB 1: VERTEX AI & GCP */}
             <TabsContent value="vertex" className={styles.tabContent}>
-
-              {/* Mode Selector Pill cards */}
-              <div className={styles.fieldGroup}>
-                <Label className={styles.fieldLabel}>
-                  <span>Routing Strategy</span>
-                  <span className={styles.fieldLabelRight}>Vertex AI Primary</span>
-                </Label>
-
-                <div className={styles.modeGrid}>
-                  <button
-                    type="button"
-                    onClick={() => setAiProvider('auto')}
-                    className={`${styles.modeCard} ${aiProvider === 'auto' ? `${styles.modeCardAutoActive} ${styles.modeCardActiveRingBlue}` : styles.modeCardIdle}`}
-                  >
-                    <div className={styles.modeIconRow}>
-                      <Zap className={`${styles.modeIcon} ${aiProvider === 'auto' ? styles.modeIconBlue : ''}`} />
-                      {aiProvider === 'auto' && <span className={styles.pingDot} />}
-                    </div>
-                    <div>
-                      <p className={styles.modeTitle}>Auto Route</p>
-                      <p className={styles.modeSub}>Prefers Vertex JSON if detected</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setAiProvider('vertex')}
-                    className={`${styles.modeCard} ${aiProvider === 'vertex' ? `${styles.modeCardVertexActive} ${styles.modeCardActiveRingBlue}` : styles.modeCardIdle}`}
-                  >
-                    <div className={styles.modeIconRow}>
-                      <Cloud className={`${styles.modeIcon} ${aiProvider === 'vertex' ? styles.modeIconBlue : ''}`} />
-                      {aiProvider === 'vertex' && <CheckCircle2 className={styles.modeCheck} />}
-                    </div>
-                    <div>
-                      <p className={styles.modeTitle}>Vertex AI</p>
-                      <p className={styles.modeSub}>Enforces Service Account JSON</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setAiProvider('gemini')}
-                    className={`${styles.modeCard} ${aiProvider === 'gemini' ? `${styles.modeCardGeminiActive} ${styles.modeCardActiveRingEmerald}` : styles.modeCardIdle}`}
-                  >
-                    <div className={styles.modeIconRow}>
-                      <Key className={`${styles.modeIcon} ${aiProvider === 'gemini' ? styles.modeIconEmerald : ''}`} />
-                      {aiProvider === 'gemini' && <CheckCircle2 className={styles.modeCheckEmerald} />}
-                    </div>
-                    <div>
-                      <p className={styles.modeTitle}>AI Studio</p>
-                      <p className={styles.modeSub}>Uses API Key only</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Detected Credentials Pill Banner */}
-              {(gcpStatus?.exists || jsonParsedMeta) && (
+              {/* Detected Credentials Banner */}
+              {(gcpStatus?.exists || (jsonValidation?.valid && gcpCredentialsJson)) && (
                 <div className={styles.credBanner}>
-                  <div className={styles.credInner}>
-                    <div className={styles.credLeft}>
-                      <div className={styles.credIconWrap}>
-                        <ShieldCheck className={styles.credIcon} />
+                  <div className={styles.credLeft}>
+                    <div className={styles.credIconWrap}>
+                      <ShieldCheck className={styles.credIcon} />
+                    </div>
+                    <div className={styles.credBody}>
+                      <div className={styles.credTitleRow}>
+                        <p className={styles.credTitle}>Service Account Credentials Ready</p>
+                        <Badge variant="outline" className={styles.credBadge}>GCP Validated</Badge>
                       </div>
-                      <div className={styles.credBody}>
-                        <div className={styles.credTitleRow}>
-                          <p className={styles.credTitle}>
-                            Service Account Credentials Active
-                          </p>
-                          <Badge variant="outline" className={styles.credBadge}>
-                            GCP Validated
-                          </Badge>
-                        </div>
-                        {(gcpStatus?.projectId || jsonParsedMeta?.projectId) && (
-                          <p className={styles.credMeta}>
-                            Project ID: <code className={styles.credCode}>{gcpStatus?.projectId || jsonParsedMeta?.projectId}</code>
-                          </p>
-                        )}
-                        {(gcpStatus?.clientEmail || jsonParsedMeta?.clientEmail) && (
-                          <p className={styles.credAccount}>
-                            Account: <code className={styles.credAccountCode}>{gcpStatus?.clientEmail || jsonParsedMeta?.clientEmail}</code>
-                          </p>
-                        )}
-                      </div>
+                      {(gcpStatus?.projectId || jsonValidation?.projectId) && (
+                        <p className={styles.credMeta}>
+                          Project ID: <code className={styles.credCode}>{gcpStatus?.projectId || jsonValidation?.projectId}</code>
+                        </p>
+                      )}
+                      {(gcpStatus?.clientEmail || jsonValidation?.clientEmail) && (
+                        <p className={styles.credAccount}>
+                          Account: <code className={styles.credAccountCode}>{gcpStatus?.clientEmail || jsonValidation?.clientEmail}</code>
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Drag and Drop Zone for gcp-credentials.json */}
-              <div className={styles.fieldGroup}>
-                <Label className={styles.jsonLabel}>
-                  <span className={styles.jsonLabelLeft}>
-                    <FileJson className={styles.jsonLabelIcon} />
-                    Upload / Drop <code className={styles.jsonCode}>gcp-credentials.json</code>
-                  </span>
-                  {gcpCredentialsJson && (
-                    <button
-                      type="button"
-                      onClick={() => { setGcpCredentialsJson(''); setJsonParsedMeta(null); }}
-                      className={styles.clearBtn}
-                    >
-                      <Trash2 className={styles.iconXs} /> Clear JSON
-                    </button>
-                  )}
-                </Label>
-
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`${styles.dropZone} ${
-                    isDragging
-                      ? styles.dropZoneActive
-                      : gcpCredentialsJson
-                      ? styles.dropZoneLoaded
-                      : styles.dropZoneIdle
-                  }`}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json"
-                    onChange={handleFileUpload}
-                    className={styles.dropInput}
-                  />
-
-                  <div className={styles.dropIconWrap}>
-                    <Upload className={styles.dropIcon} />
-                  </div>
-
-                  <div>
-                    <p className={styles.dropTitle}>
-                      {isDragging ? 'Drop gcp-credentials.json here' : 'Click to browse or drag & drop gcp-credentials.json'}
-                    </p>
-                    <p className={styles.dropSub}>
-                      Supports official Google Cloud Service Account key JSON files
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Paste Textarea Fallback */}
-              <div className={styles.pasteGroup}>
-                <Label className={styles.pasteLabel}>
-                  <Code2 className={styles.pasteIcon} />
-                  Or paste Service Account JSON content directly:
-                </Label>
-                <Textarea
-                  placeholder={`{\n  "type": "service_account",\n  "project_id": "my-gcp-project-123",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\n..."\n}`}
-                  value={gcpCredentialsJson}
-                  onChange={(e) => setGcpCredentialsJson(e.target.value)}
-                  className={styles.pasteTextarea}
-                />
-              </div>
-
-              {/* Project ID & Region Grid */}
+              {/* Inputs: Project ID & Region */}
               <div className={styles.projGrid}>
                 <div className={styles.projCol}>
                   <Label className={styles.projLabel}>
@@ -522,7 +394,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   <Input
                     placeholder="e.g. my-gcp-project-123"
                     value={gcpProjectId}
-                    onChange={(e) => setGcpProjectId(e.target.value)}
+                    onChange={e => setGcpProjectId(e.target.value)}
                     className={styles.projInput}
                   />
                 </div>
@@ -533,13 +405,57 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   <Input
                     placeholder="us-central1"
                     value={gcpLocation}
-                    onChange={(e) => setGcpLocation(e.target.value)}
+                    onChange={e => setGcpLocation(e.target.value)}
                     className={styles.projInput}
                   />
                 </div>
               </div>
 
-              {/* Test Connection Button & Status */}
+              {/* Paste Service Account JSON */}
+              <div className={styles.pasteGroup}>
+                <Label className={styles.pasteLabel}>
+                  <FileJson className={styles.pasteIcon} />
+                  Service Account Key JSON
+                  {gcpCredentialsJson && (
+                    <button
+                      type="button"
+                      onClick={() => setGcpCredentialsJson('')}
+                      className={styles.clearBtn}
+                    >
+                      <Trash2 className={styles.iconXs} /> Clear
+                    </button>
+                  )}
+                </Label>
+                <Textarea
+                  placeholder={`{\n  "type": "service_account",\n  "project_id": "my-gcp-project-123",\n  "client_email": "sa@project.iam.gserviceaccount.com",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\n...",\n  "token_uri": "https://oauth2.googleapis.com/token"\n}`}
+                  value={gcpCredentialsJson}
+                  onChange={e => setGcpCredentialsJson(e.target.value)}
+                  className={styles.pasteTextarea}
+                />
+                {jsonValidation && !jsonValidation.valid && (
+                  <p className={styles.jsonHintErr}>
+                    <XCircle className={styles.iconXs} /> {jsonValidation.error}
+                  </p>
+                )}
+                {jsonValidation?.valid && (
+                  <p className={styles.jsonHintOk}>
+                    <CheckCircle2 className={styles.iconXs} /> Valid service account JSON — Project:{' '}
+                    <code className={styles.credCode}>{jsonValidation.projectId}</code>, Account:{' '}
+                    <code className={styles.credAccountCode}>{jsonValidation.clientEmail}</code>
+                  </p>
+                )}
+              </div>
+
+              {/* Vertex Model Picker */}
+              <div className={styles.fieldGroup}>
+                <Label className={styles.fieldLabel}>
+                  <span>Vertex AI Model</span>
+                  <span className={styles.fieldLabelRight}>used for transcription</span>
+                </Label>
+                {renderModelCards(VERTEX_MODELS, selectedVertexModel, selectVertexModel, styles.modeCardVertexActive)}
+              </div>
+
+              {/* Test Connection */}
               <div className={styles.testRow}>
                 <Button
                   type="button"
@@ -553,7 +469,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   Test Vertex AI Connection
                 </Button>
 
-                {vertexStatus === 'connected' && (
+                {vertexStatus === 'connected' && vertexSuccess && (
                   <Badge variant="outline" className={styles.statusBadgeOk}>
                     <CheckCircle2 className={styles.statusBadgeIcon} /> Connected
                   </Badge>
@@ -564,6 +480,19 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   </Badge>
                 )}
               </div>
+
+              {vertexStatus === 'connected' && vertexSuccess && (
+                <div className={styles.successCard}>
+                  <p className={styles.errorTitle}>
+                    <CheckCircle2 className={styles.iconSm} /> Connection Successful
+                  </p>
+                  <p className={styles.errorBody}>
+                    Project: <code className={styles.credCode}>{vertexSuccess.projectId}</code> • Region:{' '}
+                    <code className={styles.credCode}>{vertexSuccess.location}</code> • Model:{' '}
+                    <code className={styles.credCode}>{vertexSuccess.model}</code>
+                  </p>
+                </div>
+              )}
 
               {vertexStatus === 'error' && (
                 <div className={styles.errorCard}>
@@ -600,7 +529,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </div>
             </TabsContent>
 
-            {/* TAB 2: GEMINI API KEY */}
+            {/* TAB 2: GOOGLE AI STUDIO */}
             <TabsContent value="gemini" className={styles.tabContent}>
               <div className={styles.geminiCard}>
                 <div className={styles.geminiHeader}>
@@ -631,11 +560,29 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 </div>
 
                 {geminiStatus === 'connected' && (
-                  <p className={styles.geminiOk}>
-                    <CheckCircle2 className={styles.iconSm} /> API Key verified & ready!
-                  </p>
+                  <div className={styles.successCard}>
+                    <p className={styles.errorTitle}>
+                      <CheckCircle2 className={styles.iconSm} /> API Key verified & ready!
+                    </p>
+                    <p className={styles.errorBody}>
+                      Working model: <code className={styles.credCode}>{geminiSuccessModel}</code>
+                    </p>
+                  </div>
                 )}
-                {geminiStatus === 'error' && <p className={styles.geminiErr}>{geminiError}</p>}
+                {geminiStatus === 'error' && (
+                  <div className={styles.errorCard}>
+                    <p className={styles.errorTitle}>Connection Error:</p>
+                    <p className={styles.errorBody}>{geminiError}</p>
+                  </div>
+                )}
+
+                <div className={styles.fieldGroup}>
+                  <Label className={styles.fieldLabel}>
+                    <span>Gemini Model</span>
+                    <span className={styles.fieldLabelRight}>used for transcription</span>
+                  </Label>
+                  {renderModelCards(AVAILABLE_MODELS, selectedGeminiModel, selectGeminiModel, styles.modeCardGeminiActive)}
+                </div>
 
                 <p className={styles.geminiHint}>
                   Get your free API key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className={styles.geminiLink}>aistudio.google.com <ArrowRight className={styles.linkArrow} /></a>

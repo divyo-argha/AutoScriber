@@ -14,11 +14,13 @@ export interface VertexOptions {
 }
 
 const VERTEX_FALLBACK_MODELS = [
+  'gemini-2.5-flash',
   'gemini-2.0-flash',
   'gemini-1.5-flash',
   'gemini-1.5-pro',
-  'gemini-2.5-flash',
   'gemini-2.5-pro',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash-lite',
 ];
 
 /**
@@ -235,25 +237,71 @@ async function transcribeChunkWithVertexInternal(
   };
 }
 
-export async function testVertexConnection(options?: VertexOptions): Promise<{ success: boolean; projectId: string; location: string; error?: string }> {
+/**
+ * Turns raw Vertex AI / Google auth errors into actionable, human-readable messages.
+ */
+export function explainVertexError(err: any): string {
+  const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+
+  if (errMsg.includes('unable to authenticate') || errMsg.includes('client_email') || errMsg.includes('private_key')) {
+    return (
+      'Authentication with Google failed. This usually means: (1) the service account JSON you pasted is incomplete ' +
+      '(it must contain type, project_id, client_email, private_key, token_uri), (2) the key was revoked or regenerated, ' +
+      'or (3) the service account is not valid. ' +
+      'Paste the FULL JSON contents of the key file from Google Cloud Console → IAM & Admin → Service Accounts → Keys → Add Key → Create new key → JSON.'
+    );
+  }
+
+  if (errMsg.includes('permission_denied') || errMsg.includes('403')) {
+    return (
+      'Permission denied (403). The service account does not have permission to call Vertex AI. ' +
+      'Grant it the "Vertex AI User" (roles/aiplatform.user) role: Google Cloud Console → IAM & Admin → Grant Access → ' +
+      'add the service account email → select "Vertex AI User".'
+    );
+  }
+
+  if (errMsg.includes('not found') || errMsg.includes('404')) {
+    return (
+      'Not found (404). Check that the GCP Project ID is correct and that the Vertex AI API is enabled for it. ' +
+      'Enable it at Google Cloud Console → Vertex AI → Get Started.'
+    );
+  }
+
+  if (errMsg.includes('api key') || errMsg.includes('apikey')) {
+    return 'Vertex AI uses service account keys, not API keys. Paste a full service-account JSON key (from IAM & Admin → Service Accounts → Keys).';
+  }
+
+  if (errMsg.includes('billing') || errMsg.includes('billing is disabled')) {
+    return 'Billing is not enabled for this GCP project. Gemini models on Vertex AI require a billing-enabled project. Enable billing in Google Cloud Console → Billing.';
+  }
+
+  if (errMsg.includes('quota') || errMsg.includes('quota exceeded') || errMsg.includes('429')) {
+    return 'Quota exceeded (429) for the Vertex AI Gemini model on this project. You can retry later or choose a different model/region.';
+  }
+
+  return errMsg;
+}
+
+export async function testVertexConnection(options?: VertexOptions, modelId?: string): Promise<{ success: boolean; projectId: string; location: string; model?: string; error?: string }> {
   try {
     const { client, projectId, location } = createVertexClient(options);
-    const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = client.getGenerativeModel({ model: modelId || 'gemini-2.5-flash' });
     const res = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: 'Say "Vertex OK"' }] }],
+      contents: [{ role: 'user', parts: [{ text: 'Say exactly: Vertex OK' }] }],
     });
     const text = res?.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (text) {
-      return { success: true, projectId, location };
+      return { success: true, projectId, location, model: modelId || 'gemini-2.5-flash' };
     }
-    return { success: false, projectId, location, error: 'Empty response from Vertex AI' };
+    return { success: false, projectId, location, model: modelId || 'gemini-2.5-flash', error: 'Empty response from Vertex AI' };
   } catch (err: any) {
     const creds = getGcpCredentialsInfo(options?.credentialsPath, options?.location);
     return {
       success: false,
-      projectId: creds.projectId || 'unknown',
+      projectId: options?.projectId || creds.projectId || 'unknown',
       location: creds.location,
-      error: err?.message || String(err),
+      model: modelId || 'gemini-2.5-flash',
+      error: explainVertexError(err),
     };
   }
 }

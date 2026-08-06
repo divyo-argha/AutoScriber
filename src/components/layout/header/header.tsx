@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
+import { ALL_MODELS } from '@/lib/transcriber/types';
 import styles from './header.module.css';
 
 export function Header() {
@@ -39,14 +39,14 @@ export function Header() {
 
   const hasGeminiKey = !!(userGeminiApiKey || geminiApiKey === '***');
 
-  function isModelAvailable(model?: typeof AVAILABLE_MODELS[number]) {
+  function isModelAvailable(model?: typeof ALL_MODELS[number]) {
     if (!model) return false;
-    // Only Gemini models require an API key; other providers don't.
+    // Vertex models are authenticated via service account credentials (configured in Settings).
     if (model.provider !== 'gemini') return true;
     return hasGeminiKey;
   }
 
-  const ModelOption = ({ model }: { model: typeof AVAILABLE_MODELS[number] }) => {
+  const ModelOption = ({ model }: { model: typeof ALL_MODELS[number] }) => {
     const available = isModelAvailable(model);
     return (
       <div className={styles.modelOption}>
@@ -90,14 +90,14 @@ export function Header() {
               <Select value={selectedModel} onValueChange={setSelectedModel}>
                 <SelectTrigger className={styles.modelTrigger}>
                   <div className={styles.triggerContent}>
-                    <span className={styles.truncate}>{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
-                    {!isModelAvailable(AVAILABLE_MODELS.find(m => m.id === selectedModel)) && (
+                    <span className={styles.truncate}>{ALL_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
+                    {!isModelAvailable(ALL_MODELS.find(m => m.id === selectedModel)) && (
                       <AlertTriangle className={styles.warnIcon} />
                     )}
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  {AVAILABLE_MODELS.map(model => (
+                  {ALL_MODELS.map(model => (
                     <SelectItem key={model.id} value={model.id}>
                       <ModelOption model={model} />
                     </SelectItem>
@@ -144,14 +144,14 @@ export function Header() {
             <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isProcessing}>
               <SelectTrigger className={styles.modelTriggerFull}>
                 <div className={styles.triggerContent}>
-                  <span className={styles.truncate}>{AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
-                  {!isModelAvailable(AVAILABLE_MODELS.find(m => m.id === selectedModel)) && (
+                  <span className={styles.truncate}>{ALL_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
+                  {!isModelAvailable(ALL_MODELS.find(m => m.id === selectedModel)) && (
                     <AlertTriangle className={styles.warnIcon} />
                   )}
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {AVAILABLE_MODELS.map(model => (
+                {ALL_MODELS.map(model => (
                   <SelectItem key={model.id} value={model.id}>
                     <ModelOption model={model} />
                   </SelectItem>

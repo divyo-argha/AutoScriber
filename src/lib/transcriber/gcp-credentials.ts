@@ -1,5 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import { validateGcpCredentialsJson } from './credentials-validate';
+import type { GcpCredentialsValidation } from './credentials-validate';
+
+export { validateGcpCredentialsJson };
+export type { GcpCredentialsValidation };
 
 export interface GcpCredentialsInfo {
   exists: boolean;
@@ -113,11 +118,12 @@ export function getGcpCredentialsInfo(customPath?: string | null, customLocation
  */
 export function saveGcpCredentialsJson(jsonContent: string, saveToRoot = false): { success: boolean; filePath: string; projectId: string | null; error?: string } {
   try {
-    const parsed = JSON.parse(jsonContent);
-    if (typeof parsed !== 'object' || !parsed) {
-      return { success: false, filePath: '', projectId: null, error: 'Uploaded content is not a valid JSON object.' };
+    const validation = validateGcpCredentialsJson(jsonContent);
+    if (!validation.valid) {
+      return { success: false, filePath: '', projectId: null, error: validation.error };
     }
 
+    const parsed = JSON.parse(jsonContent);
     const projectId = parsed.project_id || null;
     const cwd = process.cwd();
     const targetDir = saveToRoot ? cwd : path.join(cwd, 'data');
