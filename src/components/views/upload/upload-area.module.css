@@ -287,6 +287,34 @@
   transition: all 0.2s;
 }
 
+.tabCard {
+  display: flex;
+  border: 2px dashed color-mix(in oklab, var(--muted-foreground) 25%, transparent);
+  transition: all 0.2s;
+}
+
+.tabCard:hover {
+  border-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+}
+
+.tabCardInner {
+  display: flex;
+  width: 100%;
+  min-height: 17rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .tabCardInner {
+    padding: 1.75rem 2rem;
+  }
+}
+
 .dropZone:hover {
   border-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
 }
@@ -308,21 +336,6 @@
 
 :global(.dark) .dropZoneActive .dropIcon {
   color: var(--brand-400);
-}
-
-.dropInner {
-  padding: 1.5rem;
-  text-align: center;
-}
-
-.dropInner > * + * {
-  margin-top: 1rem;
-}
-
-@media (min-width: 640px) {
-  .dropInner {
-    padding: 3rem;
-  }
 }
 
 .dropIconWrap {

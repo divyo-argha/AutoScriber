@@ -1,7 +1,7 @@
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Archive, FolderOpen } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { TabCard } from './tab-card';
 import styles from './upload-area.module.css';
 
 interface SourceCardProps {
@@ -16,19 +16,17 @@ interface SourceCardProps {
 
 export function SourceCard({ icon, title, subtitle, buttonLabel, buttonIcon, onButtonClick, extra }: SourceCardProps) {
   return (
-    <Card className={styles.dropZone}>
-      <div className={styles.dropInner}>
-        {icon}
-        <div>
-          <p className={styles.dropTitle}>{title}</p>
-          <p className={styles.dropSubtitle}>{subtitle}</p>
-        </div>
-        <Button variant="outline" onClick={onButtonClick} className={styles.gap2}>
-          {buttonIcon} {buttonLabel}
-        </Button>
-        {extra}
+    <TabCard>
+      {icon}
+      <div>
+        <p className={styles.dropTitle}>{title}</p>
+        <p className={styles.dropSubtitle}>{subtitle}</p>
       </div>
-    </Card>
+      <Button variant="outline" onClick={onButtonClick} className={styles.gap2}>
+        {buttonIcon} {buttonLabel}
+      </Button>
+      {extra}
+    </TabCard>
   );
 }
 

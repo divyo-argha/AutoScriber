@@ -1,9 +1,9 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { useMediaRecorder } from './use-media-recorder';
 import { RecorderDisplay } from './recorder-display';
 import { RecorderControls } from './recorder-controls';
+import { TabCard } from './tab-card';
 import styles from './audio-recorder.module.css';
 
 interface AudioRecorderProps {
@@ -28,41 +28,39 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
   } = useMediaRecorder(onRecordingComplete);
 
   return (
-    <Card className={styles.container}>
-      <div className={styles.inner}>
-        <RecorderDisplay
-          status={status}
-          duration={duration}
-          audioLevel={audioLevel}
-          waveform={waveform}
-          error={error}
-          isActive={isActive}
-          isRecording={isRecording}
-          isPaused={isPaused}
-        />
+    <TabCard>
+      <RecorderDisplay
+        status={status}
+        duration={duration}
+        audioLevel={audioLevel}
+        waveform={waveform}
+        error={error}
+        isActive={isActive}
+        isRecording={isRecording}
+        isPaused={isPaused}
+      />
 
-        <RecorderControls
-          status={status}
-          isRecording={isRecording}
-          isPaused={isPaused}
-          onStart={startRecording}
-          onPause={pauseRecording}
-          onResume={resumeRecording}
-          onStop={stopRecording}
-          onCancel={onCancel}
-        />
+      <RecorderControls
+        status={status}
+        isRecording={isRecording}
+        isPaused={isPaused}
+        onStart={startRecording}
+        onPause={pauseRecording}
+        onResume={resumeRecording}
+        onStop={stopRecording}
+        onCancel={onCancel}
+      />
 
-        {status === 'idle' && (
-          <p className={styles.tip}>
-            Click &quot;Start Recording&quot; to begin. Your microphone will be used to capture audio directly.
-          </p>
-        )}
-        {isActive && (
-          <p className={styles.tip}>
-            {isRecording ? 'Recording in progress...' : 'Recording paused.'} Click the stop button when you&apos;re done.
-          </p>
-        )}
-      </div>
-    </Card>
+      {status === 'idle' && (
+        <p className={styles.tip}>
+          Click &quot;Start Recording&quot; to begin. Your microphone will be used to capture audio directly.
+        </p>
+      )}
+      {isActive && (
+        <p className={styles.tip}>
+          {isRecording ? 'Recording in progress...' : 'Recording paused.'} Click the stop button when you&apos;re done.
+        </p>
+      )}
+    </TabCard>
   );
 }
