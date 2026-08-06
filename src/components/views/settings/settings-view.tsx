@@ -26,6 +26,13 @@ import {
   Lock,
   ArrowRight,
   ArrowLeft,
+  Gauge,
+  ChevronDown,
+  RotateCcw,
+  Activity,
+  Radio,
+  Zap,
+  AlertTriangle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AVAILABLE_MODELS, VERTEX_MODELS } from '@/lib/transcriber/types';
@@ -87,6 +94,9 @@ export function SettingsView() {
         if (data.gcpLocation) setGcpLocation(data.gcpLocation);
         if (data.gcpCredentialsPath) setGcpCredentialsPath(data.gcpCredentialsPath);
         if (data.gcpCredentialsStatus) setGcpStatus(data.gcpCredentialsStatus);
+        if (data.gcpCredentialsStatus?.projectId && !data.gcpProjectId) {
+          setGcpProjectId(data.gcpCredentialsStatus.projectId);
+        }
         if (data.userGeminiApiKey) {
           setLocalGeminiKey(data.userGeminiApiKey);
           setSettings({ userGeminiApiKey: data.userGeminiApiKey });
@@ -233,18 +243,24 @@ export function SettingsView() {
     }
   };
 
+  const resetAdvanced = () => {
+    setLocalChunkDuration('300');
+    setLocalOverlapDuration('30');
+  };
+
   const saveSettings = async () => {
     setSaving(true);
     try {
       const parsedChunk = parseInt(localChunkDuration);
       const parsedOverlap = parseInt(localOverlapDuration);
+      const projectIdFromJson = jsonValidation?.valid ? jsonValidation.projectId : null;
       const body = {
         aiProvider: activeTab,
         chunkDuration: isNaN(parsedChunk) ? 300 : parsedChunk,
         overlapDuration: isNaN(parsedOverlap) ? 30 : parsedOverlap,
         userGeminiApiKey: localGeminiKey,
         defaultModel: activeTab === 'vertex' ? selectedVertexModel : selectedGeminiModel,
-        gcpProjectId,
+        gcpProjectId: projectIdFromJson || gcpProjectId,
         gcpLocation,
         gcpCredentialsPath,
         gcpCredentialsJson: gcpCredentialsJson.trim() || undefined,
@@ -288,10 +304,15 @@ export function SettingsView() {
     }
   };
 
+  const activeModelInfo = activeTab === 'vertex'
+    ? VERTEX_MODELS.find(m => m.id === selectedVertexModel)
+    : AVAILABLE_MODELS.find(m => m.id === selectedGeminiModel);
+
   const renderModelCards = (models: ModelInfo[], selectedId: string, onSelect: (id: string) => void, activeClass: string) => (
     <div className={styles.modelGrid}>
       {models.map(model => {
         const isActive = model.id === selectedId;
+        const tier = model.tierInfo?.startsWith('Paid') ? 'Paid' : model.tierInfo || 'Free';
         return (
           <button
             key={model.id}
@@ -304,7 +325,17 @@ export function SettingsView() {
               {isActive && <Check className={styles.modelCheck} />}
             </div>
             <p className={styles.modeSub}>{model.description}</p>
-            <p className={styles.modelTier}>{model.tierInfo}</p>
+            <div className={styles.modelMetaRow}>
+              {model.recommended && (
+                <span className={styles.modelBadgeRec}>
+                  <Zap className={styles.modelBadgeIcon} /> Recommended
+                </span>
+              )}
+              <span className={styles.modelTier} title={model.tierInfo}>
+                <span className={styles.modelTierDot} />
+                {tier}
+              </span>
+            </div>
           </button>
         );
       })}
@@ -313,7 +344,7 @@ export function SettingsView() {
 
   return (
     <div className={styles.page}>
-      {/* Top toolbar with back navigation */}
+      {/* Sticky top toolbar */}
       <div className={styles.toolbar}>
         <Button
           variant="ghost"
@@ -324,14 +355,21 @@ export function SettingsView() {
           <ArrowLeft className={styles.iconSm} />
           Back to App
         </Button>
-        <span className={styles.toolbarTitle}>Settings</span>
+        <div className={styles.toolbarCenter}>
+          <span className={styles.toolbarTitle}>Settings</span>
+          <span className={styles.toolbarChip}>
+            <Activity className={styles.toolbarChipIcon} />
+            {activeTab === 'vertex' ? 'Vertex AI' : 'AI Studio'}
+          </span>
+        </div>
         <span className={styles.toolbarSpacer} />
       </div>
 
       <div className={styles.content}>
-        {/* Glowing Top Gradient Header */}
+        {/* Hero header */}
         <div className={styles.header}>
           <div className={styles.glowBlob} />
+          <div className={styles.glowBlob2} />
           <div className={styles.headerRow}>
             <div className={styles.headerLeft}>
               <div className={styles.headerIconWrap}>
@@ -339,16 +377,28 @@ export function SettingsView() {
               </div>
               <div>
                 <h1 className={styles.titleRow}>
-                  AI Provider & GCP Credentials
-                  <Badge variant="outline" className={styles.vertexBadge}>
-                    Vertex AI Ready
-                  </Badge>
+                  Transcription Engine
+                  {activeTab === 'vertex' ? (
+                    <Badge variant="outline" className={styles.vertexBadge}>
+                      <Cloud className={styles.iconXs} /> Vertex AI Ready
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className={styles.geminiBadge}>
+                      <Sparkles className={styles.iconXs} /> API Key Mode
+                    </Badge>
+                  )}
                 </h1>
                 <p className={styles.dialogDesc}>
-                  Pick one engine below. Paste the credentials it asks for, then press Test to verify before saving.
+                  Choose how AutoScriber transcribes. Configure credentials, pick a model, then verify with one click.
                 </p>
               </div>
             </div>
+            {activeModelInfo && (
+              <div className={styles.headerStatus}>
+                <span className={styles.headerStatusLabel}>Active model</span>
+                <span className={styles.headerStatusValue}>{activeModelInfo.name}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -356,111 +406,171 @@ export function SettingsView() {
           <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'vertex' | 'gemini')} className={styles.tabsWrap}>
             <TabsList className={styles.tabsList}>
               <TabsTrigger value="vertex" className={`${styles.tabTrigger} ${styles.tabTriggerVertex}`}>
-                <Cloud className={styles.iconSm} />
-                Vertex AI & GCP
+                <span className={styles.tabTriggerTop}>
+                  <Cloud className={styles.iconSm} />
+                  Vertex AI & GCP
+                </span>
+                <span className={styles.tabTriggerSub}>Service account credentials</span>
               </TabsTrigger>
               <TabsTrigger value="gemini" className={`${styles.tabTrigger} ${styles.tabTriggerGemini}`}>
-                <Sparkles className={styles.iconSm} />
-                Google AI Studio
+                <span className={styles.tabTriggerTop}>
+                  <Sparkles className={styles.iconSm} />
+                  Google AI Studio
+                </span>
+                <span className={styles.tabTriggerSub}>Gemini API key</span>
               </TabsTrigger>
             </TabsList>
 
             {/* TAB 1: VERTEX AI & GCP */}
             <TabsContent value="vertex" className={styles.tabContent}>
-              {/* Detected Credentials Banner */}
-              {(gcpStatus?.exists || (jsonValidation?.valid && gcpCredentialsJson)) && (
-                <div className={styles.credBanner}>
-                  <div className={styles.credLeft}>
-                    <div className={styles.credIconWrap}>
-                      <ShieldCheck className={styles.credIcon} />
-                    </div>
-                    <div className={styles.credBody}>
-                      <div className={styles.credTitleRow}>
-                        <p className={styles.credTitle}>Service Account Credentials Ready</p>
-                        <Badge variant="outline" className={styles.credBadge}>GCP Validated</Badge>
-                      </div>
-                      {(gcpStatus?.projectId || jsonValidation?.projectId) && (
-                        <p className={styles.credMeta}>
-                          Project ID: <code className={styles.credCode}>{gcpStatus?.projectId || jsonValidation?.projectId}</code>
-                        </p>
-                      )}
-                      {(gcpStatus?.clientEmail || jsonValidation?.clientEmail) && (
-                        <p className={styles.credAccount}>
-                          Account: <code className={styles.credAccountCode}>{gcpStatus?.clientEmail || jsonValidation?.clientEmail}</code>
-                        </p>
-                      )}
-                    </div>
+              <div className={styles.card}>
+                <div className={styles.cardHead}>
+                  <div className={styles.cardHeadIcon} style={{ color: 'var(--blue-400)' }}>
+                    <Globe className={styles.iconMd} />
+                  </div>
+                  <div>
+                    <p className={styles.cardTitle}>Google Cloud Project</p>
+                    <p className={styles.cardDesc}>Your project ID is read from the key JSON when you paste one; only the region needs typing.</p>
                   </div>
                 </div>
-              )}
-
-              {/* Inputs: Project ID & Region */}
-              <div className={styles.projGrid}>
-                <div className={styles.projCol}>
-                  <Label className={styles.projLabel}>
-                    <Globe className={styles.projLabelIcon} /> GCP Project ID
-                  </Label>
-                  <Input
-                    placeholder="e.g. my-gcp-project-123"
-                    value={gcpProjectId}
-                    onChange={e => setGcpProjectId(e.target.value)}
-                    className={styles.projInput}
-                  />
-                </div>
-                <div className={styles.projCol}>
-                  <Label className={styles.projLabel}>
-                    <Server className={styles.projLabelIcon} /> GCP Region
-                  </Label>
-                  <Input
-                    placeholder="us-central1"
-                    value={gcpLocation}
-                    onChange={e => setGcpLocation(e.target.value)}
-                    className={styles.projInput}
-                  />
-                </div>
-              </div>
-
-              {/* Paste Service Account JSON */}
-              <div className={styles.pasteGroup}>
-                <Label className={styles.pasteLabel}>
-                  <FileJson className={styles.pasteIcon} />
-                  Service Account Key JSON
-                  {gcpCredentialsJson && (
-                    <button
-                      type="button"
-                      onClick={() => setGcpCredentialsJson('')}
-                      className={styles.clearBtn}
-                    >
-                      <Trash2 className={styles.iconXs} /> Clear
-                    </button>
+                <div className={styles.projGrid}>
+                  {!(jsonValidation?.valid && jsonValidation.projectId) ? (
+                    <div className={styles.projCol}>
+                      <Label className={styles.projLabel}>GCP Project ID</Label>
+                      <Input
+                        placeholder="e.g. my-gcp-project-123"
+                        value={gcpProjectId}
+                        onChange={e => setGcpProjectId(e.target.value)}
+                        className={styles.projInput}
+                      />
+                      <p className={styles.projHint}>Only needed if you don't paste a key JSON below.</p>
+                    </div>
+                  ) : (
+                    <div className={styles.projCol}>
+                      <Label className={styles.projLabel}>GCP Project ID</Label>
+                      <div className={styles.projAutoBox}>
+                        <CheckCircle2 className={styles.projAutoIcon} />
+                        <code className={styles.credCode}>{jsonValidation.projectId}</code>
+                        <span className={styles.projAutoTag}>from your key JSON</span>
+                      </div>
+                    </div>
                   )}
-                </Label>
-                <Textarea
-                  placeholder={`{\n  "type": "service_account",\n  "project_id": "my-gcp-project-123",\n  "client_email": "sa@project.iam.gserviceaccount.com",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\n...",\n  "token_uri": "https://oauth2.googleapis.com/token"\n}`}
-                  value={gcpCredentialsJson}
-                  onChange={e => setGcpCredentialsJson(e.target.value)}
-                  className={styles.pasteTextarea}
-                />
-                {jsonValidation && !jsonValidation.valid && (
-                  <p className={styles.jsonHintErr}>
-                    <XCircle className={styles.iconXs} /> {jsonValidation.error}
-                  </p>
-                )}
-                {jsonValidation?.valid && (
-                  <p className={styles.jsonHintOk}>
-                    <CheckCircle2 className={styles.iconXs} /> Valid service account JSON — Project:{' '}
-                    <code className={styles.credCode}>{jsonValidation.projectId}</code>, Account:{' '}
-                    <code className={styles.credAccountCode}>{jsonValidation.clientEmail}</code>
-                  </p>
-                )}
+                  <div className={styles.projCol}>
+                    <Label className={styles.projLabel}>GCP Region</Label>
+                    <Input
+                      placeholder="us-central1"
+                      value={gcpLocation}
+                      onChange={e => setGcpLocation(e.target.value)}
+                      className={styles.projInput}
+                    />
+                    <p className={styles.projHint}>Key files don't include a region — Vertex endpoints are per-region.</p>
+                  </div>
+                </div>
               </div>
 
-              {/* Vertex Model Picker */}
-              <div className={styles.fieldGroup}>
-                <Label className={styles.fieldLabel}>
-                  <span>Vertex AI Model</span>
-                  <span className={styles.fieldLabelRight}>used for transcription</span>
-                </Label>
+              <div className={styles.card}>
+                <div className={styles.cardHead}>
+                  <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
+                    <ShieldCheck className={styles.iconMd} />
+                  </div>
+                  <div>
+                    <p className={styles.cardTitle}>Service Account Key</p>
+                    <p className={styles.cardDesc}>Paste the JSON key for a service account with Vertex AI access.</p>
+                  </div>
+                </div>
+
+                {gcpStatus?.exists && (
+                  <div className={styles.credBanner}>
+                    <div className={styles.credLeft}>
+                      <div className={styles.credIconWrap}>
+                        <CheckCircle2 className={styles.credIcon} />
+                      </div>
+                      <div className={styles.credBody}>
+                        <div className={styles.credTitleRow}>
+                          <p className={styles.credTitle}>Detected at {gcpStatus.source}</p>
+                          <Badge variant="outline" className={styles.credBadge}>GCP Validated</Badge>
+                        </div>
+                        {(gcpStatus?.projectId || gcpStatus?.clientEmail) && (
+                          <p className={styles.credMeta}>
+                            {gcpStatus?.projectId && <code className={styles.credCode}>{gcpStatus.projectId}</code>}
+                            {gcpStatus?.projectId && gcpStatus?.clientEmail && ' • '}
+                            {gcpStatus?.clientEmail && <code className={styles.credCode}>{gcpStatus.clientEmail}</code>}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className={styles.pasteGroup}>
+                  <Label className={styles.pasteLabel}>
+                    <span className={styles.pasteLabelLeft}>
+                      <FileJson className={styles.pasteIcon} /> Service Account Key JSON
+                    </span>
+                    {gcpCredentialsJson && (
+                      <button
+                        type="button"
+                        onClick={() => setGcpCredentialsJson('')}
+                        className={styles.clearBtn}
+                      >
+                        <Trash2 className={styles.iconXs} /> Clear
+                      </button>
+                    )}
+                  </Label>
+                  <Textarea
+                    placeholder={`{\n  "type": "service_account",\n  "project_id": "my-gcp-project-123",\n  "client_email": "sa@project.iam.gserviceaccount.com",\n  "private_key": "-----BEGIN PRIVATE KEY-----\\n...",\n  "token_uri": "https://oauth2.googleapis.com/token"\n}`}
+                    value={gcpCredentialsJson}
+                    onChange={e => setGcpCredentialsJson(e.target.value)}
+                    className={styles.pasteTextarea}
+                  />
+                  {jsonValidation && !jsonValidation.valid && (
+                    <div className={styles.jsonBad}>
+                      <p className={styles.jsonHintErr}>
+                        <XCircle className={styles.iconXs} /> {jsonValidation.error}
+                      </p>
+                      {jsonValidation.missingFields.length > 0 && (
+                        <div className={styles.jsonFieldChips}>
+                          {jsonValidation.missingFields.map(field => (
+                            <span key={field} className={styles.jsonChip}>
+                              {field}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {jsonValidation?.valid && (
+                    <div className={styles.jsonBad}>
+                      <p className={styles.jsonHintOk}>
+                        <CheckCircle2 className={styles.iconXs} /> Valid service account JSON — Project:{' '}
+                        <code className={styles.credCode}>{jsonValidation.projectId}</code>, Account:{' '}
+                        <code className={styles.credCode}>{jsonValidation.clientEmail}</code>
+                      </p>
+                      {jsonValidation.warnings?.map(warning => (
+                        <p key={warning} className={styles.jsonWarn}>
+                          <AlertTriangle className={styles.iconXs} /> {warning}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {!gcpCredentialsJson && !gcpStatus?.exists && (
+                    <p className={styles.jsonHint}>
+                      <FileJson className={styles.iconXs} /> Tip: download the key from GCP Console → IAM → Service Accounts → Keys → Add Key → JSON.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.card}>
+                <div className={styles.cardHead}>
+                  <div className={styles.cardHeadIcon} style={{ color: 'var(--blue-400)' }}>
+                    <Cpu className={styles.iconMd} />
+                  </div>
+                  <div>
+                    <p className={styles.cardTitle}>Transcription Model</p>
+                    <p className={styles.cardDesc}>Picked model is used for every transcription job.</p>
+                  </div>
+                </div>
                 {renderModelCards(VERTEX_MODELS, selectedVertexModel, selectVertexModel, styles.modeCardVertexActive)}
               </div>
 
@@ -474,8 +584,17 @@ export function SettingsView() {
                   disabled={vertexStatus === 'testing'}
                   className={styles.testBtn}
                 >
-                  {vertexStatus === 'testing' ? <Loader2 className={`${styles.iconSm} ${styles.spin}`} /> : <Wifi className={styles.iconSm} />}
-                  Test Vertex AI Connection
+                  {vertexStatus === 'testing' ? (
+                    <>
+                      <Loader2 className={`${styles.iconSm} ${styles.spin}`} />
+                      Testing connection…
+                    </>
+                  ) : (
+                    <>
+                      <Wifi className={styles.iconSm} />
+                      Test Vertex AI Connection
+                    </>
+                  )}
                 </Button>
 
                 {vertexStatus === 'connected' && vertexSuccess && (
@@ -492,30 +611,38 @@ export function SettingsView() {
 
               {vertexStatus === 'connected' && vertexSuccess && (
                 <div className={styles.successCard}>
-                  <p className={styles.errorTitle}>
-                    <CheckCircle2 className={styles.iconSm} /> Connection Successful
-                  </p>
-                  <p className={styles.errorBody}>
-                    Project: <code className={styles.credCode}>{vertexSuccess.projectId}</code> • Region:{' '}
-                    <code className={styles.credCode}>{vertexSuccess.location}</code> • Model:{' '}
-                    <code className={styles.credCode}>{vertexSuccess.model}</code>
-                  </p>
+                  <div className={styles.successHead}>
+                    <CheckCircle2 className={styles.successIcon} />
+                    <div>
+                      <p className={styles.errorTitle}>Connection Successful</p>
+                      <p className={styles.errorBody}>
+                        Project: <code className={styles.credCode}>{vertexSuccess.projectId}</code> • Region:{' '}
+                        <code className={styles.credCode}>{vertexSuccess.location}</code> • Model:{' '}
+                        <code className={styles.credCode}>{vertexSuccess.model}</code>
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {vertexStatus === 'error' && (
                 <div className={styles.errorCard}>
-                  <p className={styles.errorTitle}>Connection Error:</p>
-                  <p className={styles.errorBody}>{vertexError}</p>
+                  <div className={styles.errorHead}>
+                    <XCircle className={styles.errorIcon} />
+                    <div>
+                      <p className={styles.errorTitle}>Connection Error</p>
+                      <p className={styles.errorBody}>{vertexError}</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* 100% LOCAL PRIVACY GUARANTEE CARD */}
+              {/* Privacy card */}
               <div className={styles.privacyCard}>
                 <div className={styles.privacyHeader}>
                   <div className={styles.privacyTitle}>
                     <Lock className={styles.privacyIcon} />
-                    <span>Privacy & 100% Local Data Sovereignty</span>
+                    <span>100% Local Data Sovereignty</span>
                   </div>
                   <Badge variant="outline" className={styles.privacyBadge}>
                     Local Only
@@ -524,15 +651,15 @@ export function SettingsView() {
                 <div className={styles.privacyList}>
                   <div className={styles.privacyItem}>
                     <Check className={styles.privacyCheck} />
-                    <span><strong>100% Local File & DB Storage:</strong> All recordings, transcribed text, SQLite database (<code className={styles.dialogDescCode}>dev.db</code>), and settings stay on your machine.</span>
+                    <span><strong>Local file & DB storage:</strong> Recordings, transcripts, and the SQLite database stay on your machine.</span>
                   </div>
                   <div className={styles.privacyItem}>
                     <Check className={styles.privacyCheck} />
-                    <span><strong>Zero Google Model Training:</strong> Under Google Cloud Vertex AI terms, your audio & transcripts are <strong>NEVER used to train models</strong> or stored by Google.</span>
+                    <span><strong>Zero model training:</strong> Under Google Vertex AI terms, your audio & transcripts are never used to train models.</span>
                   </div>
                   <div className={styles.privacyItem}>
                     <Check className={styles.privacyCheck} />
-                    <span><strong>Ephemeral In-Memory Transfer:</strong> Audio is sent in-memory over encrypted TLS during inference and discarded immediately. No GCP cloud buckets (GCS) are used.</span>
+                    <span><strong>Ephemeral transfer:</strong> Audio is sent in-memory over TLS and discarded immediately — no GCS buckets used.</span>
                   </div>
                 </div>
               </div>
@@ -540,17 +667,16 @@ export function SettingsView() {
 
             {/* TAB 2: GOOGLE AI STUDIO */}
             <TabsContent value="gemini" className={styles.tabContent}>
-              <div className={styles.geminiCard}>
-                <div className={styles.geminiHeader}>
-                  <div className={styles.geminiTitle}>
-                    <Key className={styles.geminiTitleIcon} />
-                    <span className={styles.geminiTitleText}>Google AI Studio (Gemini API Key)</span>
+              <div className={styles.card}>
+                <div className={styles.cardHead}>
+                  <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
+                    <Key className={styles.iconMd} />
                   </div>
-                  <Badge variant="outline" className={styles.geminiModeBadge}>
-                    API Key Mode
-                  </Badge>
+                  <div>
+                    <p className={styles.cardTitle}>Gemini API Key</p>
+                    <p className={styles.cardDesc}>Generate a free key at AI Studio, paste it below and verify.</p>
+                  </div>
                 </div>
-
                 <div className={styles.geminiField}>
                   <Label className={styles.advLabel}>API Key</Label>
                   <div className={styles.keyRow}>
@@ -562,40 +688,65 @@ export function SettingsView() {
                       className={styles.keyInput}
                     />
                     <Button variant="outline" size="sm" onClick={testGemini} disabled={geminiStatus === 'testing'} className={styles.testKeyBtn}>
-                      {geminiStatus === 'testing' ? <Loader2 className={`${styles.iconSm} ${styles.spin}`} /> : <Wifi className={styles.iconSm} />}
-                      Test Key
+                      {geminiStatus === 'testing' ? (
+                        <>
+                          <Loader2 className={`${styles.iconSm} ${styles.spin}`} />
+                          Testing…
+                        </>
+                      ) : (
+                        <>
+                          <Wifi className={styles.iconSm} />
+                          Test Key
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
 
                 {geminiStatus === 'connected' && (
                   <div className={styles.successCard}>
-                    <p className={styles.errorTitle}>
-                      <CheckCircle2 className={styles.iconSm} /> API Key verified & ready!
-                    </p>
-                    <p className={styles.errorBody}>
-                      Working model: <code className={styles.credCode}>{geminiSuccessModel}</code>
-                    </p>
+                    <div className={styles.successHead}>
+                      <CheckCircle2 className={styles.successIcon} />
+                      <div>
+                        <p className={styles.errorTitle}>API Key verified & ready!</p>
+                        <p className={styles.errorBody}>
+                          Working model: <code className={styles.credCode}>{geminiSuccessModel}</code>
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
                 {geminiStatus === 'error' && (
                   <div className={styles.errorCard}>
-                    <p className={styles.errorTitle}>Connection Error:</p>
-                    <p className={styles.errorBody}>{geminiError}</p>
+                    <div className={styles.errorHead}>
+                      <XCircle className={styles.errorIcon} />
+                      <div>
+                        <p className={styles.errorTitle}>Connection Error</p>
+                        <p className={styles.errorBody}>{geminiError}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <div className={styles.fieldGroup}>
-                  <Label className={styles.fieldLabel}>
-                    <span>Gemini Model</span>
-                    <span className={styles.fieldLabelRight}>used for transcription</span>
-                  </Label>
-                  {renderModelCards(AVAILABLE_MODELS, selectedGeminiModel, selectGeminiModel, styles.modeCardGeminiActive)}
-                </div>
-
                 <p className={styles.geminiHint}>
-                  Get your free API key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className={styles.geminiLink}>aistudio.google.com <ArrowRight className={styles.linkArrow} /></a>
+                  Get your free API key at{' '}
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className={styles.geminiLink}>
+                    aistudio.google.com <ArrowRight className={styles.linkArrow} />
+                  </a>
                 </p>
+              </div>
+
+              <div className={styles.card}>
+                <div className={styles.cardHead}>
+                  <div className={styles.cardHeadIcon} style={{ color: 'var(--brand-400)' }}>
+                    <Sparkles className={styles.iconMd} />
+                  </div>
+                  <div>
+                    <p className={styles.cardTitle}>Gemini Model</p>
+                    <p className={styles.cardDesc}>Picked model is used for every transcription job.</p>
+                  </div>
+                </div>
+                {renderModelCards(AVAILABLE_MODELS, selectedGeminiModel, selectGeminiModel, styles.modeCardGeminiActive)}
               </div>
             </TabsContent>
           </Tabs>
@@ -605,21 +756,35 @@ export function SettingsView() {
             <details className={styles.advDetails}>
               <summary className={styles.advSummary}>
                 <span className={styles.advSummaryLeft}>
-                  <Server className={styles.advSummaryIcon} /> Advanced Audio Slicing & Chunk Settings
+                  <Gauge className={styles.advSummaryIcon} /> Advanced Audio Slicing & Chunk Settings
                 </span>
-                <span className={styles.advChevron}>▼</span>
+                <ChevronDown className={styles.advChevron} />
               </summary>
               <div className={styles.advGrid}>
                 <div className={styles.advCol}>
                   <Label className={styles.advLabel}>Chunk Duration (seconds)</Label>
-                  <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} className={styles.advInput} />
-                  <p className={styles.advHint}>Default: 300s (5 minutes)</p>
+                  <div className={styles.advInputWrap}>
+                    <Input type="number" min="60" max="3600" value={localChunkDuration} onChange={e => setLocalChunkDuration(e.target.value)} className={styles.advInput} />
+                    <span className={styles.advUnit}>sec</span>
+                  </div>
+                  <p className={styles.advHint}>Long audio is split into chunks of this size. Default: 300s (5 min).</p>
                 </div>
                 <div className={styles.advCol}>
                   <Label className={styles.advLabel}>Overlap Duration (seconds)</Label>
-                  <Input type="number" min="0" max="60" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} className={styles.advInput} />
-                  <p className={styles.advHint}>Default: 30s overlap</p>
+                  <div className={styles.advInputWrap}>
+                    <Input type="number" min="0" max="60" value={localOverlapDuration} onChange={e => setLocalOverlapDuration(e.target.value)} className={styles.advInput} />
+                    <span className={styles.advUnit}>sec</span>
+                  </div>
+                  <p className={styles.advHint}>Overlap between chunks avoids cutting words mid-sentence. Default: 30s.</p>
                 </div>
+              </div>
+              <div className={styles.advFooter}>
+                <span className={styles.advSummaryNote}>
+                  <Radio className={styles.iconXs} /> Applies to all future transcription jobs.
+                </span>
+                <button type="button" onClick={resetAdvanced} className={styles.advResetBtn}>
+                  <RotateCcw className={styles.iconXs} /> Reset to defaults
+                </button>
               </div>
             </details>
           </div>
@@ -628,7 +793,7 @@ export function SettingsView() {
         {/* Footer Actions */}
         <div className={styles.footer}>
           <p className={styles.footerHint}>
-            Changes will take effect for all future transcription jobs.
+            Changes take effect for all future transcription jobs.
           </p>
           <div className={styles.footerBtns}>
             <Button variant="ghost" size="sm" onClick={() => setCurrentView('upload')} className={styles.cancelBtn}>

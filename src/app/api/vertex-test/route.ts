@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { testVertexConnection } from '@/lib/transcriber/vertex';
-import { getGcpCredentialsInfo, saveGcpCredentialsJson, validateGcpCredentialsJson } from '@/lib/transcriber/gcp-credentials';
+import { getGcpCredentialsInfo, getGcpCredentialsInfoFromJson, validateGcpCredentialsJson } from '@/lib/transcriber/gcp-credentials';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,14 +9,13 @@ export async function POST(request: NextRequest) {
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
 
     const location = body.gcpLocation || settings?.gcpLocation || 'us-central1';
-    const projectId = body.gcpProjectId || settings?.gcpProjectId || '';
     const modelId = body.modelId || body.gcpModelId || 'gemini-2.5-flash';
 
-    let credentialsPath = body.gcpCredentialsPath || settings?.gcpCredentialsPath || '';
-
-    // Pasted JSON takes precedence: validate it immediately, and if it looks
-    // like a full service account key, persist it and test with it.
+    // Pasted JSON takes precedence (used in-memory only — never written to disk).
     const rawJson = typeof body.gcpCredentialsJson === 'string' ? body.gcpCredentialsJson.trim() : '';
+    const storedJson = settings?.gcpCredentialsJson || '';
+
+    const activeJson = rawJson || storedJson || '';
     if (rawJson) {
       const validation = validateGcpCredentialsJson(rawJson);
       if (!validation.valid) {
@@ -29,28 +28,20 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      const saveResult = saveGcpCredentialsJson(rawJson);
-      if (!saveResult.success) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: saveResult.error || 'Failed to save credentials.',
-          },
-          { status: 400 }
-        );
-      }
-      credentialsPath = saveResult.filePath;
     }
 
-    const credsInfo = getGcpCredentialsInfo(credentialsPath, location);
-    const effectiveProjectId = projectId || credsInfo.projectId;
+    const credsInfo = activeJson
+      ? getGcpCredentialsInfoFromJson(activeJson, location)
+      : getGcpCredentialsInfo(settings?.gcpCredentialsPath, location);
 
-    if (!credsInfo.exists && !effectiveProjectId && !process.env.GCP_PROJECT_ID) {
+    const projectId = body.gcpProjectId || settings?.gcpProjectId || credsInfo.projectId || '';
+
+    if (!credsInfo.exists && !projectId && !process.env.GCP_PROJECT_ID) {
       return NextResponse.json(
         {
           success: false,
           error:
-            'No GCP service account credentials detected. Paste the full contents of your service account key JSON ' +
+            'No GCP service account credentials found. Paste the full contents of your service account key JSON ' +
             '(Google Cloud Console → IAM & Admin → Service Accounts → Keys → Add Key → Create new key → JSON) into the field above, ' +
             'or set the GOOGLE_APPLICATION_CREDENTIALS environment variable.',
         },
@@ -60,9 +51,10 @@ export async function POST(request: NextRequest) {
 
     const testResult = await testVertexConnection(
       {
-        projectId: effectiveProjectId,
+        projectId,
         location,
-        credentialsPath: credentialsPath || credsInfo.filePath,
+        credentialsPath: settings?.gcpCredentialsPath || credsInfo.filePath,
+        credentialsJson: activeJson || undefined,
       },
       modelId
     );

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getGcpCredentialsInfo, saveGcpCredentialsJson } from '@/lib/transcriber/gcp-credentials';
+import { getGcpCredentialsInfo, getGcpCredentialsInfoFromJson, validateGcpCredentialsJson } from '@/lib/transcriber/gcp-credentials';
 
 export async function GET() {
   try {
@@ -9,7 +9,11 @@ export async function GET() {
       settings = await db.appSettings.create({ data: { id: 'default' } });
     }
 
-    const gcpCredsInfo = getGcpCredentialsInfo(settings.gcpCredentialsPath, settings.gcpLocation);
+    // Credentials stored in the DB take precedence; otherwise detect a key file
+    // in the project root / env var (standard Google tooling).
+    const gcpCredsInfo = settings.gcpCredentialsJson
+      ? getGcpCredentialsInfoFromJson(settings.gcpCredentialsJson, settings.gcpLocation)
+      : getGcpCredentialsInfo(settings.gcpCredentialsPath, settings.gcpLocation);
 
     return NextResponse.json({
       ...settings,
@@ -28,15 +32,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const isNum = (v: unknown): v is number => typeof v === 'number' && !isNaN(v);
 
-    let customPath = body.gcpCredentialsPath || '';
-
-    // If user provided raw JSON credentials string
-    if (body.gcpCredentialsJson && typeof body.gcpCredentialsJson === 'string' && body.gcpCredentialsJson.trim().length > 0) {
-      const saveResult = saveGcpCredentialsJson(body.gcpCredentialsJson);
-      if (saveResult.success) {
-        customPath = saveResult.filePath;
-      } else {
-        return NextResponse.json({ error: saveResult.error }, { status: 400 });
+    const newJson = typeof body.gcpCredentialsJson === 'string' ? body.gcpCredentialsJson.trim() : '';
+    if (newJson) {
+      const validation = validateGcpCredentialsJson(newJson);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
       }
     }
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         geminiApiKey: body.userGeminiApiKey !== undefined ? body.userGeminiApiKey : undefined,
         gcpProjectId: body.gcpProjectId || '',
         gcpLocation: body.gcpLocation || 'us-central1',
-        gcpCredentialsPath: customPath,
+        ...(newJson ? { gcpCredentialsJson: newJson } : {}),
       } as any,
       create: {
         id: 'default',
@@ -61,11 +61,13 @@ export async function POST(request: NextRequest) {
         geminiApiKey: body.userGeminiApiKey || '',
         gcpProjectId: body.gcpProjectId || '',
         gcpLocation: body.gcpLocation || 'us-central1',
-        gcpCredentialsPath: customPath,
+        gcpCredentialsJson: newJson,
       } as any,
     });
 
-    const gcpCredsInfo = getGcpCredentialsInfo(settings.gcpCredentialsPath, settings.gcpLocation);
+    const gcpCredsInfo = settings.gcpCredentialsJson
+      ? getGcpCredentialsInfoFromJson(settings.gcpCredentialsJson, settings.gcpLocation)
+      : getGcpCredentialsInfo(settings.gcpCredentialsPath, settings.gcpLocation);
 
     return NextResponse.json({
       ...settings,

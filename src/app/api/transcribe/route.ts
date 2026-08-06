@@ -4,7 +4,7 @@ import { splitAudioIntoChunks, getAudioDuration, cleanupChunks } from '@/lib/aud
 import { mergeChunkResults } from '@/lib/transcriber/merger';
 import { formatTime } from '@/lib/format-utils';
 import { transcribeChunk } from '@/lib/transcriber';
-import { getGcpCredentialsInfo } from '@/lib/transcriber/gcp-credentials';
+import { getGcpCredentialsInfo, getGcpCredentialsInfoFromJson } from '@/lib/transcriber/gcp-credentials';
 import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
 import type { TranscriptionResult, ChunkResult } from '@/lib/transcriber/types';
 import type { ChunkInfo } from '@/lib/audio/types';
@@ -32,7 +32,10 @@ export async function POST(request: NextRequest) {
 
     const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
     const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
-    const gcpCreds = getGcpCredentialsInfo(settings?.gcpCredentialsPath, settings?.gcpLocation);
+    const storedGcpJson = settings?.gcpCredentialsJson || '';
+    const gcpCreds = storedGcpJson
+      ? getGcpCredentialsInfoFromJson(storedGcpJson, settings?.gcpLocation)
+      : getGcpCredentialsInfo(settings?.gcpCredentialsPath, settings?.gcpLocation);
     const hasGcpCreds = gcpCreds.exists || !!settings?.gcpProjectId || !!process.env.GCP_PROJECT_ID;
     const chunkDuration = parseInt(formData.get('chunkDuration') as string) || 300; // 5 mins
     const overlapDuration = parseInt(formData.get('overlapDuration') as string) || 30; // 30s overlap
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!geminiApiKey && !hasGcpCreds) {
-      return NextResponse.json({ error: 'Gemini API key or GCP Vertex credentials (gcp-credentials.json) are required for transcription' }, { status: 400 });
+      return NextResponse.json({ error: 'Gemini API key or GCP Vertex credentials are required for transcription. Add them in Settings.' }, { status: 400 });
     }
 
     // Sanitize the client-supplied filename to prevent path traversal when it
@@ -123,6 +126,7 @@ export async function POST(request: NextRequest) {
       gcpProjectId: settings?.gcpProjectId,
       gcpLocation: settings?.gcpLocation,
       gcpCredentialsPath: settings?.gcpCredentialsPath,
+      gcpCredentialsJson: storedGcpJson || null,
     });
 
     return NextResponse.json({ jobId: job.id, status: 'started' });
@@ -149,6 +153,7 @@ interface TranscriptionJobParams {
   gcpProjectId?: string;
   gcpLocation?: string;
   gcpCredentialsPath?: string;
+  gcpCredentialsJson?: string | null;
 }
 
 const CONTROL_POLL_INTERVAL = 3000;
@@ -236,6 +241,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
     gcpProjectId,
     gcpLocation,
     gcpCredentialsPath,
+    gcpCredentialsJson,
   } = params;
   let chunks: ChunkInfo[] = [];
 
@@ -305,7 +311,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
         }
         chunkAttempts++;
         try {
-          result = await transcribeChunk({
+result = await transcribeChunk({
             filePath: chunk.filePath,
             modelId: activeModel,
             chunkIndex: chunk.index,
@@ -315,6 +321,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
             gcpProjectId,
             gcpLocation,
             gcpCredentialsPath,
+            gcpCredentialsJson,
           });
         } catch (chunkErr) {
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
@@ -380,6 +387,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
             gcpProjectId,
             gcpLocation,
             gcpCredentialsPath,
+            gcpCredentialsJson,
           });
           console.log(`[transcribe] Chunk ${chunk.index} recovered on retry: ${result.segments.length} segments`);
           completedChunkResults.push({ chunk, result });

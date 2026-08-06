@@ -1,6 +1,6 @@
 import { transcribeChunkWithGemini } from './gemini';
 import { transcribeChunkWithVertex } from './vertex';
-import { getGcpCredentialsInfo } from './gcp-credentials';
+import { getGcpCredentialsInfo, getGcpCredentialsInfoFromJson } from './gcp-credentials';
 import type { ChunkResult } from './types';
 
 export interface TranscribeChunkOptions {
@@ -13,6 +13,7 @@ export interface TranscribeChunkOptions {
   gcpProjectId?: string;
   gcpLocation?: string;
   gcpCredentialsPath?: string;
+  gcpCredentialsJson?: string | null;
 }
 
 /**
@@ -29,12 +30,16 @@ export async function transcribeChunk(options: TranscribeChunkOptions): Promise<
     gcpProjectId,
     gcpLocation,
     gcpCredentialsPath,
+    gcpCredentialsJson,
   } = options;
 
-  const gcpCreds = getGcpCredentialsInfo(gcpCredentialsPath, gcpLocation);
+  const gcpCreds = gcpCredentialsJson
+    ? getGcpCredentialsInfoFromJson(gcpCredentialsJson, gcpLocation)
+    : getGcpCredentialsInfo(gcpCredentialsPath, gcpLocation);
 
   // Determine active provider:
-  // If explicitly 'vertex', or if 'auto' and gcp-credentials.json exists (or no Gemini API key is set), use Vertex AI.
+  // If explicitly 'vertex', or if 'auto' and GCP credentials exist
+  // (from settings or a key file), or no Gemini API key is set, use Vertex AI.
   const shouldUseVertex =
     aiProvider === 'vertex' ||
     (aiProvider === 'auto' && gcpCreds.exists) ||
@@ -43,7 +48,7 @@ export async function transcribeChunk(options: TranscribeChunkOptions): Promise<
   if (shouldUseVertex) {
     if (!gcpCreds.exists && !gcpProjectId && !process.env.GCP_PROJECT_ID) {
       throw new Error(
-        'Vertex AI provider selected but gcp-credentials.json was not found. Please upload or place gcp-credentials.json in the project root.'
+        'Vertex AI provider selected but no GCP service account credentials were found. Add your service account key JSON in Settings.'
       );
     }
     console.log(`[transcription-router] Chunk ${chunkIndex}: Using Google Cloud Vertex AI (Project: ${gcpCreds.projectId || gcpProjectId || 'env'}, Region: ${gcpCreds.location})`);
@@ -51,11 +56,12 @@ export async function transcribeChunk(options: TranscribeChunkOptions): Promise<
       projectId: gcpProjectId || gcpCreds.projectId,
       location: gcpLocation || gcpCreds.location,
       credentialsPath: gcpCredentialsPath || gcpCreds.filePath,
+      credentialsJson: gcpCredentialsJson || undefined,
     });
   }
 
   if (!geminiApiKey) {
-    throw new Error('Gemini API key or GCP Vertex credentials (gcp-credentials.json) are required.');
+    throw new Error('Gemini API key or GCP Vertex credentials are required. Add them in Settings.');
   }
 
   console.log(`[transcription-router] Chunk ${chunkIndex}: Using Google AI Studio (Gemini API)`);

@@ -4,13 +4,14 @@ import path from 'path';
 import { GEMINI_TRANSCRIPTION_PROMPT, GEMINI_CHUNK_PROMPT } from './types';
 import type { ChunkResult } from './types';
 import { getMimeType, parseTranscriptionResponse } from './parser';
-import { getGcpCredentialsInfo } from './gcp-credentials';
+import { getGcpCredentialsInfo, getGcpCredentialsInfoFromJson } from './gcp-credentials';
 import { isQuotaError } from './error-utils';
 
 export interface VertexOptions {
   projectId?: string | null;
   location?: string | null;
   credentialsPath?: string | null;
+  credentialsJson?: string | null;
 }
 
 const VERTEX_FALLBACK_MODELS = [
@@ -24,24 +25,27 @@ const VERTEX_FALLBACK_MODELS = [
 ];
 
 /**
- * Initializes a VertexAI client using gcp-credentials.json or system GCP environment variables.
+ * Initializes a VertexAI client using credentials from the app's SQLite
+ * database (settings.gcpCredentialsJson), an optional key file, or standard
+ * GCP environment variables.
  */
 export function createVertexClient(options?: VertexOptions): { client: VertexAI; projectId: string; location: string } {
-  const creds = getGcpCredentialsInfo(options?.credentialsPath, options?.location);
+  const creds = options?.credentialsJson
+    ? getGcpCredentialsInfoFromJson(options.credentialsJson, options?.location)
+    : getGcpCredentialsInfo(options?.credentialsPath, options?.location);
 
   const projectId = options?.projectId || creds.projectId || process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
   const location = options?.location || creds.location || process.env.GCP_LOCATION || process.env.GOOGLE_CLOUD_REGION || 'us-central1';
 
   if (!creds.exists && !projectId) {
-    throw new Error('GCP credentials not found. Please provide gcp-credentials.json or set GCP_PROJECT_ID.');
-  }
-
-  if (creds.filePath) {
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = creds.filePath;
+    throw new Error('GCP credentials not found. Please add your service account key in Settings or set GCP_PROJECT_ID.');
   }
 
   const googleAuthOptions: Record<string, any> = {};
-  if (creds.filePath) {
+  if (options?.credentialsJson) {
+    googleAuthOptions.credentials = JSON.parse(options.credentialsJson);
+  } else if (creds.filePath) {
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = creds.filePath;
     googleAuthOptions.keyFilename = creds.filePath;
   }
 
@@ -246,7 +250,7 @@ export function explainVertexError(err: any): string {
   if (errMsg.includes('unable to authenticate') || errMsg.includes('client_email') || errMsg.includes('private_key')) {
     return (
       'Authentication with Google failed. This usually means: (1) the service account JSON you pasted is incomplete ' +
-      '(it must contain type, project_id, client_email, private_key, token_uri), (2) the key was revoked or regenerated, ' +
+      '(it must contain at least type, project_id, client_email and private_key), (2) the key was revoked or regenerated, ' +
       'or (3) the service account is not valid. ' +
       'Paste the FULL JSON contents of the key file from Google Cloud Console → IAM & Admin → Service Accounts → Keys → Add Key → Create new key → JSON.'
     );
@@ -295,7 +299,9 @@ export async function testVertexConnection(options?: VertexOptions, modelId?: st
     }
     return { success: false, projectId, location, model: modelId || 'gemini-2.5-flash', error: 'Empty response from Vertex AI' };
   } catch (err: any) {
-    const creds = getGcpCredentialsInfo(options?.credentialsPath, options?.location);
+    const creds = options?.credentialsJson
+      ? getGcpCredentialsInfoFromJson(options.credentialsJson, options?.location)
+      : getGcpCredentialsInfo(options?.credentialsPath, options?.location);
     return {
       success: false,
       projectId: options?.projectId || creds.projectId || 'unknown',

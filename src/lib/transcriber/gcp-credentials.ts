@@ -12,12 +12,14 @@ export interface GcpCredentialsInfo {
   projectId: string | null;
   clientEmail: string | null;
   location: string;
-  source: 'root_file' | 'env_var' | 'data_dir' | 'custom_path' | 'none';
+  source: 'root_file' | 'env_var' | 'custom_path' | 'settings' | 'none';
   error?: string;
 }
 
 /**
- * Searches for gcp-credentials.json across default location candidates.
+ * Searches for gcp-credentials.json across supported file locations.
+ * Note: pasted credentials are stored in the app's SQLite database
+ * (settings.gcpCredentialsJson), never in a file.
  */
 export function findGcpCredentialsPath(customPath?: string | null): { path: string; source: GcpCredentialsInfo['source'] } | null {
   const cwd = process.cwd();
@@ -44,12 +46,6 @@ export function findGcpCredentialsPath(customPath?: string | null): { path: stri
     if (fs.existsSync(envPath)) {
       return { path: envPath, source: 'env_var' };
     }
-  }
-
-  // 4. Data directory: data/gcp-credentials.json
-  const dataPath = path.join(cwd, 'data', 'gcp-credentials.json');
-  if (fs.existsSync(dataPath)) {
-    return { path: dataPath, source: 'data_dir' };
   }
 
   return null;
@@ -114,37 +110,72 @@ export function getGcpCredentialsInfo(customPath?: string | null, customLocation
 }
 
 /**
- * Saves JSON string content directly to data/gcp-credentials.json or root gcp-credentials.json.
+ * Builds credential info purely from a stored JSON string (e.g. the one saved
+ * in the app's SQLite database). No filesystem access.
  */
-export function saveGcpCredentialsJson(jsonContent: string, saveToRoot = false): { success: boolean; filePath: string; projectId: string | null; error?: string } {
+export function getGcpCredentialsInfoFromJson(
+  jsonString?: string | null,
+  customLocation?: string | null
+): GcpCredentialsInfo {
+  const defaultLocation = customLocation || process.env.GCP_LOCATION || process.env.GOOGLE_CLOUD_REGION || 'us-central1';
+
+  if (!jsonString || !jsonString.trim()) {
+    return {
+      exists: false,
+      filePath: null,
+      projectId: process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || null,
+      clientEmail: null,
+      location: defaultLocation,
+      source: 'none',
+    };
+  }
+
   try {
-    const validation = validateGcpCredentialsJson(jsonContent);
-    if (!validation.valid) {
-      return { success: false, filePath: '', projectId: null, error: validation.error };
-    }
+    const json = JSON.parse(jsonString);
+    const projectId = json.project_id || process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || null;
+    const clientEmail = json.client_email || null;
 
-    const parsed = JSON.parse(jsonContent);
-    const projectId = parsed.project_id || null;
-    const cwd = process.cwd();
-    const targetDir = saveToRoot ? cwd : path.join(cwd, 'data');
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
+    if (!projectId && !json.private_key) {
+      return {
+        exists: true,
+        filePath: null,
+        projectId: null,
+        clientEmail: null,
+        location: defaultLocation,
+        source: 'settings',
+        error: 'Stored credentials are missing required fields "project_id" or "private_key".',
+      };
     }
-
-    const targetPath = path.join(targetDir, 'gcp-credentials.json');
-    fs.writeFileSync(targetPath, JSON.stringify(parsed, null, 2), 'utf8');
 
     return {
-      success: true,
-      filePath: targetPath,
+      exists: true,
+      filePath: null,
       projectId,
+      clientEmail,
+      location: defaultLocation,
+      source: 'settings',
     };
   } catch (err: any) {
     return {
-      success: false,
-      filePath: '',
+      exists: true,
+      filePath: null,
       projectId: null,
-      error: `Failed to parse JSON credentials: ${err?.message || String(err)}`,
+      clientEmail: null,
+      location: defaultLocation,
+      source: 'settings',
+      error: `Invalid stored GCP service account JSON: ${err?.message || String(err)}`,
     };
   }
+}
+
+/**
+ * Validates a pasted JSON string for storing in the database.
+ * Returns the raw string when valid, or a descriptive error.
+ */
+export function validateStoredCredentialsJson(jsonContent: string): { ok: true; json: string } | { ok: false; error: string } {
+  const validation = validateGcpCredentialsJson(jsonContent);
+  if (!validation.valid) {
+    return { ok: false, error: validation.error || 'Invalid service account JSON.' };
+  }
+  return { ok: true, json: jsonContent };
 }
