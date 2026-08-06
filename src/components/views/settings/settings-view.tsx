@@ -58,7 +58,7 @@ type CredentialsValidation = ReturnType<typeof validateGcpCredentialsJson>;
 
 export function SettingsView() {
   const { toast } = useToast();
-  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setSettings, setCurrentView } = useAppStore();
+  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setDisabledModel, clearDisabledModels, setSettings, setCurrentView } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'vertex' | 'gemini'>('vertex');
   const [localGeminiKey, setLocalGeminiKey] = useState(userGeminiApiKey);
@@ -194,10 +194,15 @@ export function SettingsView() {
       if (data.connected) {
         setGeminiStatus('connected');
         setGeminiSuccessModel(data.workingModel);
+        if (data.disabledModels && typeof data.disabledModels === 'object') {
+          Object.entries(data.disabledModels).forEach(([mId, reason]) => {
+            setDisabledModel(mId, reason as string);
+          });
+        }
         if (data.fallbackUsed && data.workingModel) {
           toast({
             title: '⚡ Gemini AI Connected',
-            description: `Model automatically optimized to ${data.workingModel}.`,
+            description: `Model automatically optimized to ${data.workingModel}. Rate-limited models disabled in dropdown.`,
           });
         } else {
           toast({

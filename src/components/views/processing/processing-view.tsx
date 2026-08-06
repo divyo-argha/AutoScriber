@@ -29,6 +29,8 @@ export function ProcessingView() {
     setTranscriptionResult,
     setCurrentView,
     availableModels,
+    setDisabledModel,
+    setSelectedModel,
   } = useAppStore();
 
   const hasStarted = useRef(false);
@@ -268,9 +270,13 @@ export function ProcessingView() {
         stopPolling();
         try { localStorage.removeItem('autoscribe_active_job_id'); } catch {}
         setPaused(false);
+        const errMsg = job.errorMessage || 'Transcription failed';
+        if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted') || errMsg.includes('limit: 0')) {
+          setDisabledModel(job.model, 'Rate Limit (429) / Quota Exhausted');
+        }
         setProcessingState({
           isProcessing: false,
-          processingStatus: `Failed: ${job.errorMessage || 'Transcription failed'}`,
+          processingStatus: `Failed: ${errMsg}`,
         });
       }
 

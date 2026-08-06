@@ -23,14 +23,16 @@ export async function GET(request: NextRequest) {
 
     const modelsToTry = [
       modelId,
-      'gemini-3.5-flash',
-      'gemini-3.1-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
       'gemini-2.5-flash',
       'gemini-2.5-flash-lite',
       'gemini-2.5-pro',
     ].filter((value, index, self) => self.indexOf(value) === index);
 
     const attempts: { model: string; success: boolean; error?: string }[] = [];
+    const disabledModels: Record<string, string> = {};
     let workingModel = '';
     let text = '';
 
@@ -39,12 +41,15 @@ export async function GET(request: NextRequest) {
         const model = genAI.getGenerativeModel({ model: currentModel });
         const result = await model.generateContent('Respond with only the word "OK".');
         text = result.response.text();
-        workingModel = currentModel;
-        break;
+        if (!workingModel) workingModel = currentModel;
       } catch (err: any) {
         const errMsg = err instanceof Error ? err.message : String(err);
         attempts.push({ model: currentModel, success: false, error: errMsg });
         
+        if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted') || errMsg.includes('limit: 0')) {
+          disabledModels[currentModel] = 'Free tier rate limit / quota exhausted';
+        }
+
         // Auth failures should stop the loop immediately
         const isAuthError =
           errMsg.includes('API key not valid') ||
@@ -63,6 +68,7 @@ export async function GET(request: NextRequest) {
         response: text.substring(0, 100),
         workingModel,
         fallbackUsed: workingModel !== modelId,
+        disabledModels,
       });
     }
 

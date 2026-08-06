@@ -19,6 +19,7 @@ export function Header() {
     setCurrentView,
     selectedModel,
     setSelectedModel,
+    disabledModels,
     userGeminiApiKey,
     geminiApiKey,
     reset,
@@ -35,23 +36,34 @@ export function Header() {
     return hasGeminiKey;
   }
 
+  const currentModelDisabledReason = disabledModels[selectedModel];
+
   const ModelOption = ({ model }: { model: typeof ALL_MODELS[number] }) => {
     const available = isModelAvailable(model);
+    const disabledReason = disabledModels[model.id];
+    const isUnselectable = !available || Boolean(disabledReason);
+
     return (
-      <div className={styles.modelOption} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '0.5rem' }}>
+      <div className={styles.modelOption} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '0.5rem', opacity: isUnselectable ? 0.6 : 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-          <span className={available ? undefined : styles.modelOptionMuted} style={{ fontWeight: 600 }}>{model.name}</span>
-          {model.recommended && (
+          <span className={!isUnselectable ? undefined : styles.modelOptionMuted} style={{ fontWeight: 600 }}>{model.name}</span>
+          {model.recommended && !disabledReason && (
             <span style={{ fontSize: '9px', padding: '0.1rem 0.35rem', borderRadius: '9999px', backgroundColor: 'color-mix(in oklab, var(--brand-500) 20%, transparent)', color: 'var(--brand-300)', fontWeight: 700 }}>
               ★ Rec
             </span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-          <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.6, fontWeight: 600 }}>
-            {model.provider === 'vertex' ? 'Vertex' : 'Studio'}
-          </span>
-          {!available && (
+          {disabledReason ? (
+            <span title={disabledReason} style={{ fontSize: '9px', padding: '0.1rem 0.4rem', borderRadius: '9999px', backgroundColor: 'color-mix(in oklab, var(--destructive) 20%, transparent)', color: 'var(--destructive)', fontWeight: 700, border: '1px solid color-mix(in oklab, var(--destructive) 40%, transparent)' }}>
+              🚫 Quota Limit
+            </span>
+          ) : (
+            <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.6, fontWeight: 600 }}>
+              {model.provider === 'vertex' ? 'Vertex' : 'Studio'}
+            </span>
+          )}
+          {!available && !disabledReason && (
             <span title="Credentials not set — configure in Settings" className={styles.warnIcon}>
               <AlertTriangle className={styles.warnIcon} />
             </span>
@@ -92,17 +104,26 @@ export function Header() {
                 <SelectTrigger className={styles.modelTrigger}>
                   <div className={styles.triggerContent}>
                     <span className={styles.truncate}>{ALL_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
-                    {!isModelAvailable(ALL_MODELS.find(m => m.id === selectedModel)) && (
+                    {currentModelDisabledReason ? (
+                      <span title={currentModelDisabledReason} style={{ fontSize: '9px', padding: '0.1rem 0.35rem', borderRadius: '9999px', backgroundColor: 'color-mix(in oklab, var(--destructive) 25%, transparent)', color: 'var(--destructive)', fontWeight: 700 }}>
+                        Rate-Limited
+                      </span>
+                    ) : !isModelAvailable(ALL_MODELS.find(m => m.id === selectedModel)) ? (
                       <AlertTriangle className={styles.warnIcon} />
-                    )}
+                    ) : null}
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_MODELS.map(model => (
-                    <SelectItem key={model.id} value={model.id}>
-                      <ModelOption model={model} />
-                    </SelectItem>
-                  ))}
+                  {ALL_MODELS.map(model => {
+                    const available = isModelAvailable(model);
+                    const disabledReason = disabledModels[model.id];
+                    const isDisabled = !available || Boolean(disabledReason);
+                    return (
+                      <SelectItem key={model.id} value={model.id} disabled={isDisabled}>
+                        <ModelOption model={model} />
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -158,17 +179,26 @@ export function Header() {
               <SelectTrigger className={styles.modelTriggerFull}>
                 <div className={styles.triggerContent}>
                   <span className={styles.truncate}>{ALL_MODELS.find(m => m.id === selectedModel)?.name ?? selectedModel}</span>
-                  {!isModelAvailable(ALL_MODELS.find(m => m.id === selectedModel)) && (
+                  {currentModelDisabledReason ? (
+                    <span title={currentModelDisabledReason} style={{ fontSize: '9px', padding: '0.1rem 0.35rem', borderRadius: '9999px', backgroundColor: 'color-mix(in oklab, var(--destructive) 25%, transparent)', color: 'var(--destructive)', fontWeight: 700 }}>
+                      Rate-Limited
+                    </span>
+                  ) : !isModelAvailable(ALL_MODELS.find(m => m.id === selectedModel)) ? (
                     <AlertTriangle className={styles.warnIcon} />
-                  )}
+                  ) : null}
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {ALL_MODELS.map(model => (
-                  <SelectItem key={model.id} value={model.id}>
-                    <ModelOption model={model} />
-                  </SelectItem>
-                ))}
+                {ALL_MODELS.map(model => {
+                  const available = isModelAvailable(model);
+                  const disabledReason = disabledModels[model.id];
+                  const isDisabled = !available || Boolean(disabledReason);
+                  return (
+                    <SelectItem key={model.id} value={model.id} disabled={isDisabled}>
+                      <ModelOption model={model} />
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

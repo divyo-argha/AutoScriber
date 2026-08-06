@@ -63,6 +63,9 @@ interface AppState {
   selectedModel: string;
   setSelectedModel: (model: string) => void;
   availableModels: ModelInfo[];
+  disabledModels: Record<string, string>;
+  setDisabledModel: (modelId: string, reason: string | null) => void;
+  clearDisabledModels: () => void;
 
   // File info
   uploadedFile: File | null;
@@ -122,6 +125,7 @@ const initialState = {
   currentView: 'upload' as AppView,
   selectedModel: 'gemini-2.0-flash',
   availableModels: AVAILABLE_MODELS,
+  disabledModels: {} as Record<string, string>,
   uploadedFile: null as File | null,
   uploadedFileName: '',
   uploadedFileSize: 0,
@@ -158,6 +162,18 @@ export const useAppStore = create<AppState>((set) => ({
   setCurrentView: (view) => set({ currentView: view }),
 
   setSelectedModel: (model) => set({ selectedModel: model }),
+
+  setDisabledModel: (modelId, reason) => set((prev) => {
+    const next = { ...prev.disabledModels };
+    if (reason) {
+      next[modelId] = reason;
+    } else {
+      delete next[modelId];
+    }
+    return { disabledModels: next };
+  }),
+
+  clearDisabledModels: () => set({ disabledModels: {} }),
 
   setUploadedFile: (file) => set({
     uploadedFile: file,
