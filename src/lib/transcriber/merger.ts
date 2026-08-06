@@ -76,22 +76,16 @@ function isBoundaryContinuation(a: string, b: string): boolean {
 function isDuplicate(existing: TranscriptionSegment, seg: TranscriptionSegment): boolean {
   const overlap = Math.min(seg.endTime, existing.endTime) - Math.max(seg.startTime, existing.startTime);
   const startGap = Math.abs(seg.startTime - existing.startTime);
-  const nearInTime = overlap > 0.2 || startGap < 5;
+  const nearInTime = overlap > 0.1 || startGap < 6;
   if (!nearInTime) return false;
 
   const sim = textSimilarity(existing.text, seg.text);
-  const minTokenCount = Math.min(tokenize(existing.text).length, tokenize(seg.text).length);
 
-  if (existing.speaker === seg.speaker) {
-    if (sim >= 0.5) return true;
-    if (isBoundaryContinuation(existing.text, seg.text) && sim >= 0.25) return true;
-    // Same speech split into different segment sizes across chunks
-    return overlap > 2 && sim >= 0.3;
-  }
+  if (sim >= 0.45) return true;
+  if (isBoundaryContinuation(existing.text, seg.text) && sim >= 0.2) return true;
+  if (overlap > 1.5 && sim >= 0.3) return true;
 
-  // Speaker labels are assigned independently per chunk and can disagree for
-  // the same voice; only treat as a duplicate on a very strong text match.
-  return sim >= 0.8 && minTokenCount >= 6;
+  return false;
 }
 
 /**

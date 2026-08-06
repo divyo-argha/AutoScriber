@@ -300,7 +300,7 @@ async function processTranscriptionJob(params: TranscriptionJobParams) {
 
       let result: ChunkResult | null = null;
       let chunkAttempts = 0;
-      const maxChunkAttempts = 2;
+      const maxChunkAttempts = 3;
 
       while (chunkAttempts < maxChunkAttempts && !result) {
         // Cancel takes priority over retrying a failing chunk

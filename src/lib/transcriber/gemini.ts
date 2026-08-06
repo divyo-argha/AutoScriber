@@ -199,8 +199,8 @@ async function transcribeWithGeminiInternal(
   const model = genAI.getGenerativeModel({
     model: modelId,
     generationConfig: {
-      temperature: 0,
-      maxOutputTokens: 16384,
+      temperature: 0.0,
+      maxOutputTokens: 32768,
     },
   });
 
