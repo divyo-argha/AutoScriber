@@ -125,7 +125,7 @@ export function useBatchQueue() {
     for (const job of done) {
       const base = job.file.name.replace(/\.[^/.]+$/, '');
       for (const format of ['txt', 'srt', 'md'] as const) {
-        const { content } = buildClientExport(job.segments, format);
+        const { content } = buildClientExport(job.segments, format, base);
         zip.file(`${base}.${format}`, content);
       }
     }

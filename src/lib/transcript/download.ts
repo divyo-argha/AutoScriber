@@ -25,7 +25,8 @@ export function downloadTextFile({ content, filename, mimeType = 'text/plain' }:
 
 export function buildClientExport(
   segments: TranscriptionSegment[],
-  format: ClientExportFormat
+  format: ClientExportFormat,
+  title?: string
 ): { content: string; ext: string; mimeType: string } {
   switch (format) {
     case 'txt':
@@ -35,7 +36,7 @@ export function buildClientExport(
     case 'vtt':
       return { content: buildVtt(segments), ext: 'vtt', mimeType: 'text/vtt' };
     case 'md':
-      return { content: buildMarkdown(segments), ext: 'md', mimeType: 'text/markdown' };
+      return { content: buildMarkdown(segments, title), ext: 'md', mimeType: 'text/markdown' };
   }
 }
 
@@ -45,6 +46,6 @@ export function downloadTranscriptClient(
   format: ClientExportFormat,
   filenameBase: string
 ): void {
-  const { content, ext, mimeType } = buildClientExport(segments, format);
+  const { content, ext, mimeType } = buildClientExport(segments, format, filenameBase);
   downloadTextFile({ content, filename: `${filenameBase}.${ext}`, mimeType });
 }
