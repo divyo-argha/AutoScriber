@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
       ? getGcpCredentialsInfoFromJson(activeJson, location)
       : getGcpCredentialsInfo(settings?.gcpCredentialsPath, location);
 
-    const projectId = body.gcpProjectId || settings?.gcpProjectId || credsInfo.projectId || '';
+    // Pasted/detected service account JSON project_id takes precedence over manual overrides
+    const projectId = credsInfo.projectId || body.gcpProjectId || settings?.gcpProjectId || '';
 
     if (!credsInfo.exists && !projectId && !process.env.GCP_PROJECT_ID) {
       return NextResponse.json(

@@ -266,8 +266,10 @@ export function explainVertexError(err: any): string {
 
   if (errMsg.includes('not found') || errMsg.includes('404')) {
     return (
-      'Not found (404). Check that the GCP Project ID is correct and that the Vertex AI API is enabled for it. ' +
-      'Enable it at Google Cloud Console → Vertex AI → Get Started.'
+      'Not found (404). Please verify: ' +
+      '1. The Vertex AI API (aiplatform.googleapis.com) is enabled for your GCP project in Google Cloud Console → APIs & Services → Enable APIs and Services. ' +
+      '2. Billing is enabled for this GCP project (Vertex AI requires an active billing account). ' +
+      '3. Your service account has the "Vertex AI User" role in IAM & Admin.'
     );
   }
 
@@ -287,27 +289,51 @@ export function explainVertexError(err: any): string {
 }
 
 export async function testVertexConnection(options?: VertexOptions, modelId?: string): Promise<{ success: boolean; projectId: string; location: string; model?: string; error?: string }> {
-  try {
-    const { client, projectId, location } = createVertexClient(options);
-    const model = client.getGenerativeModel({ model: modelId || 'gemini-2.5-flash' });
-    const res = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: 'Say exactly: Vertex OK' }] }],
-    });
-    const text = res?.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (text) {
-      return { success: true, projectId, location, model: modelId || 'gemini-2.5-flash' };
+  const primaryModel = modelId || 'gemini-2.0-flash';
+  const modelsToTest = Array.from(new Set([
+    primaryModel,
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    ...VERTEX_FALLBACK_MODELS,
+  ]));
+
+  let lastError: any = null;
+  let resolvedProjectId = 'unknown';
+  let resolvedLocation = options?.location || 'us-central1';
+
+  for (const currentModel of modelsToTest) {
+    try {
+      const { client, projectId, location } = createVertexClient(options);
+      resolvedProjectId = projectId;
+      resolvedLocation = location;
+      const model = client.getGenerativeModel({ model: currentModel });
+      const res = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: 'Say exactly: Vertex OK' }] }],
+      });
+      const text = res?.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (text) {
+        return { success: true, projectId: resolvedProjectId, location: resolvedLocation, model: currentModel };
+      }
+    } catch (err: any) {
+      lastError = err;
+      const errMsg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+      // Stop checking further models if auth fails or credentials missing
+      if (errMsg.includes('unable to authenticate') || errMsg.includes('client_email') || errMsg.includes('private_key') || errMsg.includes('invalid_grant')) {
+        break;
+      }
     }
-    return { success: false, projectId, location, model: modelId || 'gemini-2.5-flash', error: 'Empty response from Vertex AI' };
-  } catch (err: any) {
-    const creds = options?.credentialsJson
-      ? getGcpCredentialsInfoFromJson(options.credentialsJson, options?.location)
-      : getGcpCredentialsInfo(options?.credentialsPath, options?.location);
-    return {
-      success: false,
-      projectId: options?.projectId || creds.projectId || 'unknown',
-      location: creds.location,
-      model: modelId || 'gemini-2.5-flash',
-      error: explainVertexError(err),
-    };
   }
+
+  const creds = options?.credentialsJson
+    ? getGcpCredentialsInfoFromJson(options.credentialsJson, options?.location)
+    : getGcpCredentialsInfo(options?.credentialsPath, options?.location);
+
+  return {
+    success: false,
+    projectId: options?.projectId || creds.projectId || resolvedProjectId || 'unknown',
+    location: creds.location || resolvedLocation,
+    model: primaryModel,
+    error: explainVertexError(lastError),
+  };
 }
