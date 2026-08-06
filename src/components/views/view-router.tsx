@@ -7,6 +7,7 @@ import { ProcessingView } from './processing';
 import { TranscriptionViewer } from './result';
 import { HistoryView } from './history';
 import { BatchView } from './batch';
+import { SettingsView } from './settings';
 import styles from './view-router.module.css';
 
 export function ViewRouter() {
@@ -91,6 +92,18 @@ export function ViewRouter() {
           transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <BatchView />
+        </motion.div>
+      )}
+
+      {currentView === 'settings' && (
+        <motion.div
+          key="settings"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+          <SettingsView />
         </motion.div>
       )}
     </AnimatePresence>

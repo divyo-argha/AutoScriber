@@ -89,7 +89,6 @@ import {
   User,
   Copy,
   CheckCircle2,
-  RotateCcw,
   Loader2,
   Headphones,
   List,
@@ -119,7 +118,7 @@ const stagger = {
 };
 
 export function TranscriptionViewer() {
-  const { transcriptionSegments, transcriptionText, reset, setCurrentView, jobId, currentTime, activeSegmentIndex, transcriptionSkippedChunks, chunkDuration, audioDuration } = useAppStore();
+  const { transcriptionSegments, transcriptionText, jobId, currentTime, activeSegmentIndex, transcriptionSkippedChunks, chunkDuration, audioDuration } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('player');
@@ -261,11 +260,6 @@ export function TranscriptionViewer() {
     }
   };
 
-  const handleNewTranscription = () => {
-    reset();
-    setCurrentView('upload');
-  };
-
   const handleSegmentClick = (startTime: number) => {
     if (typeof (window as any).__autoScribeSeek === 'function') {
       (window as any).__autoScribeSeek(startTime);
@@ -286,12 +280,9 @@ export function TranscriptionViewer() {
           <p className={styles.emptyTitle}>No transcription results available</p>
           <p className={styles.emptySub}>
             The transcription may have produced empty results. Try uploading a different audio file or check your audio quality.
+            Use the New button in the top bar to start another transcription.
           </p>
         </div>
-        <Button variant="outline" onClick={handleNewTranscription} className={styles.btnGap}>
-          <RotateCcw className={styles.iconSm} />
-          Start New Transcription
-        </Button>
       </motion.div>
     );
   }
@@ -362,10 +353,6 @@ export function TranscriptionViewer() {
           <Button variant="outline" size="sm" onClick={copyToClipboard} className={styles.actionBtn}>
             {copied ? <CheckCircle2 className={styles.copyIcon} /> : <Copy className={styles.iconSm} />}
             {copied ? 'Copied' : 'Copy'}
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleNewTranscription} className={styles.actionBtn}>
-            <RotateCcw className={styles.iconSm} />
-            New
           </Button>
         </div>
       </motion.div>

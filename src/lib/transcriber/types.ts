@@ -193,7 +193,11 @@ export const VERTEX_MODELS: ModelInfo[] = [
   },
 ];
 
-export const ALL_MODELS: ModelInfo[] = [...AVAILABLE_MODELS, ...VERTEX_MODELS];
+const ALL_MODELS_MERGED: ModelInfo[] = [...AVAILABLE_MODELS, ...VERTEX_MODELS];
+
+export const ALL_MODELS: ModelInfo[] = Array.from(
+  new Map(ALL_MODELS_MERGED.map(model => [model.id, model])).values()
+);
 
 
 export const GEMINI_TRANSCRIPTION_PROMPT = `You are a professional Bangla-English speech transcription engine. Your ONLY job is to output a valid JSON array of transcribed speech segments.

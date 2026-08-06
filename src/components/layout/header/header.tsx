@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Settings, Mic, RotateCcw, History, AlertTriangle } from 'lucide-react';
-import { SettingsDialog } from '@/components/settings';
+import { Mic, RotateCcw, History, Settings, AlertTriangle } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -25,17 +23,8 @@ export function Header() {
     geminiApiKey,
     reset,
     isProcessing,
-    jobId,
     processingProgress,
   } = useAppStore();
-
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
-  useEffect(() => {
-    const handler = () => setSettingsOpen(true);
-    window.addEventListener('open-settings', handler);
-    return () => window.removeEventListener('open-settings', handler);
-  }, []);
 
   const hasGeminiKey = !!(userGeminiApiKey || geminiApiKey === '***');
 
@@ -133,7 +122,11 @@ export function Header() {
                 <History className={styles.iconMd} />
                 <span className={styles.hiddenSmInline}>History</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
+              <Button
+                variant={currentView === 'settings' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setCurrentView('settings')}
+              >
                 <Settings className={styles.iconLg} />
               </Button>
             </div>
@@ -161,8 +154,6 @@ export function Header() {
           </div>
         </div>
       </header>
-
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   );
 }

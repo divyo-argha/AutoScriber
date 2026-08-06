@@ -7,3 +7,4 @@ export { AudioPlayer } from './result';
 export { FocusPlayer } from './result';
 export { HistoryView } from './history';
 export { BatchView } from './batch';
+export { SettingsView } from './settings';

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -26,17 +25,13 @@ import {
   Globe,
   Lock,
   ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AVAILABLE_MODELS, VERTEX_MODELS } from '@/lib/transcriber/types';
 import type { ModelInfo } from '@/lib/transcriber/types';
 import { validateGcpCredentialsJson } from '@/lib/transcriber/credentials-validate';
-import styles from './settings-dialog.module.css';
-
-interface SettingsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+import styles from './settings-view.module.css';
 
 type TestStatus = 'idle' | 'testing' | 'connected' | 'error';
 
@@ -52,9 +47,9 @@ interface GcpStatus {
 
 type CredentialsValidation = ReturnType<typeof validateGcpCredentialsJson>;
 
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+export function SettingsView() {
   const { toast } = useToast();
-  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setSettings } = useAppStore();
+  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setSettings, setCurrentView } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'vertex' | 'gemini'>('vertex');
   const [localGeminiKey, setLocalGeminiKey] = useState(userGeminiApiKey);
@@ -85,7 +80,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
     fetch('/api/settings')
       .then(r => r.json())
       .then(data => {
@@ -125,7 +119,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setVertexError('');
     setVertexSuccess(null);
     setGeminiSuccessModel('');
-  }, [open, setSettings]);
+  }, [setSettings]);
 
   // Live validation of the pasted service account JSON
   useEffect(() => {
@@ -281,7 +275,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         description: 'Your AI engine & GCP credentials configuration are up to date.',
       });
 
-      onOpenChange(false);
+      setCurrentView('upload');
     } catch (err) {
       console.error(err);
       toast({
@@ -318,8 +312,23 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={styles.content}>
+    <div className={styles.page}>
+      {/* Top toolbar with back navigation */}
+      <div className={styles.toolbar}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCurrentView('upload')}
+          className={styles.backBtn}
+        >
+          <ArrowLeft className={styles.iconSm} />
+          Back to App
+        </Button>
+        <span className={styles.toolbarTitle}>Settings</span>
+        <span className={styles.toolbarSpacer} />
+      </div>
+
+      <div className={styles.content}>
         {/* Glowing Top Gradient Header */}
         <div className={styles.header}>
           <div className={styles.glowBlob} />
@@ -329,15 +338,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <Cpu className={styles.headerIcon} />
               </div>
               <div>
-                <DialogTitle className={styles.titleRow}>
+                <h1 className={styles.titleRow}>
                   AI Provider & GCP Credentials
                   <Badge variant="outline" className={styles.vertexBadge}>
                     Vertex AI Ready
                   </Badge>
-                </DialogTitle>
-                <DialogDescription className={styles.dialogDesc}>
+                </h1>
+                <p className={styles.dialogDesc}>
                   Pick one engine below. Paste the credentials it asks for, then press Test to verify before saving.
-                </DialogDescription>
+                </p>
               </div>
             </div>
           </div>
@@ -622,7 +631,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             Changes will take effect for all future transcription jobs.
           </p>
           <div className={styles.footerBtns}>
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className={styles.cancelBtn}>
+            <Button variant="ghost" size="sm" onClick={() => setCurrentView('upload')} className={styles.cancelBtn}>
               Cancel
             </Button>
             <Button
@@ -636,7 +645,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

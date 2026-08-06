@@ -128,11 +128,6 @@ export function ProcessingView() {
     }
   }, [jobId, setProcessingState, stopPolling]);
 
-  const goBackToUpload = useCallback(() => {
-    hasStarted.current = false;
-    setCurrentView('upload');
-  }, [setCurrentView]);
-
   const startTranscription = useCallback(async () => {
     // Prevent a second job from being started while one is already running
     // (e.g. remounting the view while a job is still in flight).
@@ -529,22 +524,8 @@ export function ProcessingView() {
                 <AlertTriangle className={styles.warningIcon} />
                 <div className={styles.messageInner}>
                   <p className={styles.messageTitle}>Transcription Cancelled</p>
-                  <p className={styles.messageSub}>The job was cancelled. {chunksDone > 0 ? `${chunksDone} of ${chunksTotal} chunk(s) had been transcribed.` : 'No chunks were transcribed.'} No result was saved.</p>
+                  <p className={styles.messageSub}>The job was cancelled. {chunksDone > 0 ? `${chunksDone} of ${chunksTotal} chunk(s) had been transcribed.` : 'No chunks were transcribed.'} No result was saved. Use the New button in the top bar to start another transcription.</p>
                 </div>
-              </div>
-              <div className={styles.actionRow}>
-                <Button variant="outline" onClick={goBackToUpload}>
-                  Go Back
-                </Button>
-                <Button
-                  className={styles.primaryBtn}
-                  onClick={() => {
-                    hasStarted.current = false;
-                    startTranscription();
-                  }}
-                >
-                  Start New Transcription
-                </Button>
               </div>
             </div>
           )}
@@ -594,9 +575,7 @@ export function ProcessingView() {
                       className={`${styles.primaryBtn} ${styles.btnGap}`}
                       onClick={() => {
                         hasStarted.current = false;
-                        setCurrentView('upload');
-                        // Open settings dialog - we'll dispatch a custom event
-                        window.dispatchEvent(new CustomEvent('open-settings'));
+                        setCurrentView('settings');
                       }}
                     >
                       <Settings className={styles.iconSm} />
@@ -627,8 +606,7 @@ export function ProcessingView() {
                       className={`${styles.primaryBtn} ${styles.btnGap}`}
                       onClick={() => {
                         hasStarted.current = false;
-                        setCurrentView('upload');
-                        window.dispatchEvent(new CustomEvent('open-settings'));
+                        setCurrentView('settings');
                       }}
                     >
                       <Settings className={styles.iconSm} />
