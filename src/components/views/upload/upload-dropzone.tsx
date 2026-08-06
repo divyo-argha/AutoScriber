@@ -15,7 +15,7 @@ interface DropzoneProps {
 export function UploadDropzone({ isDragging, onDragStart, onDragEnd, onDrop, onBrowse }: DropzoneProps) {
   return (
     <Card
-      className={styles.dropZone}
+      className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''}`}
       onDragOver={(e) => { e.preventDefault(); onDragStart(); }}
       onDragLeave={(e) => { e.preventDefault(); onDragEnd(); }}
       onDrop={(e) => {

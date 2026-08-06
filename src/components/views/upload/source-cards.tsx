@@ -35,7 +35,11 @@ export function SourceCard({ icon, title, subtitle, buttonLabel, buttonIcon, onB
 export function ZipCard({ onChooseZip }: { onChooseZip: () => void }) {
   return (
     <SourceCard
-      icon={<Archive className={styles.bigIcon} />}
+      icon={
+        <div className={styles.sourceIconWrap}>
+          <Archive className={styles.sourceIcon} />
+        </div>
+      }
       title="Upload ZIP file"
       subtitle="Extracts audio files recursively"
       buttonLabel="Choose ZIP"
@@ -48,7 +52,11 @@ export function ZipCard({ onChooseZip }: { onChooseZip: () => void }) {
 export function FolderCard({ onChooseFolder }: { onChooseFolder: () => void }) {
   return (
     <SourceCard
-      icon={<FolderOpen className={styles.bigIcon} />}
+      icon={
+        <div className={styles.sourceIconWrap}>
+          <FolderOpen className={styles.sourceIcon} />
+        </div>
+      }
       title="Select folder"
       subtitle="Scans recursively for audio files"
       buttonLabel="Choose Folder"

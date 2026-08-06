@@ -1,11 +1,25 @@
 .root {
+  position: relative;
   display: flex;
   min-height: 100vh;
   flex-direction: column;
   background-color: var(--background);
 }
 
+.root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(60rem 32rem at 15% -10%, color-mix(in oklab, var(--brand-500) 8%, transparent), transparent 60%),
+    radial-gradient(48rem 28rem at 95% 5%, color-mix(in oklab, var(--teal-500) 6%, transparent), transparent 55%);
+}
+
 .main {
+  position: relative;
+  z-index: 1;
   flex: 1;
   padding: 2rem 1rem;
 }

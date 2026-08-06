@@ -32,8 +32,12 @@ export function ViewRouter() {
               transition={{ duration: 0.4, delay: 0.05 }}
               className={styles.hero}
             >
+              <div className={styles.heroBadge}>
+                <span className={styles.heroBadgeDot} />
+                Free, no account required
+              </div>
               <h2 className={styles.heroTitle}>
-                Transcribe Your Bangla Audio
+                Transcribe Your <span className={styles.heroTitleAccent}>Bangla Audio</span>
               </h2>
               <p className={styles.heroSub}>
                 Upload an audio file or record directly from your browser. Get accurate Bangla-English mixed transcriptions with

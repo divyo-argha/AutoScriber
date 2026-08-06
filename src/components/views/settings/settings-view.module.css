@@ -132,6 +132,14 @@
   gap: 1rem;
 }
 
+@media (max-width: 640px) {
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
+}
+
 .headerLeft {
   display: flex;
   align-items: center;
@@ -432,7 +440,7 @@
 }
 
 .projInput {
-  height: 2.25rem !important;
+  height: 2.375rem !important;
   border-radius: var(--radius-med) !important;
   border: 1px solid var(--border) !important;
   background-color: var(--background) !important;
@@ -1122,7 +1130,7 @@
 }
 
 .advInput {
-  height: 2.5rem;
+  height: 2.375rem;
   padding-right: 3rem;
   border-radius: var(--radius-med);
   border: 1px solid var(--border);
@@ -1259,7 +1267,7 @@
 
 .regionInput {
   width: 130px;
-  height: 2.1rem;
+  flex-shrink: 0;
 }
 
 .advHintTop {

@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Cloud, Loader2, FileAudio, Download } from 'lucide-react';
 import styles from './upload-area.module.css';
 
@@ -22,7 +23,9 @@ export function DriveTab({ driveLoading, driveFiles, driveSelected, onConnect, o
   return (
     <Card className={styles.dropZone}>
       <div className={styles.dropInner}>
-        <Cloud className={styles.bigIcon} />
+        <div className={styles.sourceIconWrap}>
+          <Cloud className={styles.sourceIcon} />
+        </div>
         {driveFiles.length === 0 ? (
           <>
             <div>
@@ -39,11 +42,9 @@ export function DriveTab({ driveLoading, driveFiles, driveSelected, onConnect, o
             <div className={styles.driveList}>
               {driveFiles.map(f => (
                 <label key={f.id} className={styles.driveRow}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={driveSelected.has(f.id)}
-                    onChange={(e) => onToggleFile(f.id, e.target.checked)}
-                    className={styles.checkbox}
+                    onCheckedChange={(checked) => onToggleFile(f.id, checked === true)}
                   />
                   <FileAudio className={styles.fileRowIcon} />
                   <span className={styles.fileRowName}>{f.name}</span>
