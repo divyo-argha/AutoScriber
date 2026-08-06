@@ -85,6 +85,35 @@ export function SettingsView() {
   const [vertexError, setVertexError] = useState('');
   const [vertexSuccess, setVertexSuccess] = useState<{ projectId: string; location: string; model: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [cleaningStorage, setCleaningStorage] = useState(false);
+
+  const handleCleanupStorage = async () => {
+    setCleaningStorage(true);
+    try {
+      const res = await fetch('/api/audio/cleanup', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast({
+          title: 'Storage Cleaned',
+          description: `Removed ${data.filesDeleted} orphan audio files (${data.formattedFreed || '0 MB'} freed).`,
+        });
+      } else {
+        toast({
+          title: 'Cleanup Failed',
+          description: data.error || 'Failed to clean storage',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      toast({
+        title: 'Cleanup Error',
+        description: err instanceof Error ? err.message : 'Storage cleanup failed',
+        variant: 'destructive',
+      });
+    } finally {
+      setCleaningStorage(false);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/settings')
@@ -787,6 +816,30 @@ export function SettingsView() {
                 </button>
               </div>
             </details>
+          </div>
+
+          {/* Storage Cleanup Section */}
+          <div className={styles.advSection} style={{ marginTop: '1rem' }}>
+            <div className={styles.advGrid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
+              <div>
+                <Label className={styles.advLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                  <Trash2 style={{ width: '1rem', height: '1rem', color: 'var(--muted-foreground)' }} /> Storage Cleanup
+                </Label>
+                <p className={styles.advHint} style={{ margin: 0 }}>
+                  Purge unused or orphaned audio files from disk to free up space.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCleanupStorage}
+                disabled={cleaningStorage}
+                style={{ gap: '0.5rem' }}
+              >
+                {cleaningStorage ? <Loader2 className={`${styles.iconSm} ${styles.spin}`} /> : <Trash2 className={styles.iconSm} />}
+                Clean Storage
+              </Button>
+            </div>
           </div>
         </div>
 
