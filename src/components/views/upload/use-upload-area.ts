@@ -17,10 +17,8 @@ export function useUploadArea() {
   const { uploadedFile, setUploadedFile, setCurrentView, selectedModel, setBatchJobs, clearBatch } = useAppStore();
 
   const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('upload');
   const [preflightChecking, setPreflightChecking] = useState(false);
-  const [preflightWarning, setPreflightWarning] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveFiles, setDriveFiles] = useState<any[]>([]);
@@ -31,10 +29,16 @@ export function useUploadArea() {
   const { toast } = useToast();
 
   const showError = useCallback((msg: string) => {
-    setError(msg);
     toast({
       variant: 'destructive',
       title: 'File Upload/Processing Error',
+      description: msg,
+    });
+  }, [toast]);
+
+  const showSuccess = useCallback((msg: string) => {
+    toast({
+      title: 'Success',
       description: msg,
     });
   }, [toast]);
@@ -49,24 +53,24 @@ export function useUploadArea() {
       else valid.push(f);
     }
     if (errors.length) showError(errors.join('; '));
-    else setError(null);
 
     if (valid.length === 1 && pendingFiles.length === 0) {
       setUploadedFile(valid[0]);
+      showSuccess(`"${valid[0].name}" added. Ready to transcribe.`);
     } else if (valid.length > 0) {
       setPendingFiles(prev => {
         const names = new Set(prev.map(f => f.name));
         return [...prev, ...valid.filter(f => !names.has(f.name))];
       });
       setUploadedFile(null);
+      showSuccess(`${valid.length} file${valid.length !== 1 ? 's' : ''} added to batch.`);
     }
-  }, [pendingFiles.length, setUploadedFile, showError]);
+  }, [pendingFiles.length, setUploadedFile, showError, showSuccess]);
 
   const handleZipUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setError(null);
     try {
       const audioFiles = await extractAudioFilesFromZip(file);
       if (audioFiles.length === 0) {
@@ -85,7 +89,6 @@ export function useUploadArea() {
     const items = e.currentTarget.webkitdirectory ? e.target.files : null;
     if (!items) return;
 
-    setError(null);
     try {
       const audioFiles = filterAudioFiles(Array.from(items));
       if (audioFiles.length === 0) {
@@ -147,9 +150,7 @@ export function useUploadArea() {
       setDriveLoading(false);
     }
   }, [driveSelected, driveFiles, addFiles, showError]);
-
   const startPreflight = useCallback(async (onPass: () => void) => {
-    setPreflightWarning(null);
     const state = useAppStore.getState();
     const modelInfo = state.availableModels.find(m => m.id === selectedModel);
 
@@ -158,9 +159,27 @@ export function useUploadArea() {
       try {
         const data = await testGeminiConnection(selectedModel, state.userGeminiApiKey || undefined);
         if (data.connected) { onPass(); }
-        else if (data.errorType === 'no_key') { setPreflightWarning('Gemini API key is not configured. Enter it in Settings.'); }
-        else if (data.errorType === 'location_blocked') { setPreflightWarning('Gemini API is not available in your region.'); }
-        else if (data.errorType === 'auth_failed') { setPreflightWarning('Gemini API key is invalid. Check your key in Settings.'); }
+        else if (data.errorType === 'no_key') {
+          toast({
+            variant: 'destructive',
+            title: 'Cannot Start Transcription',
+            description: 'Gemini API key is not configured. Enter it in Settings.',
+          });
+        }
+        else if (data.errorType === 'location_blocked') {
+          toast({
+            variant: 'destructive',
+            title: 'Cannot Start Transcription',
+            description: 'Gemini API is not available in your region.',
+          });
+        }
+        else if (data.errorType === 'auth_failed') {
+          toast({
+            variant: 'destructive',
+            title: 'Cannot Start Transcription',
+            description: 'Gemini API key is invalid. Check your key in Settings.',
+          });
+        }
         else { onPass(); }
       } catch {
         onPass();
@@ -170,7 +189,7 @@ export function useUploadArea() {
     } else {
       onPass();
     }
-  }, [selectedModel]);
+  }, [selectedModel, toast]);
 
   const startBatch = useCallback(() => {
     startPreflight(() => {
@@ -197,12 +216,10 @@ export function useUploadArea() {
 
   const removeUploadedFile = useCallback(() => {
     setUploadedFile(null);
-    setPreflightWarning(null);
   }, [setUploadedFile]);
 
   const clearPending = useCallback(() => {
     setPendingFiles([]);
-    setError(null);
   }, []);
 
   return {
@@ -212,12 +229,9 @@ export function useUploadArea() {
     selectedModel,
     isDragging,
     setIsDragging,
-    error,
-    setError,
     activeTab,
     setActiveTab,
     preflightChecking,
-    preflightWarning,
     pendingFiles,
     driveLoading,
     driveFiles,

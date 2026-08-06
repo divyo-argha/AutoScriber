@@ -11,13 +11,11 @@ export type RecorderStatus = 'idle' | 'recording' | 'paused' | 'stopped';
 export function useMediaRecorder(onRecordingComplete: (file: File, blob: Blob) => void) {
   const [status, setStatus] = useState<RecorderStatus>('idle');
   const [duration, setDuration] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [waveform, setWaveform] = useState<number[]>(new Array(60).fill(0));
   const { toast } = useToast();
 
   const showError = useCallback((msg: string) => {
-    setError(msg);
     toast({
       variant: 'destructive',
       title: 'Audio Recorder Error',
@@ -90,8 +88,6 @@ export function useMediaRecorder(onRecordingComplete: (file: File, blob: Blob) =
 
   const startRecording = useCallback(async () => {
     try {
-      setError(null);
-
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -202,6 +198,10 @@ export function useMediaRecorder(onRecordingComplete: (file: File, blob: Blob) =
       closeAudioContext();
 
       onRecordingComplete(file, blob);
+      toast({
+        title: 'Recording Saved',
+        description: 'Your recording is ready to transcribe.',
+      });
 
       chunksRef.current = [];
     };
@@ -212,7 +212,7 @@ export function useMediaRecorder(onRecordingComplete: (file: File, blob: Blob) =
       // Some browsers throw if already stopped
     }
     recorder.stop();
-  }, [onRecordingComplete, stopTimer, stopAnimationLoop, stopStream, closeAudioContext, showError]);
+  }, [onRecordingComplete, stopTimer, stopAnimationLoop, stopStream, closeAudioContext, showError, toast]);
 
   useEffect(() => {
     return () => {
@@ -239,7 +239,6 @@ export function useMediaRecorder(onRecordingComplete: (file: File, blob: Blob) =
   return {
     status,
     duration,
-    error,
     audioLevel,
     waveform,
     isRecording,

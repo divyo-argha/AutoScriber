@@ -10,7 +10,6 @@ import { ZipCard, FolderCard } from './source-cards';
 import { DriveTab } from './drive-tab';
 import { SelectedFileCard } from './selected-file-card';
 import { PendingFilesCard } from './pending-files-card';
-import { UploadError } from './upload-messages';
 import { UploadStats } from './upload-stats';
 import styles from './upload-area.module.css';
 
@@ -20,12 +19,9 @@ export function UploadArea() {
     setUploadedFile,
     isDragging,
     setIsDragging,
-    error,
-    setError,
     activeTab,
     setActiveTab,
     preflightChecking,
-    preflightWarning,
     pendingFiles,
     driveLoading,
     driveFiles,
@@ -55,7 +51,6 @@ export function UploadArea() {
           fileName={uploadedFile.name}
           fileSize={uploadedFile.size}
           checking={preflightChecking}
-          preflightWarning={preflightWarning}
           onRemove={removeUploadedFile}
           onStart={() => startPreflight(() => setCurrentView('processing'))}
         />
@@ -69,8 +64,6 @@ export function UploadArea() {
         <PendingFilesCard
           files={pendingFiles}
           checking={preflightChecking}
-          preflightWarning={preflightWarning}
-          error={error}
           onClearAll={clearPending}
           onRemoveFile={removeFile}
           onAddMore={() => fileInputRef.current?.click()}
@@ -157,13 +150,11 @@ export function UploadArea() {
 
         <TabsContent value="record">
           <AudioRecorder
-            onRecordingComplete={(file) => { setError(null); setUploadedFile(file); }}
+            onRecordingComplete={(file) => { setUploadedFile(file); }}
             onCancel={() => setActiveTab('upload')}
           />
         </TabsContent>
       </Tabs>
-
-      {error && <UploadError message={error} />}
 
       <UploadStats />
     </div>

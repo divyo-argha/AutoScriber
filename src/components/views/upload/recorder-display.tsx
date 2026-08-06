@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Mic, AlertCircle } from 'lucide-react';
+import { Mic } from 'lucide-react';
 import { SoundWaveIndicator } from './sound-wave-indicator';
 import type { RecorderStatus } from './use-media-recorder';
 import styles from './audio-recorder.module.css';
@@ -19,13 +19,12 @@ interface RecorderDisplayProps {
   duration: number;
   audioLevel: number;
   waveform: number[];
-  error: string | null;
   isActive: boolean;
   isRecording: boolean;
   isPaused: boolean;
 }
 
-export function RecorderDisplay({ status, duration, audioLevel, waveform, error, isActive, isRecording, isPaused }: RecorderDisplayProps) {
+export function RecorderDisplay({ status, duration, audioLevel, waveform, isActive, isRecording, isPaused }: RecorderDisplayProps) {
   return (
     <>
       <div className={styles.centerRow}>
@@ -81,13 +80,6 @@ export function RecorderDisplay({ status, duration, audioLevel, waveform, error,
           <Mic className={styles.levelIcon} />
           <SoundWaveIndicator audioLevel={audioLevel} isActive={isActive} />
           <span className={styles.levelText}>{Math.round(audioLevel * 100)}%</span>
-        </div>
-      )}
-
-      {error && (
-        <div className={styles.errorBox}>
-          <AlertCircle className={styles.errorIcon} />
-          <span>{error}</span>
         </div>
       )}
     </>

@@ -15,7 +15,6 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
   const {
     status,
     duration,
-    error,
     audioLevel,
     waveform,
     isRecording,
@@ -34,7 +33,6 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
         duration={duration}
         audioLevel={audioLevel}
         waveform={waveform}
-        error={error}
         isActive={isActive}
         isRecording={isRecording}
         isPaused={isPaused}
