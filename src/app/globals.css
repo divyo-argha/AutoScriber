@@ -140,6 +140,14 @@
   }
 }
 
+/* Shared keyframes — single source of truth for loading spinners.
+   Any module may reference these global names directly. */
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Modern Glassmorphism & UI Utilities */
 .glass-card {
   background: color-mix(in oklab, var(--white) 70%, transparent);

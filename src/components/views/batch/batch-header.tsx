@@ -31,7 +31,7 @@ export function BatchHeader({ doneCount, totalCount, failedCount, anyActive, all
           </Button>
         )}
         {doneCount > 1 && (
-          <Button onClick={onDownloadAll} disabled={downloadAllDisabled} className={`${styles.btnGap} ${styles.primaryBtn}`} size="sm">
+          <Button variant="brand" onClick={onDownloadAll} disabled={downloadAllDisabled} className={styles.btnGap} size="sm">
             <Archive className={styles.iconSm} />
             Download All ZIP
           </Button>

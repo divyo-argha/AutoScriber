@@ -47,7 +47,7 @@ export function PendingFilesCard({ files, checking, preflightWarning, error, onC
               <FolderOpen className={styles.iconSm} /> Add more
             </Button>
             <div className={styles.spacer} />
-            <Button size="sm" onClick={onStart} disabled={checking} className={styles.primaryBtn}>
+            <Button size="sm" variant="brand" onClick={onStart} disabled={checking}>
               {checking ? <Loader2 className={`${styles.iconSm} ${styles.spinner}`} /> : <Play className={styles.iconSm} />}
               {checking ? 'Checking...' : `Transcribe ${files.length} files`}
             </Button>

@@ -579,14 +579,6 @@
   width: 0.875rem;
   height: 0.875rem;
   color: var(--brand-500);
-  animation: viewerSpin 1s linear infinite;
+  animation: ui-spin var(--spin-duration) var(--spin-easing) infinite;
 }
 
-@keyframes viewerSpin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}

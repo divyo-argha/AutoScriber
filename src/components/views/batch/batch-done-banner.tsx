@@ -18,7 +18,7 @@ export function BatchDoneBanner({ doneCount, onDownloadAll }: BatchDoneBannerPro
             <p className={styles.doneTitle}>{doneCount} transcriptions ready</p>
             <p className={styles.doneSub}>Each file includes TXT, SRT, and Markdown</p>
           </div>
-          <Button onClick={onDownloadAll} className={`${styles.btnGap} ${styles.primaryBtn}`}>
+          <Button variant="brand" className={styles.btnGap} onClick={onDownloadAll}>
             <Archive className={styles.iconMd} />
             Download All as ZIP
           </Button>

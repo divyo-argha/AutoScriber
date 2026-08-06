@@ -17,11 +17,11 @@ export function ProcessingControls({ isProcessing, paused, cancelling, onPauseRe
     <>
       <div className={styles.controls}>
         <Button
-          variant={paused ? 'default' : 'outline'}
+          variant={paused ? 'brand' : 'outline'}
           size="sm"
           onClick={onPauseResume}
           disabled={cancelling}
-          className={`${styles.controlBtn} ${paused ? styles.pauseResumeActive : ''}`}
+          className={styles.controlBtn}
         >
           {paused ? <Play className={styles.iconSm} /> : <Pause className={styles.iconSm} />}
           {paused ? 'Resume' : 'Pause'}

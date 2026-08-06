@@ -20,7 +20,7 @@ export function SettingsFooter({ saving, onCancel, onSave }: SettingsFooterProps
         <Button variant="ghost" size="sm" onClick={onCancel} className={styles.cancelBtn}>
           Cancel
         </Button>
-        <Button size="sm" onClick={onSave} disabled={saving} className={styles.saveBtn}>
+        <Button size="sm" variant="brand" onClick={onSave} disabled={saving} className={styles.saveBtn}>
           {saving ? <Loader2 className={`${styles.iconSm} ${styles.spin}`} /> : <Check className={styles.iconSm} />}
           Save & Apply Settings
         </Button>

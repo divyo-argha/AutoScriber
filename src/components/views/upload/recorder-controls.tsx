@@ -19,7 +19,7 @@ export function RecorderControls({ status, isRecording, isPaused, onStart, onPau
     <div className={styles.controls}>
       {status === 'idle' && (
         <>
-          <Button onClick={onStart} className={styles.recordBtn}>
+          <Button onClick={onStart} variant="brand" className={styles.recordBtn}>
             <Mic className={styles.micIcon} />
             Start Recording
           </Button>

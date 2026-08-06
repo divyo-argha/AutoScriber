@@ -44,7 +44,7 @@ export function ErrorPanel({ isLocationError, isAuthError, processingStatus, onG
           <Button variant="outline" onClick={onGoBack}>
             Go Back
           </Button>
-          <Button className={`${styles.primaryBtn} ${styles.btnGap}`} onClick={onOpenSettings}>
+          <Button variant="brand" className={styles.btnGap} onClick={onOpenSettings}>
             <Settings className={styles.iconSm} />
             Open Settings
           </Button>
@@ -67,7 +67,7 @@ export function ErrorPanel({ isLocationError, isAuthError, processingStatus, onG
           <Button variant="outline" onClick={onGoBack}>
             Go Back
           </Button>
-          <Button className={`${styles.primaryBtn} ${styles.btnGap}`} onClick={onOpenSettings}>
+          <Button variant="brand" className={styles.btnGap} onClick={onOpenSettings}>
             <Settings className={styles.iconSm} />
             Open Settings
           </Button>
@@ -89,7 +89,7 @@ export function ErrorPanel({ isLocationError, isAuthError, processingStatus, onG
         <Button variant="outline" onClick={onGoBack}>
           Go Back
         </Button>
-        <Button className={styles.primaryBtn} onClick={onRetry}>
+        <Button variant="brand" onClick={onRetry}>
           Retry
         </Button>
       </div>

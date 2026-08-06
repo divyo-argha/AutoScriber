@@ -185,4 +185,20 @@
      ------------------------------------------------------------------ */
   --scrim: color-mix(in oklab, var(--black) 50%, transparent);
   --shadow-card: 0 8px 30px color-mix(in oklab, var(--black) 4%, transparent);
+
+  /* ------------------------------------------------------------------
+     GRADIENT — primary brand gradient used by all primary CTAs.
+     Override these two tokens to re-theme every primary button, badge
+     and accent surface across the whole application.
+     ------------------------------------------------------------------ */
+  --gradient-brand: linear-gradient(135deg, oklch(0.55 0.17 160), oklch(0.48 0.15 170));
+  --gradient-brand-hover: linear-gradient(135deg, oklch(0.58 0.17 160), oklch(0.51 0.15 170));
+  --shadow-brand-glow: 0 8px 16px -3px oklch(0.55 0.17 160 / 35%);
+  --shadow-brand-glow-hover: 0 12px 20px -3px oklch(0.55 0.17 160 / 45%);
+
+  /* ------------------------------------------------------------------
+     MOTION — shared keyframe-driven animation tokens
+     ------------------------------------------------------------------ */
+  --spin-duration: 1s;
+  --spin-easing: linear;
 }

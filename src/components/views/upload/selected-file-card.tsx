@@ -30,7 +30,7 @@ export function SelectedFileCard({ fileName, fileSize, checking, preflightWarnin
             <Button variant="outline" size="sm" onClick={onRemove} className={styles.btnGap}>
               <X className={styles.iconSm} /> Remove
             </Button>
-            <Button size="sm" onClick={onStart} disabled={checking} className={styles.primaryBtn}>
+            <Button size="sm" variant="brand" onClick={onStart} disabled={checking}>
               {checking ? <Loader2 className={`${styles.iconSm} ${styles.spinner}`} /> : <Play className={styles.iconSm} />}
               {checking ? 'Checking...' : 'Start Transcription'}
             </Button>

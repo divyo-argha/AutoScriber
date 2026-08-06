@@ -54,7 +54,7 @@ export function DriveTab({ driveLoading, driveFiles, driveSelected, onConnect, o
             <Button variant="outline" size="sm" onClick={onCancel} className={styles.driveBtn}>
               Cancel
             </Button>
-            <Button size="sm" onClick={onDownload} disabled={driveLoading || driveSelected.size === 0} className={styles.downloadBtn}>
+            <Button size="sm" variant="brand" onClick={onDownload} disabled={driveLoading || driveSelected.size === 0}>
               {driveLoading ? <Loader2 className={`${styles.iconSm} ${styles.spinner}`} /> : <Download className={styles.iconSm} />}
               Download ({driveSelected.size})
             </Button>

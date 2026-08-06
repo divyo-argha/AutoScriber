@@ -51,7 +51,7 @@
 }
 
 .spinIcon {
-  animation: historySpin 1s linear infinite;
+  animation: ui-spin var(--spin-duration) var(--spin-easing) infinite;
 }
 
 .hidden {
@@ -72,17 +72,10 @@
   width: 2rem;
   height: 2rem;
   color: var(--muted-foreground);
-  animation: historySpin 1s linear infinite;
+  animation: ui-spin var(--spin-duration) var(--spin-easing) infinite;
 }
 
-@keyframes historySpin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+
 
 .loadingText {
   margin-top: 0.75rem;
