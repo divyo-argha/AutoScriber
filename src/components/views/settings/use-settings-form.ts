@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 import { AVAILABLE_MODELS, VERTEX_MODELS } from '@/lib/transcriber/types';
@@ -34,8 +35,9 @@ export interface VertexSuccess {
 }
 
 export function useSettingsForm() {
+  const router = useRouter();
   const { toast } = useToast();
-  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setDisabledModel, setSettings, setCurrentView } = useAppStore();
+  const { chunkDuration, overlapDuration, userGeminiApiKey, selectedModel, setSelectedModel, setDisabledModel, setSettings } = useAppStore();
 
   const [mainSectionTab, setMainSectionTab] = useState<'config' | 'advanced'>('config');
   const [activeTab, setActiveTab] = useState<'vertex' | 'gemini'>('vertex');
@@ -280,7 +282,7 @@ export function useSettingsForm() {
         description: 'Your AI engine & GCP credentials configuration are up to date.',
       });
 
-      setCurrentView('upload');
+      router.push('/');
     } catch (err) {
       console.error(err);
       toast({
@@ -291,7 +293,7 @@ export function useSettingsForm() {
     } finally {
       setSaving(false);
     }
-  }, [localChunkDuration, localOverlapDuration, jsonValidation, activeTab, localGeminiKey, selectedVertexModel, selectedGeminiModel, gcpProjectId, gcpLocation, gcpCredentialsPath, gcpCredentialsJson, setSettings, toast, setCurrentView]);
+  }, [localChunkDuration, localOverlapDuration, jsonValidation, activeTab, localGeminiKey, selectedVertexModel, selectedGeminiModel, gcpProjectId, gcpLocation, gcpCredentialsPath, gcpCredentialsJson, setSettings, toast, router]);
 
   const activeModelInfo = activeTab === 'vertex'
     ? VERTEX_MODELS.find(m => m.id === selectedVertexModel)
@@ -318,6 +320,5 @@ export function useSettingsForm() {
     resetAdvanced,
     saveSettings: saveSettingsHandler,
     activeModelInfo,
-    setCurrentView,
   };
 }

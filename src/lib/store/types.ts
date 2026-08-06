@@ -1,6 +1,6 @@
 import type { TranscriptionSegment, ModelInfo, ChunkResult } from '@/lib/transcriber/types';
 
-export type AppView = 'upload' | 'processing' | 'result' | 'history' | 'batch' | 'settings';
+export type AppView = 'upload' | 'processing' | 'result';
 
 export interface HistoryJob {
   id: string;
@@ -35,6 +35,7 @@ export type ProcessingState = {
   currentChunkIndex: number;
   jobId: string | null;
   liveChunkResults: ChunkResult[];
+  paused: boolean;
 };
 
 export type PlaybackState = {
@@ -84,6 +85,7 @@ export interface AppState {
   currentChunkIndex: number;
   liveChunkResults: ChunkResult[];
   jobId: string | null;
+  paused: boolean;
   setProcessingState: (state: Partial<ProcessingState>) => void;
 
   transcriptionSegments: TranscriptionSegment[];

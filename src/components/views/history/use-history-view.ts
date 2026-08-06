@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { listJobs, getJob, deleteJob, parseJobResult } from '@/lib/api';
 import type { JobRecord } from '@/lib/api';
@@ -12,7 +13,8 @@ export type { JobRecord };
  * The view only renders the resulting state.
  */
 export function useHistoryView() {
-  const { setCurrentView, setTranscriptionResult, setUploadedFile } = useAppStore();
+  const router = useRouter();
+  const { setTranscriptionResult, setUploadedFile } = useAppStore();
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
@@ -44,7 +46,8 @@ export function useHistoryView() {
           setUploadedFile(null);
           // Set the transcription result with the job ID so AudioPlayer can load audio from /api/audio
           setTranscriptionResult(result.segments, result.fullText, job.id, result.skippedChunks);
-          setCurrentView('result');
+          useAppStore.getState().setCurrentView('result');
+          router.push('/');
           return;
         }
       }
@@ -53,7 +56,7 @@ export function useHistoryView() {
       console.error('Failed to load job:', err);
       alert('Failed to load transcription.');
     }
-  }, [setTranscriptionResult, setCurrentView, setUploadedFile]);
+  }, [setTranscriptionResult, setUploadedFile, router]);
 
   const deleteJobById = useCallback(async (jobId: string) => {
     if (!confirm('Delete this transcription? This cannot be undone.')) return;
@@ -94,6 +97,5 @@ export function useHistoryView() {
     deleteJobById,
     exportFromHistory,
     toggleExpanded,
-    setCurrentView,
   };
 }

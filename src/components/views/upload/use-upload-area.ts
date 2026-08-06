@@ -1,4 +1,5 @@
 import { useCallback, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import type { BatchJob } from '@/lib/store';
 import { extractAudioFilesFromZip } from '@/lib/file';
@@ -12,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
  * ingestion, batch queueing, and the preflight Gemini connectivity check.
  */
 export function useUploadArea() {
+  const router = useRouter();
   const { uploadedFile, setUploadedFile, setCurrentView, selectedModel, setBatchJobs, clearBatch } = useAppStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -185,9 +187,9 @@ export function useUploadArea() {
         skippedChunks: [],
       }));
       setBatchJobs(jobs);
-      setCurrentView('batch');
+      router.push('/batch');
     });
-  }, [pendingFiles, startPreflight, clearBatch, setBatchJobs, setCurrentView]);
+  }, [pendingFiles, startPreflight, clearBatch, setBatchJobs, router]);
 
   const removeFile = useCallback((index: number) => {
     setPendingFiles(prev => prev.filter((_, j) => j !== index));

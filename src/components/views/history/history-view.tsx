@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
+import { useRouter } from 'next/navigation';
 import { useHistoryView } from './use-history-view';
 import { HistoryHeader } from './history-header';
 import { HistoryLoading, HistoryEmpty } from './history-states';
@@ -9,7 +9,7 @@ import { OtherJobCard } from './other-job-card';
 import styles from './history-view.module.css';
 
 export function HistoryView() {
-  const { setCurrentView } = useAppStore();
+  const router = useRouter();
   const {
     loading,
     jobs,
@@ -35,7 +35,7 @@ export function HistoryView() {
       {loading && jobs.length === 0 ? (
         <HistoryLoading />
       ) : jobs.length === 0 ? (
-        <HistoryEmpty onStart={() => setCurrentView('upload')} />
+        <HistoryEmpty onStart={() => router.push('/')} />
       ) : (
         <div className={styles.jobsGroup}>
           {completedJobs.length > 0 && (

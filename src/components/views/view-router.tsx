@@ -6,9 +6,6 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { UploadArea } from './upload';
 import { ProcessingView } from './processing';
 import { TranscriptionViewer } from './result';
-import { HistoryView } from './history';
-import { BatchView } from './batch';
-import { SettingsView } from './settings';
 import styles from './view-router.module.css';
 
 export function ViewRouter() {
@@ -78,48 +75,6 @@ export function ViewRouter() {
         >
           <ErrorBoundary fallbackTitle="The transcript view hit a snag">
             <TranscriptionViewer />
-          </ErrorBoundary>
-        </motion.div>
-      )}
-
-      {currentView === 'history' && (
-        <motion.div
-          key="history"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
-          transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-        >
-          <ErrorBoundary fallbackTitle="The history view hit a snag">
-            <HistoryView />
-          </ErrorBoundary>
-        </motion.div>
-      )}
-
-      {currentView === 'batch' && (
-        <motion.div
-          key="batch"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
-          transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-        >
-          <ErrorBoundary fallbackTitle="The batch view hit a snag">
-            <BatchView />
-          </ErrorBoundary>
-        </motion.div>
-      )}
-
-      {currentView === 'settings' && (
-        <motion.div
-          key="settings"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
-          transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-        >
-          <ErrorBoundary fallbackTitle="The settings view hit a snag">
-            <SettingsView />
           </ErrorBoundary>
         </motion.div>
       )}

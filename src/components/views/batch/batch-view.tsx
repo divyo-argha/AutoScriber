@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Progress } from '@/components/ui/progress';
 import { AnimatePresence } from 'framer-motion';
 import { useBatchQueue } from './use-batch-queue';
@@ -9,6 +10,7 @@ import { BatchDoneBanner } from './batch-done-banner';
 import styles from './batch-view.module.css';
 
 export function BatchView() {
+  const router = useRouter();
   const {
     batchJobs,
     chunkDuration,
@@ -21,7 +23,6 @@ export function BatchView() {
     downloadAll,
     stopBatch,
     clearBatch,
-    setCurrentView,
   } = useBatchQueue();
 
   return (
@@ -35,7 +36,7 @@ export function BatchView() {
         downloadAllDisabled={false}
         onStop={stopBatch}
         onDownloadAll={downloadAll}
-        onNewBatch={() => { clearBatch(); setCurrentView('upload'); }}
+        onNewBatch={() => { clearBatch(); router.push('/'); }}
       />
 
       {!allFinished && (

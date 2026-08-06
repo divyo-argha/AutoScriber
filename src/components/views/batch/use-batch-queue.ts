@@ -15,7 +15,7 @@ const MAX_POLL_ATTEMPTS = 900; // ~45 minutes
  * progress, cancelling the whole batch, and downloading per-job / zipped output.
  */
 export function useBatchQueue() {
-  const { batchJobs, setCurrentView, clearBatch, chunkDuration } = useAppStore();
+  const { batchJobs, clearBatch, chunkDuration } = useAppStore();
   const processingRef = useRef(false);
   const stopRequestedRef = useRef(false);
   const mountedRef = useRef(true);
@@ -172,6 +172,5 @@ export function useBatchQueue() {
     downloadAll,
     stopBatch,
     clearBatch,
-    setCurrentView,
   };
 }

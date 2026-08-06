@@ -11,6 +11,7 @@ export interface ProcessingSlice {
   currentChunkIndex: number;
   liveChunkResults: ChunkResult[];
   jobId: string | null;
+  paused: boolean;
   setProcessingState: (state: Partial<ProcessingState>) => void;
 
   transcriptionSegments: TranscriptionSegment[];
@@ -33,6 +34,7 @@ export const createProcessingSlice: StateCreator<AppState, [], [], ProcessingSli
   currentChunkIndex: 0,
   liveChunkResults: [],
   jobId: null,
+  paused: false,
 
   transcriptionSegments: [],
   transcriptionText: '',

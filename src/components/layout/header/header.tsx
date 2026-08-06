@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname, useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Mic, History, Settings, AlertTriangle, Ban, Star } from 'lucide-react';
@@ -14,8 +15,9 @@ import { ALL_MODELS } from '@/lib/transcriber/types';
 import styles from './header.module.css';
 
 export function Header() {
+  const router = useRouter();
+  const pathname = usePathname();
   const {
-    currentView,
     setCurrentView,
     selectedModel,
     setSelectedModel,
@@ -28,6 +30,7 @@ export function Header() {
   } = useAppStore();
 
   const hasGeminiKey = !!(userGeminiApiKey || geminiApiKey === '***');
+  const onStudio = pathname === '/';
 
   function isModelAvailable(model?: typeof ALL_MODELS[number]) {
     if (!model) return false;
@@ -37,6 +40,11 @@ export function Header() {
   }
 
   const currentModelDisabledReason = disabledModels[selectedModel];
+
+  const goStudio = () => {
+    if (isProcessing) setCurrentView('processing');
+    router.push('/');
+  };
 
   const ModelOption = ({ model }: { model: typeof ALL_MODELS[number] }) => {
     const available = isModelAvailable(model);
@@ -85,10 +93,12 @@ export function Header() {
               onClick={() => {
                 if (isProcessing) {
                   setCurrentView('processing');
+                  router.push('/');
                   return;
                 }
                 reset();
                 setCurrentView('upload');
+                router.push('/');
               }}
             >
               <div className={styles.logoIcon}>
@@ -132,11 +142,11 @@ export function Header() {
             </div>
 
             <div className={styles.actions}>
-              {isProcessing && currentView !== 'processing' && (
+              {isProcessing && !onStudio && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentView('processing')}
+                  onClick={goStudio}
                   className={styles.processingBtn}
                 >
                   <span className={styles.pingDot} />
@@ -144,30 +154,27 @@ export function Header() {
                 </Button>
               )}
               <Button
-                variant={currentView === 'upload' || currentView === 'processing' || currentView === 'result' ? 'secondary' : 'ghost'}
+                variant={onStudio ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => {
-                  if (isProcessing) setCurrentView('processing');
-                  else setCurrentView('upload');
-                }}
+                onClick={goStudio}
                 className={styles.actionBtn}
               >
                 <Mic className={styles.iconSm} />
                 <span className={styles.hiddenSmInline}>Studio</span>
               </Button>
               <Button
-                variant={currentView === 'history' ? 'secondary' : 'ghost'}
+                variant={pathname === '/history' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => setCurrentView('history')}
+                onClick={() => router.push('/history')}
                 className={styles.actionBtn}
               >
                 <History className={styles.iconSm} />
                 <span className={styles.hiddenSmInline}>History</span>
               </Button>
               <Button
-                variant={currentView === 'settings' ? 'secondary' : 'ghost'}
+                variant={pathname === '/settings' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => setCurrentView('settings')}
+                onClick={() => router.push('/settings')}
                 className={styles.actionBtn}
               >
                 <Settings className={styles.iconSm} />

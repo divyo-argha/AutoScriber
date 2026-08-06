@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Cloud, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSettingsForm } from './use-settings-form';
@@ -11,6 +12,7 @@ import { AdvancedTab } from './advanced-tab';
 import styles from './settings-view.module.css';
 
 export function SettingsView() {
+  const router = useRouter();
   const form = useSettingsForm();
 
   return (
@@ -85,7 +87,7 @@ export function SettingsView() {
 
         <SettingsFooter
           saving={form.saving}
-          onCancel={() => form.setCurrentView('upload')}
+          onCancel={() => router.push('/')}
           onSave={form.saveSettings}
         />
       </div>

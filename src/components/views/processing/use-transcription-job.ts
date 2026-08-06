@@ -1,17 +1,18 @@
 'use client';
 
 import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
-import { getJob, controlJob, parseJobResult, parseChunkResults, startTranscriptionWithSignal, ApiError } from '@/lib/api';
+import { controlJob, startTranscriptionWithSignal, ApiError } from '@/lib/api';
 import type { JobAction } from '@/lib/api';
-import type { ChunkResult, TranscriptionResult } from '@/lib/transcriber/types';
 
 const ACTIVE_JOB_KEY = 'autoscribe_active_job_id';
 
 /**
- * Owns the entire single-file transcription job lifecycle: starting the job,
- * polling its status, and sending pause/resume/cancel control commands.
- * The view component only renders the resulting state.
+ * Owns the user-facing actions for a single-file transcription: starting the
+ * job, sending pause/resume/cancel controls, and local UI state (dialogs).
+ * Progress polling is handled globally by <JobPoller/> in the root layout, so
+ * the job keeps reporting status even when the user navigates away.
  */
 export function useTranscriptionJob() {
   const {
@@ -27,28 +28,19 @@ export function useTranscriptionJob() {
     chunksDone,
     liveChunkResults,
     jobId,
+    paused,
     setProcessingState,
-    setTranscriptionResult,
-    setCurrentView,
     availableModels,
     setDisabledModel,
   } = useAppStore();
+  const router = useRouter();
 
   const hasStarted = useRef(false);
   const startTimeRef = useRef<number>(0);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const [paused, setPaused] = useState(() => useAppStore.getState().processingStatus.startsWith('Paused'));
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmPauseOpen, setConfirmPauseOpen] = useState(false);
-
-  const stopPolling = useCallback(() => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-  }, []);
 
   const estimatedTime = useMemo(() => {
     if (!isProcessing || processingProgress <= 0 || processingProgress >= 100) return '';
@@ -103,28 +95,21 @@ export function useTranscriptionJob() {
     try {
       await controlJob(jobId, action);
       if (action === 'cancel') {
-        stopPolling();
         setProcessingState({
           isProcessing: false,
           processingStatus: 'Cancelled by user',
         });
       } else if (action === 'pause') {
-        setPaused(true);
-        setProcessingState({
-          processingStatus: 'Paused — press Resume to continue',
-        });
+        setProcessingState({ paused: true, processingStatus: 'Paused — press Resume to continue' });
       } else if (action === 'resume') {
-        setPaused(false);
-        setProcessingState({
-          processingStatus: 'Resuming transcription...',
-        });
+        setProcessingState({ paused: false, processingStatus: 'Resuming transcription...' });
       }
     } catch (err) {
       console.error('Control request failed:', err);
     } finally {
       if (action === 'cancel') setCancelling(false);
     }
-  }, [jobId, setProcessingState, stopPolling]);
+  }, [jobId, setProcessingState]);
 
   const startTranscription = useCallback(async () => {
     // Prevent a second job from being started while one is already running
@@ -132,10 +117,10 @@ export function useTranscriptionJob() {
     if (!uploadedFile || hasStarted.current || useAppStore.getState().isProcessing) return;
     hasStarted.current = true;
     startTimeRef.current = Date.now();
-    setPaused(false);
 
     setProcessingState({
       isProcessing: true,
+      paused: false,
       processingProgress: 0,
       processingStatus: 'Uploading audio file...',
       chunksTotal: 0,
@@ -198,103 +183,11 @@ export function useTranscriptionJob() {
     }
   }, [uploadedFile, selectedModel, chunkDuration, overlapDuration, setProcessingState]);
 
-  const pollJobStatus = useCallback(async (id: string) => {
-    try {
-      const job = await getJob(id);
-      if (!job || !job.status) return;
-
-      const liveResults: ChunkResult[] = parseChunkResults(job) as ChunkResult[];
-
-      setPaused(job.controlStatus === 'paused');
-
-      setProcessingState({
-        processingProgress: job.progress ?? 0,
-        chunksTotal: job.chunksTotal ?? 0,
-        chunksDone: job.chunksDone ?? 0,
-        liveChunkResults: liveResults,
-        processingStatus: job.status === 'processing'
-          ? job.controlStatus === 'paused'
-            ? 'Paused — press Resume to continue'
-            : job.chunksDone >= job.chunksTotal && job.chunksTotal > 0
-              ? 'Deduplicating overlaps & finalizing merged transcript...'
-              : `Transcribing segment ${Math.min(job.chunksDone + 1, job.chunksTotal)}/${job.chunksTotal}...`
-          : job.status === 'chunking'
-            ? 'Splitting audio into chunks with FFmpeg...'
-            : job.status === 'completed'
-              ? 'Deduplicating overlaps & finalizing merged transcript...'
-              : job.status === 'failed'
-                ? job.errorMessage || 'Transcription failed'
-                : job.status,
-      });
-
-      if (job.status === 'completed' && job.result) {
-        try { localStorage.removeItem(ACTIVE_JOB_KEY); } catch {}
-        const result: TranscriptionResult | null = parseJobResult(job);
-        if (result && result.segments.length > 0) {
-          setPaused(false);
-          setProcessingState({
-            isProcessing: false,
-            processingProgress: 100,
-            processingStatus: 'Transcription complete!',
-          });
-
-          setTranscriptionResult(result.segments, result.fullText, job.id, result.skippedChunks);
-          setCurrentView('result');
-        }
-      }
-
-      if (job.status === 'failed') {
-        stopPolling();
-        try { localStorage.removeItem(ACTIVE_JOB_KEY); } catch {}
-        setPaused(false);
-        const errMsg = job.errorMessage || 'Transcription failed';
-        if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted') || errMsg.includes('limit: 0')) {
-          setDisabledModel(job.model, 'Rate Limit (429) / Quota Exhausted');
-        }
-        setProcessingState({
-          isProcessing: false,
-          processingStatus: `Failed: ${errMsg}`,
-        });
-      }
-
-      if (job.status === 'cancelled') {
-        stopPolling();
-        try { localStorage.removeItem(ACTIVE_JOB_KEY); } catch {}
-        setPaused(false);
-        setProcessingState({
-          isProcessing: false,
-          processingProgress: job.progress ?? 0,
-          processingStatus: 'Cancelled by user',
-        });
-      }
-    } catch (err) {
-      console.error('Job polling error:', err);
-    }
-  }, [setProcessingState, setTranscriptionResult, setCurrentView, stopPolling]);
-
   useEffect(() => {
     if (uploadedFile && !hasStarted.current) {
       startTranscription();
     }
   }, [uploadedFile, startTranscription]);
-
-  useEffect(() => {
-    if (!jobId) return;
-
-    const tick = async () => {
-      await pollJobStatus(jobId);
-    };
-
-    tick();
-    pollingRef.current = setInterval(tick, 2500);
-
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, [jobId, pollJobStatus]);
 
   return {
     uploadedFile,
@@ -319,15 +212,15 @@ export function useTranscriptionJob() {
     isCancelled,
     isFailed,
     sendControl,
-    setCurrentView,
+    setCurrentView: (view: 'upload' | 'processing' | 'result') => useAppStore.getState().setCurrentView(view),
     startTranscription,
     resetAndGoBack: () => {
       hasStarted.current = false;
-      setCurrentView('upload');
+      router.push('/');
     },
     resetAndOpenSettings: () => {
       hasStarted.current = false;
-      setCurrentView('settings');
+      router.push('/settings');
     },
     resetAndRetry: () => {
       hasStarted.current = false;
@@ -335,3 +228,4 @@ export function useTranscriptionJob() {
     },
   };
 }
+

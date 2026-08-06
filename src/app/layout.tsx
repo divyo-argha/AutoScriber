@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
+import { JobPoller } from "@/components/jobs/job-poller";
 import styles from "./layout.module.css";
 
 const geistSans = Geist({
@@ -36,7 +39,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${styles.body}`}
         suppressHydrationWarning
       >
-        {children}
+        <div className={styles.root}>
+          <Header />
+          <main className={styles.main}>
+            {children}
+          </main>
+          <Footer />
+        </div>
+        <JobPoller />
         <Toaster />
       </body>
     </html>
