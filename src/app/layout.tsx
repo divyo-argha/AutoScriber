@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { JobPoller } from "@/components/jobs/job-poller";
+import { ThemeProvider } from "next-themes";
 import styles from "./layout.module.css";
 
 const geistSans = Geist({
@@ -39,15 +40,17 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${styles.body}`}
         suppressHydrationWarning
       >
-        <div className={styles.root}>
-          <Header />
-          <main className={styles.main}>
-            {children}
-          </main>
-          <Footer />
-        </div>
-        <JobPoller />
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <div className={styles.root}>
+            <Header />
+            <main className={styles.main}>
+              {children}
+            </main>
+            <Footer />
+          </div>
+          <JobPoller />
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

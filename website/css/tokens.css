@@ -1,28 +1,29 @@
 :root {
   color-scheme: dark;
 
-  --brand-teal: #00C9A7;
-  --brand-blue: #0077B6;
+  --brand-teal: #00c9a7;
+  --brand-blue: #0077b6;
   --grad-primary: linear-gradient(135deg, var(--brand-teal), var(--brand-blue));
 
-  --bg-main: #080d14;
-  --bg-surface: #0d1520;
-  --bg-raised: #111c2a;
-  --bg-glass: rgba(255, 255, 255, 0.04);
-  --bg-nav: rgba(8, 13, 20, 0.85);
+  /* Dark mode by default */
+  --bg-main: #06090e;
+  --bg-surface: #0a0f18;
+  --bg-raised: #0f1623;
+  --bg-glass: rgba(255, 255, 255, 0.035);
+  --bg-nav: rgba(6, 9, 14, 0.82);
 
   --border-color: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(0, 201, 167, 0.3);
+  --border-hover: rgba(0, 201, 167, 0.35);
 
-  --text-main: #e8f0fe;
-  --text-muted: #7a8fa6;
-  --text-inverse: #080d14;
+  --text-main: #f1f5f9;
+  --text-muted: #8fa0b5;
+  --text-inverse: #06090e;
 
-  --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.25);
-  --shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 32px rgba(0, 201, 167, 0.2);
-  --shadow-brand: 0 4px 24px rgba(0, 201, 167, 0.25);
-  --shadow-hover: 0 12px 40px rgba(0, 201, 167, 0.35);
+  --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 20px 50px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 40px rgba(0, 201, 167, 0.15);
+  --shadow-brand: 0 6px 20px rgba(0, 201, 167, 0.25);
+  --shadow-hover: 0 12px 36px rgba(0, 201, 167, 0.35);
 
   --radius-sm: 8px;
   --radius-md: 12px;

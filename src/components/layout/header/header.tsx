@@ -1,9 +1,11 @@
 'use client';
 
+import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Mic, History, Settings, AlertTriangle, Ban, Star } from 'lucide-react';
+import { Mic, History, Settings, AlertTriangle, Ban, Star, Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import {
   Select,
   SelectContent,
@@ -13,6 +15,38 @@ import {
 } from '@/components/ui/select';
 import { ALL_MODELS } from '@/lib/transcriber/types';
 import styles from './header.module.css';
+
+function ThemeToggleBtn() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon" className={styles.actionBtn} aria-label="Toggle theme">
+        <Sun className={styles.iconSm} style={{ opacity: 0 }} />
+      </Button>
+    );
+  }
+
+  const isDark = theme === 'dark';
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      className={styles.actionBtn}
+      title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      aria-label="Toggle theme"
+    >
+      {isDark ? <Sun className={styles.iconSm} /> : <Moon className={styles.iconSm} />}
+    </Button>
+  );
+}
 
 export function Header() {
   const router = useRouter();
@@ -180,6 +214,7 @@ export function Header() {
                 <Settings className={styles.iconSm} />
                 <span className={styles.hiddenSmInline}>Settings</span>
               </Button>
+              <ThemeToggleBtn />
             </div>
           </div>
 

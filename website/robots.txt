@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://autoscriber.vercel.app/sitemap.xml
+Sitemap: https://autoscriber-web.vercel.app/sitemap.xml
