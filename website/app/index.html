@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>autoScriber Web — Transcribe Audio in Your Browser</title>
+  <meta name="description" content="autoScriber Web is a zero-backend, browser-native transcription studio. Record or upload Bangla and English audio, transcribe with Gemini, edit speakers, and export TXT, SRT, JSON, DOCX, PDF, and ZIP — all locally in your browser." />
+  <link rel="icon" href="/assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/reset.css" />
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/global.css" />
+  <link rel="stylesheet" href="/app/css/app.module.css" />
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('theme');
+        var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', stored || (systemDark ? 'dark' : 'light'));
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <header class="app-topbar">
+    <div class="app-topbar-inner">
+      <a class="app-logo" href="/index.html" title="Back to autoScriber home">
+        <img src="/assets/logo.png" alt="autoScriber logo" />
+        <span>auto<strong>Scriber</strong> <em>Web</em></span>
+      </a>
+      <nav class="app-actions">
+        <a class="app-link-home" href="/index.html">Home</a>
+        <button class="theme-toggle" data-action="toggle-theme" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">
+          <span id="theme-toggle-icon"></span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="app-view" class="app-view" aria-live="polite">
+    <div class="app-loading">Loading autoScriber Web…</div>
+  </main>
+
+  <dialog id="app-settings-dialog" class="app-dialog">
+    <form method="dialog" class="app-dialog-body">
+      <h2>Settings</h2>
+      <label class="app-field">
+        <span>Gemini API key</span>
+        <input id="setting-api-key" type="password" autocomplete="off" placeholder="AIza… (stored only in this browser)" />
+      </label>
+      <label class="app-field">
+        <span>Default model</span>
+        <select id="setting-model"></select>
+      </label>
+      <p class="app-dialog-note">Your API key never leaves this browser. It is stored in local IndexedDB and used only for direct calls to the Google Gemini API.</p>
+      <div class="app-dialog-actions">
+        <button class="btn-ghost" value="cancel">Cancel</button>
+        <button class="btn-primary" value="save" data-dialog-save="true">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <noscript>
+    <p class="noscript">autoScriber Web needs JavaScript to run. Please enable JavaScript in your browser.</p>
+  </noscript>
+
+  <script src="/js/theme.js" type="module"></script>
+  <script src="/app/js/app-main.js" type="module"></script>
+</body>
+</html>
