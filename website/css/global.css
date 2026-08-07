@@ -73,6 +73,48 @@ button:focus-visible {
   margin: 0 auto;
 }
 
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--grad-primary);
+  color: #fff;
+  border: none;
+  padding: 0.85rem 1.8rem;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-brand);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.btn-ghost {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.2s, border-color 0.2s;
+  border: 1px solid var(--border-color);
+  padding: 0.85rem 1.4rem;
+  border-radius: var(--radius-md);
+}
+
+.btn-ghost:hover {
+  color: var(--text-main);
+  border-color: var(--brand-teal);
+}
+
+.noscript {
+  padding: 2rem;
+  text-align: center;
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(24px);
@@ -99,5 +141,11 @@ button:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .section-header h2 {
+    font-size: 1.8rem;
   }
 }

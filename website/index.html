@@ -12,7 +12,14 @@
   <link rel="stylesheet" href="css/reset.css" />
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/global.css" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="components/nav/nav.module.css" />
+  <link rel="stylesheet" href="components/hero/hero.module.css" />
+  <link rel="stylesheet" href="components/features/features.module.css" />
+  <link rel="stylesheet" href="components/models/models.module.css" />
+  <link rel="stylesheet" href="components/pipeline/pipeline.module.css" />
+  <link rel="stylesheet" href="components/download/download.module.css" />
+  <link rel="stylesheet" href="components/about/about.module.css" />
+  <link rel="stylesheet" href="components/footer/footer.module.css" />
   <script>
     (function () {
       try {
@@ -26,382 +33,26 @@
   </script>
 </head>
 <body>
+  <div data-component="nav"></div>
 
-  <!-- NAV -->
-  <nav class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="#" class="nav-logo">
-        <img src="assets/logo.png" alt="autoScriber logo" />
-        <span>auto<strong>Scriber</strong></span>
-      </a>
-      <ul class="nav-links">
-        <li><a href="#features">Features</a></li>
-        <li><a href="#download">Download</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="https://github.com/divyo-argha/AutoScriber" target="_blank" class="nav-github">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-          GitHub
-        </a></li>
-      </ul>
-      <button class="theme-toggle" data-action="toggle-theme" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">
-        <span id="theme-toggle-icon"></span>
-      </button>
-      <button class="nav-cta" onclick="scrollToDownload()">Download Free</button>
-    </div>
-  </nav>
+  <main>
+    <div data-component="hero"></div>
+    <div data-component="features"></div>
+    <div data-component="models"></div>
+    <div data-component="pipeline"></div>
+    <div data-component="download"></div>
+    <div data-component="about"></div>
+  </main>
 
-  <!-- HERO -->
-  <section class="hero" id="hero">
-    <div class="hero-bg">
-      <div class="hero-orb orb-1"></div>
-      <div class="hero-orb orb-2"></div>
-      <div class="hero-orb orb-3"></div>
-      <div class="hero-grid"></div>
-    </div>
-    <div class="hero-inner">
-      <div class="hero-badge reveal">
-        <span class="badge-dot"></span>
-        v2.0.1 — Now Available
-      </div>
-      <h1 class="hero-title reveal">
-        <span class="hero-brand">auto<strong>Scriber</strong></span>
-        <span class="hero-subtitle-bn">স্বয়ংলিপি</span>
-        <span class="hero-tagline">AI-Powered Bangla<br/>Audio Transcription</span>
-      </h1>
-      <p class="hero-desc reveal">
-        Speaker diarization · Word-level timestamps<br/>
-        100% local storage · 6 export formats · Google Gemini API &amp; Vertex AI
-      </p>
-      <div class="hero-actions reveal">
-        <button class="btn-primary" id="hero-download-btn" onclick="scrollToDownload()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span id="hero-dl-label">Download for macOS</span>
-        </button>
-        <a href="#features" class="btn-ghost">See Features →</a>
-      </div>
-      <div class="hero-platforms reveal">
-        <span>Available for</span>
-        <span class="platform-tag"><svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> macOS</span>
-        <span class="platform-tag"><svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M3 5.557L10.025 5l.004 6.961-7.021.04L3 5.557zm7.029 7.638l.005 6.961L3.003 19.6l-.001-6.404 7.027-.001zm.951-7.668l9.318-.001v6.837l-9.318.074V5.527zm9.319 7.601l-.002 6.836-9.317-.001-.002-6.835h9.321z"/></svg> Windows</span>
-        <span class="platform-tag"><svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587.026 1.522-.756 2.078-1.171 1.274-.91 1.667-1.3 2.397-1.348h.034c.632 0 1.599.388 2.335.794.733.4 1.573.7 2.237.6.826-.134 1.34-.6 1.5-1.348.16-.748-.007-1.726-.36-2.607-.355-.88-.937-1.67-1.612-2.158-.675-.49-1.35-.7-1.9-.7-.55 0-.9.21-1.1.5-.2.29-.25.65-.25 1.05 0 .4.05.85.05 1.3 0 .45-.05.9-.25 1.25-.2.35-.55.6-1.1.6-.55 0-1.1-.25-1.65-.5-.55-.25-1.1-.5-1.65-.5-.55 0-1.1.25-1.65.5-.55.25-1.1.5-1.65.5-.55 0-.9-.25-1.1-.6-.2-.35-.25-.8-.25-1.25 0-.45.05-.9.05-1.3 0-.4-.05-.76-.25-1.05-.2-.29-.55-.5-1.1-.5-.55 0-1.225.21-1.9.7-.675.49-1.257 1.278-1.612 2.158-.353.881-.52 1.859-.36 2.607.16.748.674 1.214 1.5 1.348.664.1 1.504-.2 2.237-.6.736-.406 1.703-.794 2.335-.794h.034c.73.048 1.123.438 2.397 1.348.556.415 1.491 1.197 2.078 1.171.238.482.682.83 1.208.946.75.2 1.69-.004 2.616-.47.864-.465 1.964-.4 2.774-.6.405-.131.766-.267.94-.601.174-.339.143-.804-.106-1.484-.076-.242-.018-.571.04-.97.028-.136.055-.337.055-.536a1.27 1.27 0 00-.132-.602c-.206-.411-.551-.544-.864-.68-.312-.133-.598-.201-.797-.4-.213-.239-.403-.571-.663-.839a.424.424 0 00-.11-.135c.123-.805-.009-1.657-.287-2.489-.589-1.771-1.831-3.47-2.716-4.521-.75-1.067-.974-1.928-1.05-3.02-.065-1.491 1.056-5.965-3.17-6.298-.165-.013-.325-.021-.48-.021z"/></svg> Linux</span>
-      </div>
-    </div>
-    <div class="hero-visual reveal">
-      <div class="app-mockup">
-        <div class="mockup-bar">
-          <span></span><span></span><span></span>
-        </div>
-        <div class="mockup-body">
-          <div class="mockup-waveform">
-            <div class="wave-bars">
-              <span></span><span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span><span></span>
-            </div>
-          </div>
-          <div class="mockup-transcript">
-            <div class="transcript-line">
-              <span class="speaker speaker-1">Speaker 1</span>
-              <span class="transcript-text">আমাদের আজকের আলোচনার বিষয় হলো...</span>
-            </div>
-            <div class="transcript-line">
-              <span class="speaker speaker-2">Speaker 2</span>
-              <span class="transcript-text">হ্যাঁ, এটি একটি গুরুত্বপূর্ণ বিষয়।</span>
-            </div>
-            <div class="transcript-line">
-              <span class="speaker speaker-1">Speaker 1</span>
-              <span class="transcript-text typing">বাংলা ভাষায় AI ট্রান্সক্রিপশন...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <div data-component="footer"></div>
 
-  <!-- FEATURES -->
-  <section class="features" id="features">
-    <div class="section-inner">
-      <div class="section-header reveal">
-        <span class="section-label">Features</span>
-        <h2>Everything you need to transcribe</h2>
-        <p>Built specifically for Bangla language researchers, journalists, and practitioners.</p>
-      </div>
-      <div class="features-grid">
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M12 18.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13z"/><path d="M12 11v4m0-7h.01M8 21h8M12 18.5V21"/></svg></div>
-          <h3>Bangla & English</h3>
-          <p>Full support for Bangla transcription with seamless code-switching between Bangla and English in the same audio.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
-          <h3>Speaker Diarization</h3>
-          <p>Automatically identifies and labels different speakers throughout the recording. Know who said what, when.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <h3>Word-Level Timestamps</h3>
-          <p>Every word is timestamped. Click any word in the transcript to jump to that exact moment in the audio.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></div>
-          <h3>6 Export Formats</h3>
-          <p>Export your transcripts as TXT, SRT, JSON, DOCX, PDF, or ZIP. Use them anywhere, in any workflow.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
-          <h3>Private by Design</h3>
-          <p>Your audio and transcripts are stored only on your machine. The only outbound requests are AI API calls — no telemetry, no tracking.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z"/></svg></div>
-          <h3>6 Gemini AI Models</h3>
-          <p>Choose from Gemini 2.5 Pro, 2.5 Flash, 2.5 Flash-Lite, 2.0 Flash, 1.5 Flash, or 1.5 Pro — each tuned for different speed and accuracy needs.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg></div>
-          <h3>Vertex AI Enterprise</h3>
-          <p>Use Google Cloud Vertex AI with service account credentials for secure, high-scale enterprise inference.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></div>
-          <h3>Job Control</h3>
-          <p>Pause, resume, and cancel transcription jobs in real time — full control while processing.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></div>
-          <h3>Batch Queueing</h3>
-          <p>Queue multiple files simultaneously with individual progress tracking for every job.</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
-          <h3>Browser Recording</h3>
-          <p>Record high-quality audio directly via your microphone — no file uploads required.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- DOWNLOAD -->
-  <section class="download" id="download">
-    <div class="section-inner">
-      <div class="section-header reveal">
-        <span class="section-label">Download</span>
-        <h2>Get autoScriber</h2>
-        <p>Free desktop app. No account required. Works on all major platforms.</p>
-      </div>
-
-      <div class="download-tabs reveal">
-        <button class="tab-btn active" data-os="mac" id="tab-mac"><svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> macOS</button>
-        <button class="tab-btn" data-os="windows" id="tab-windows"><svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M3 5.557L10.025 5l.004 6.961-7.021.04L3 5.557zm7.029 7.638l.005 6.961L3.003 19.6l-.001-6.404 7.027-.001zm.951-7.668l9.318-.001v6.837l-9.318.074V5.527zm9.319 7.601l-.002 6.836-9.317-.001-.002-6.835h9.321z"/></svg> Windows</button>
-        <button class="tab-btn" data-os="linux" id="tab-linux"><svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587.026 1.522-.756 2.078-1.171 1.274-.91 1.667-1.3 2.397-1.348h.034c.632 0 1.599.388 2.335.794.733.4 1.573.7 2.237.6.826-.134 1.34-.6 1.5-1.348.16-.748-.007-1.726-.36-2.607-.355-.88-.937-1.67-1.612-2.158-.675-.49-1.35-.7-1.9-.7-.55 0-.9.21-1.1.5-.2.29-.25.65-.25 1.05 0 .4.05.85.05 1.3 0 .45-.05.9-.25 1.25-.2.35-.55.6-1.1.6-.55 0-1.1-.25-1.65-.5-.55-.25-1.1-.5-1.65-.5-.55 0-1.1.25-1.65.5-.55.25-1.1.5-1.65.5-.55 0-.9-.25-1.1-.6-.2-.35-.25-.8-.25-1.25 0-.45.05-.9.05-1.3 0-.4-.05-.76-.25-1.05-.2-.29-.55-.5-1.1-.5-.55 0-1.225.21-1.9.7-.675.49-1.257 1.278-1.612 2.158-.353.881-.52 1.859-.36 2.607.16.748.674 1.214 1.5 1.348.664.1 1.504-.2 2.237-.6.736-.406 1.703-.794 2.335-.794h.034c.73.048 1.123.438 2.397 1.348.556.415 1.491 1.197 2.078 1.171.238.482.682.83 1.208.946.75.2 1.69-.004 2.616-.47.864-.465 1.964-.4 2.774-.6.405-.131.766-.267.94-.601.174-.339.143-.804-.106-1.484-.076-.242-.018-.571.04-.97.028-.136.055-.337.055-.536a1.27 1.27 0 00-.132-.602c-.206-.411-.551-.544-.864-.68-.312-.133-.598-.201-.797-.4-.213-.239-.403-.571-.663-.839-.278-.832-.41-1.684-.287-2.489-.589-1.771-1.831-3.47-2.716-4.521-.75-1.067-.974-1.928-1.05-3.02-.065-1.491 1.056-5.965-3.17-6.298-.165-.013-.325-.021-.48-.021z"/></svg> Linux</button>
-      </div>
-
-      <!-- macOS -->
-      <div class="download-panel active" id="panel-mac">
-        <div class="download-cards">
-          <div class="download-card recommended">
-            <div class="dl-badge">Recommended</div>
-            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></div>
-            <h3>Apple Silicon</h3>
-            <p>M-series (M1 through M5+)</p>
-            <div class="dl-actions">
-              <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-arm64.dmg" class="btn-download">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download DMG <span class="dl-size">89 MB</span>
-              </a>
-              <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-arm64-mac.zip" class="btn-download">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download ZIP <span class="dl-size">86 MB</span>
-              </a>
-            </div>
-          </div>
-          <div class="download-card">
-            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></div>
-            <h3>Intel Mac</h3>
-            <p>Intel Core processors</p>
-            <div class="dl-actions">
-              <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.dmg" class="btn-download">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download DMG <span class="dl-size">94 MB</span>
-              </a>
-              <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-mac.zip" class="btn-download">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download ZIP <span class="dl-size">91 MB</span>
-              </a>
-            </div>
-          </div>
-        </div>
-        <div class="install-cmd reveal">
-          <span class="cmd-label">Open the installer</span>
-          <div class="cmd-block">
-            <code>open autoScriber-2.0.1-arm64.dmg</code>
-            <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
-          </div>
-          <span class="cmd-note">Drag AutoScriber into Applications, then right-click → Open on first launch (unsigned build). No package manager required.</span>
-        </div>
-      </div>
-
-      <!-- Windows -->
-      <div class="download-panel" id="panel-windows">
-        <div class="download-cards">
-          <div class="download-card recommended">
-            <div class="dl-badge">Recommended</div>
-            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36"><path d="M3 5.557L10.025 5l.004 6.961-7.021.04L3 5.557zm7.029 7.638l.005 6.961L3.003 19.6l-.001-6.404 7.027-.001zm.951-7.668l9.318-.001v6.837l-9.318.074V5.527zm9.319 7.601l-.002 6.836-9.317-.001-.002-6.835h9.321z"/></svg></div>
-            <h3>Windows Universal</h3>
-            <p>NSIS installer — Windows 7 and later</p>
-            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.exe" class="btn-download">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download EXE <span class="dl-size">136 MB</span>
-            </a>
-          </div>
-          <div class="download-card">
-            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36"><path d="M3 5.557L10.025 5l.004 6.961-7.021.04L3 5.557zm7.029 7.638l.005 6.961L3.003 19.6l-.001-6.404 7.027-.001zm.951-7.668l9.318-.001v6.837l-9.318.074V5.527zm9.319 7.601l-.002 6.836-9.317-.001-.002-6.835h9.321z"/></svg></div>
-            <h3>Windows 64-bit</h3>
-            <p>Standalone installer — x64 only</p>
-            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-x64.exe" class="btn-download">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download EXE <span class="dl-size">72 MB</span>
-            </a>
-          </div>
-          <div class="download-card">
-            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36"><path d="M3 5.557L10.025 5l.004 6.961-7.021.04L3 5.557zm7.029 7.638l.005 6.961L3.003 19.6l-.001-6.404 7.027-.001zm.951-7.668l9.318-.001v6.837l-9.318.074V5.527zm9.319 7.601l-.002 6.836-9.317-.001-.002-6.835h9.321z"/></svg></div>
-            <h3>Portable Edition</h3>
-            <p>64-bit, no installation needed</p>
-            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-x64-portable.exe" class="btn-download">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download EXE
-            </a>
-          </div>
-        </div>
-        <div class="install-cmd reveal">
-          <span class="cmd-label">Launch the installer</span>
-          <div class="cmd-block">
-            <code>Start-Process .\autoScriber-2.0.1.exe</code>
-            <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
-          </div>
-          <span class="cmd-note">Run the installer and follow the wizard — no package manager required.</span>
-        </div>
-      </div>
-
-      <!-- Linux -->
-      <div class="download-panel" id="panel-linux">
-        <div class="download-cards">
-          <div class="download-card recommended">
-            <div class="dl-badge">Recommended</div>
-            <div class="dl-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587.026 1.522-.756 2.078-1.171 1.274-.91 1.667-1.3 2.397-1.348h.034c.632 0 1.599.388 2.335.794.733.4 1.573.7 2.237.6.826-.134 1.34-.6 1.5-1.348.16-.748-.007-1.726-.36-2.607-.355-.88-.937-1.67-1.612-2.158-.675-.49-1.35-.7-1.9-.7-.55 0-.9.21-1.1.5-.2.29-.25.65-.25 1.05 0 .4.05.85.05 1.3 0 .45-.05.9-.25 1.25-.2.35-.55.6-1.1.6-.55 0-1.1-.25-1.65-.5-.55-.25-1.1-.5-1.65-.5-.55 0-1.1.25-1.65.5-.55.25-1.1.5-1.65.5-.55 0-.9-.25-1.1-.6-.2-.35-.25-.8-.25-1.25 0-.45.05-.9.05-1.3 0-.4-.05-.76-.25-1.05-.2-.29-.55-.5-1.1-.5-.55 0-1.225.21-1.9.7-.675.49-1.257 1.278-1.612 2.158-.353.881-.52 1.859-.36 2.607.16.748.674 1.214 1.5 1.348.664.1 1.504-.2 2.237-.6.736-.406 1.703-.794 2.335-.794h.034c.73.048 1.123.438 2.397 1.348.556.415 1.491 1.197 2.078 1.171.238.482.682.83 1.208.946.75.2 1.69-.004 2.616-.47.864-.465 1.964-.4 2.774-.6.405-.131.766-.267.94-.601.174-.339.143-.804-.106-1.484-.076-.242-.018-.571.04-.97.028-.136.055-.337.055-.536a1.27 1.27 0 00-.132-.602c-.206-.411-.551-.544-.864-.68-.312-.133-.598-.201-.797-.4-.213-.239-.403-.571-.663-.839-.278-.832-.41-1.684-.287-2.489-.589-1.771-1.831-3.47-2.716-4.521-.75-1.067-.974-1.928-1.05-3.02-.065-1.491 1.056-5.965-3.17-6.298-.165-.013-.325-.021-.48-.021z"/></svg></div>
-            <h3>Linux AppImage</h3>
-            <p>Works on all distributions</p>
-            <a href="https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage" class="btn-download">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download AppImage <span class="dl-size">99 MB</span>
-            </a>
-          </div>
-        </div>
-        <div class="install-cmd reveal">
-          <span class="cmd-label">Run from terminal</span>
-          <div class="cmd-block">
-            <code>chmod +x autoScriber-2.0.1.AppImage && ./autoScriber-2.0.1.AppImage</code>
-            <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
-          </div>
-          <span class="cmd-note">No installation needed — AppImage runs directly on any Linux distro.</span>
-        </div>
-      </div>
-
-      <div class="download-footer reveal">
-        <a href="https://github.com/divyo-argha/AutoScriber/releases/tag/v2.0.1" target="_blank" class="btn-ghost">
-          View all releases on GitHub →
-        </a>
-        <span class="version-info">Version 2.0.1 · August 2026 · MIT License</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ABOUT -->
-  <section class="about" id="about">
-    <div class="section-inner">
-      <div class="about-grid">
-        <div class="about-content reveal">
-          <span class="section-label">About</span>
-          <h2>Built for Bangla.<br/>Powered by AI.</h2>
-          <p>
-            autoScriber (স্বয়ংলিপি — "self-writing") was built to solve a real problem: 
-            there were no good tools for transcribing Bangla audio with the accuracy and 
-            features that researchers and journalists actually need.
-          </p>
-          <p>
-            It uses Google's Gemini AI models — through the Gemini API (Google AI Studio)
-            or Google Cloud Vertex AI — to deliver accurate Bangla transcription with automatic speaker identification and
-            word-level synchronization — all running as a native
-            desktop app with your data staying entirely on your machine.
-          </p>
-          <p>
-            Built with care for Bangla language researchers, oral historians, journalists, 
-            and anyone working with spoken Bangla content.
-          </p>
-          <div class="about-tags">
-            <span>Bangla NLP</span>
-            <span>Speaker Diarization</span>
-            <span>Open Source</span>
-            <span>Privacy-first</span>
-            <span>Gemini AI</span>
-            <span>Vertex AI</span>
-          </div>
-        </div>
-        <div class="about-stats reveal">
-          <div class="stat-card">
-            <div class="stat-num">6</div>
-            <div class="stat-label">Export Formats</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num">6</div>
-            <div class="stat-label">AI Models</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num">3</div>
-            <div class="stat-label">Platforms</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num">0</div>
-            <div class="stat-label">Data Stored in Cloud</div>
-          </div>
-          <div class="about-stack">
-            <span class="stack-label">Built with</span>
-            <div class="stack-tags">
-              <span>Electron</span>
-              <span>Next.js</span>
-              <span>TypeScript</span>
-              <span>Gemini AI</span>
-              <span>Prisma</span>
-              <span>Vertex AI</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-brand">
-        <img src="assets/logo.png" alt="autoScriber" />
-        <div>
-          <span class="footer-name">auto<strong>Scriber</strong></span>
-          <span class="footer-bn">স্বয়ংলিপি</span>
-        </div>
-      </div>
-      <div class="footer-links">
-        <a href="https://github.com/divyo-argha/AutoScriber" target="_blank">GitHub</a>
-        <a href="https://github.com/divyo-argha/AutoScriber/releases" target="_blank">Releases</a>
-        <a href="https://github.com/divyo-argha/AutoScriber/blob/main/LICENSE" target="_blank">MIT License</a>
-        <a href="https://github.com/divyo-argha/AutoScriber/blob/main/README.md" target="_blank">Docs</a>
-      </div>
-      <p class="footer-copy">© 2026 autoScriber. Built with care for Bangla language researchers.</p>
-    </div>
-  </footer>
+  <noscript>
+    <p class="noscript">autoScriber needs JavaScript to render this page. Please enable JavaScript in your browser.</p>
+  </noscript>
 
   <script src="js/main.js"></script>
   <script type="module" src="js/theme.js"></script>
+  <script type="module" src="components/nav/nav.js"></script>
+  <script type="module" src="components/download/download.js"></script>
 </body>
 </html>

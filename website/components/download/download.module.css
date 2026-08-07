@@ -1,0 +1,212 @@
+.download {
+  background: var(--bg-main);
+}
+
+.download-tabs {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active,
+.tab-btn:hover {
+  background: var(--grad-primary);
+  border-color: transparent;
+  color: #fff;
+}
+
+.download-panel {
+  display: none;
+}
+
+.download-panel.active {
+  display: block;
+}
+
+.download-cards {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.download-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.75rem;
+  text-align: center;
+  min-width: 220px;
+  position: relative;
+  transition: transform 0.3s, border-color 0.3s;
+}
+
+.download-card.recommended {
+  border-color: var(--border-hover);
+}
+
+.download-card:hover {
+  transform: translateY(-4px);
+}
+
+.dl-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--grad-primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.dl-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  color: var(--brand-teal);
+}
+
+.download-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.download-card p {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-bottom: 1.25rem;
+}
+
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--grad-primary);
+  color: #fff;
+  text-decoration: none;
+  padding: 0.65rem 1.2rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-brand);
+}
+
+.btn-download:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.dl-size {
+  opacity: 0.7;
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+.dl-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.install-cmd {
+  max-width: 640px;
+  margin: 0 auto 1.5rem;
+}
+
+.cmd-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cmd-block {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.85rem 1.2rem;
+}
+
+.cmd-block code {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--brand-teal);
+  flex: 1;
+  overflow-x: auto;
+}
+
+.copy-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  color: var(--brand-teal);
+  border-color: var(--brand-teal);
+}
+
+.copy-btn.copied {
+  color: var(--brand-teal);
+  border-color: var(--brand-teal);
+}
+
+.cmd-note {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.6rem;
+}
+
+.download-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.version-info {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+  .download-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+}
