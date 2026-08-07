@@ -26,14 +26,14 @@ const state = {
   settings: { apiKey: '', model: MODELS[1].id },
   view: 'dashboard',
   activeJobId: null,
-  draftBlob: null,
-  draftFileName: '',
+  draftFiles: [],
   recording: false,
   recorder: null,
   recChunks: [],
   recTimer: null,
   recElapsed: 0,
   transcription: null,
+  queue: null,
   syncTimer: null,
 };
 
@@ -45,15 +45,17 @@ const apiKeyInput = document.getElementById('setting-api-key');
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
 fileInput.accept = 'audio/*';
+fileInput.multiple = true;
 fileInput.style.display = 'none';
 document.body.appendChild(fileInput);
 fileInput.addEventListener('change', () => {
-  if (fileInput.files && fileInput.files[0]) {
-    state.draftBlob = fileInput.files[0];
-    state.draftFileName = fileInput.files[0].name;
+  if (fileInput.files && fileInput.files.length) {
+    state.draftFiles = Array.from(fileInput.files);
     renderNewView();
   }
 });
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function setView(html) {
   viewEl.innerHTML = html;
@@ -90,7 +92,11 @@ function jobMeta(job) {
     `${made.toLocaleDateString()} ${made.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
     esc(job.model || 'gemini'),
   ];
-  if (Array.isArray(job.segments) && job.segments.length) parts.push(`${job.segments.length} segments`);
+  const segs = jobSegments(job);
+  if (segs.length) parts.push(`${segs.length} segments`);
+  if (job.status === 'processing' && job.chunksTotal && job.chunksDone != null) {
+    parts.push(`${job.chunksDone}/${job.chunksTotal} chunks`);
+  }
   return parts.join(' · ');
 }
 
@@ -121,6 +127,29 @@ function formatClock(totalSeconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+function jobSegments(job) {
+  if (Array.isArray(job.segments) && job.segments.length) return job.segments;
+  if (Array.isArray(job.chunkResults) && job.chunkResults.length) {
+    const offsets = Array.isArray(job.chunkOffsets) ? job.chunkOffsets : [];
+    const all = [];
+    job.chunkResults.forEach((segs, i) => {
+      if (!Array.isArray(segs)) return;
+      const offset = offsets[i] || 0;
+      for (const seg of segs) {
+        all.push({
+          speaker: seg.speaker,
+          startTime: Math.max(0, (Number(seg.startTime) || 0) + offset),
+          endTime: Math.max(0, (Number(seg.endTime) || 0) + offset),
+          text: seg.text,
+        });
+      }
+    });
+    all.sort((a, b) => a.startTime - b.startTime);
+    return all;
+  }
+  return [];
+}
+
 async function renderDashboard() {
   state.view = 'dashboard';
   state.activeJobId = null;
@@ -133,6 +162,7 @@ async function renderDashboard() {
     return;
   }
   const hasKey = !!state.settings.apiKey;
+  const queuable = jobs.filter((j) => j.status === 'draft' || j.status === 'paused' || j.status === 'failed');
   const grid = jobs.length
     ? `<div class="job-grid">${jobs.map(jobCard).join('')}</div>`
     : `<div class="empty-state">
@@ -142,10 +172,11 @@ async function renderDashboard() {
   setView(`
     <h1 class="view-title">Dashboard</h1>
     <p class="view-sub">Your jobs are stored privately in this browser. Audio is only sent to the Gemini API during transcription.</p>
-    ${hasKey ? '' : '<div class="status-banner error">No API key set yet — add one in Settings before transcribing.</div>'}
+    ${hasKey ? '' : '<div class="status-banner error">No API key set yet — add a key in Settings before transcribing.</div>'}
     <div class="app-actions-row">
       <button class="btn-primary" data-action="new-job">+ New job</button>
       <button class="app-btn-secondary" data-action="open-settings">Settings</button>
+      ${queuable.length ? `<button class="btn-primary" data-action="transcribe-queue">Transcribe queue (${queuable.length})</button>` : ''}
     </div>
     ${grid}
   `);
@@ -154,16 +185,28 @@ async function renderDashboard() {
 function renderNewView() {
   state.view = 'new';
   stopSync();
-  const hasAudio = !!state.draftBlob;
+  const files = state.draftFiles;
+  const fileRows = files
+    .map(
+      (f) => `
+      <div class="file-fact">
+        <span class="file-fact-name">${esc(f.name)}</span>
+        <span class="file-fact-size">${formatBytes(f.size)}</span>
+      </div>`
+    )
+    .join('');
+  const fileList = files.length
+    ? `<div class="app-field"><span>Selected ${files.length} file(s)</span>${fileRows}<span class="app-hint">Each file becomes its own job. Jobs are processed one after another.</span></div>`
+    : `<div class="dropzone" data-action="choose-file">
+         <p>↑</p>
+         <strong>Choose audio files</strong>
+         <span>MP3, WAV, OGG, M4A, WebM… (multi-select supported)</span>
+       </div>`;
   setView(`
     <button class="app-btn-secondary" data-action="dashboard">← All jobs</button>
     <h1 class="view-title" style="margin-top:1rem">New transcription job</h1>
-    <p class="view-sub">Upload an audio file or record directly from your microphone. Everything stays in your browser until you start transcription.</p>
+    <p class="view-sub">Upload one or more audio files or record directly from your microphone. Everything stays in your browser until you start transcription.</p>
     <form class="app-form" data-new-form>
-      <label class="app-field">
-        <span>Job name</span>
-        <input id="new-job-name" type="text" placeholder="e.g. Interview with Rahim" value="${esc(state.draftFileName.replace(/\.[^.]+$/, ''))}" />
-      </label>
       <label class="app-field">
         <span>Model</span>
         <select id="new-job-model">
@@ -171,28 +214,16 @@ function renderNewView() {
         </select>
         <span class="app-hint">Gemini <code>2.5 Flash</code> is a good default for speed. Use <code>2.5 Pro</code> for higher accuracy on noisy audio.</span>
       </label>
-      ${hasAudio
-        ? `<div class="file-fact">
-             <span class="file-fact-name">${esc(state.draftFileName)}</span>
-             <span class="file-fact-size">${formatBytes(state.draftBlob.size)}</span>
-             <span class="app-actions-row" style="margin-left:auto;margin-bottom:0">
-               <button type="button" class="app-btn-secondary" data-action="choose-file">Replace</button>
-               <button type="button" class="app-btn-secondary" data-action="clear-file">Remove</button>
-             </span>
-           </div>`
-        : `<div class="dropzone" data-action="choose-file">
-             <p>↑</p>
-             <strong>Choose an audio file</strong>
-             <span>MP3, WAV, OGG, M4A, WebM…</span>
-           </div>`}
+      ${files.length ? `<div style="display:flex;gap:0.75rem"><button type="button" class="app-btn-secondary" data-action="choose-file">Add more files</button><button type="button" class="app-btn-secondary" data-action="clear-file">Clear selection</button></div>` : ''}
+      ${fileList}
       <div class="record-panel">
         <button type="button" class="rec-btn ${state.recording ? 'recording' : ''}" data-action="toggle-record">
           ${state.recording ? '&#9632;' : '&#9679;'}
         </button>
-        <div class="rec-timer">${state.recording ? formatClock(state.recElapsed) : 'Tap to record from microphone'}</div>
+        <div class="rec-timer">${state.recording ? formatClock(state.recElapsed) : 'or record from microphone'}</div>
       </div>
       <div class="app-actions-row">
-        <button type="submit" class="btn-primary" ${hasAudio ? '' : 'disabled'}>Create &amp; transcribe</button>
+        <button type="submit" class="btn-primary" ${files.length ? '' : 'disabled'}>${files.length > 1 ? `Create ${files.length} jobs &amp; transcribe` : 'Create &amp; transcribe'}</button>
         <button type="button" class="app-btn-secondary" data-action="dashboard">Cancel</button>
       </div>
     </form>
@@ -222,13 +253,13 @@ async function toggleRecording() {
     recorder.onstop = () => {
       stream.getTracks().forEach((t) => t.stop());
       const type = state.recChunks[0]?.type || 'audio/webm';
-      state.draftBlob = new Blob(state.recChunks, { type });
-      state.draftFileName = `recording-${Date.now()}.webm`;
+      const file = new File(state.recChunks, `recording-${Date.now()}.webm`, { type, lastModified: Date.now() });
+      state.draftFiles = [file];
       state.recording = false;
       state.recorder = null;
       clearInterval(state.recTimer);
       state.recTimer = null;
-      toast('Recording saved. You can now create the job.');
+      toast('Recording saved.');
       renderNewView();
     };
     recorder.start(250);
@@ -243,8 +274,8 @@ async function toggleRecording() {
   }
 }
 
-async function createJob() {
-  if (!state.draftBlob) {
+async function createJobs() {
+  if (!state.draftFiles.length) {
     toast('Choose or record an audio file first.');
     return;
   }
@@ -252,28 +283,38 @@ async function createJob() {
     toast('Add your Gemini API key in Settings before transcribing.');
     return;
   }
-  const nameInput = document.getElementById('new-job-name');
   const modelInput = document.getElementById('new-job-model');
-  const name = (nameInput ? nameInput.value : '').trim() || 'Untitled job';
   const model = modelInput ? modelInput.value : state.settings.model;
 
-  const job = {
-    id: (crypto.randomUUID && crypto.randomUUID()) || `job-${Date.now()}`,
-    createdAt: Date.now(),
-    name,
-    model,
-    fileName: state.draftFileName,
-    status: 'draft',
-    segments: [],
-    progress: 0,
-    error: '',
-  };
-  await saveJob(job, state.draftBlob);
-  state.draftBlob = null;
-  state.draftFileName = '';
-  state.activeJobId = job.id;
-  await renderJobView(job.id);
-  startTranscription();
+  const created = [];
+  for (const file of state.draftFiles) {
+    const name = (file.name.match(/[^.]+(?=\.[^.]+$)/) || [file.name])[0] || 'Untitled job';
+    const job = {
+      id: (crypto.randomUUID && crypto.randomUUID()) || `job-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      createdAt: Date.now(),
+      name,
+      model,
+      fileName: file.name,
+      status: 'draft',
+      segments: [],
+      chunkResults: [],
+      chunkOffsets: [],
+      chunksDone: 0,
+      chunksTotal: 0,
+      progress: 0,
+      error: '',
+    };
+    await saveJob(job, file);
+    created.push(job.id);
+  }
+  state.draftFiles = [];
+  if (created.length === 1) {
+    state.activeJobId = created[0];
+    await renderJobView(created[0]);
+    startTranscription();
+  } else {
+    await processQueue(created);
+  }
 }
 
 async function fetchAudioBlob(job) {
@@ -288,14 +329,12 @@ async function fetchAudioBlob(job) {
   return null;
 }
 
-async function startTranscription() {
-  const jobId = state.activeJobId;
-  if (!jobId || state.transcription) return;
+async function runTranscription(jobId) {
+  if (state.transcription) return;
   const job = await getJob(jobId);
   if (!job) return;
   if (!state.settings.apiKey) {
     toast('Add your Gemini API key in Settings first.');
-    renderJobView(jobId);
     return;
   }
   const audioBlob = await fetchAudioBlob(job);
@@ -304,10 +343,14 @@ async function startTranscription() {
     return;
   }
 
-  state.transcription = { cancelled: false };
+  const wasResume = job.status === 'paused' && job.chunksDone > 0;
+  if (!Array.isArray(job.chunkResults)) job.chunkResults = [];
+  if (!Array.isArray(job.chunkOffsets)) job.chunkOffsets = [];
+
+  state.transcription = { cancelled: false, pauseRequested: false };
   job.status = 'processing';
   job.error = '';
-  job.progress = 5;
+  job.progress = wasResume ? job.progress || 5 : 5;
   await updateJob(job);
   await renderJobView(jobId);
 
@@ -315,7 +358,11 @@ async function startTranscription() {
     setFfmpegLogger(() => {});
     const chunks = await splitAudioToChunks(audioBlob, CHUNK_SECONDS);
     if (state.transcription.cancelled) throw new Cancelled();
+    if (state.transcription.pauseRequested) return await pauseJob(jobId);
     if (!chunks.length) throw new Error('The audio could not be split into chunks.');
+
+    const total = chunks.length;
+    job.chunksTotal = total;
 
     const offsets = [];
     let acc = 0;
@@ -323,36 +370,60 @@ async function startTranscription() {
       offsets.push(acc);
       acc += await measureDuration(chunk.blob);
       if (state.transcription.cancelled) throw new Cancelled();
+      if (state.transcription.pauseRequested) {
+        job.chunkOffsets = offsets;
+        job.durationSec = acc;
+        await updateJob(job);
+        return await pauseJob(jobId);
+      }
     }
+    job.chunkOffsets = offsets;
     job.durationSec = acc;
 
-    const total = chunks.length;
-    const all = [];
-    for (let i = 0; i < total; i++) {
+    const startIdx = Math.min(job.chunksDone || 0, total);
+    for (let i = startIdx; i < total; i++) {
       if (state.transcription.cancelled) throw new Cancelled();
+      if (state.transcription.pauseRequested) {
+        job.chunksDone = i;
+        await updateJob(job);
+        return await pauseJob(jobId);
+      }
       job.progress = Math.round((i / total) * 90);
       await updateJob(job);
       updateProgress(i, total);
       const segs = await transcribeChunkInBrowser(chunks[i].blob, state.settings.apiKey, job.model);
       if (state.transcription.cancelled) throw new Cancelled();
-      const offset = offsets[i];
+      if (state.transcription.pauseRequested) {
+        job.chunkResults[i] = segs;
+        job.chunksDone = i + 1;
+        await updateJob(job);
+        return await pauseJob(jobId);
+      }
+      job.chunkResults[i] = segs;
+      job.chunksDone = i + 1;
+      await updateJob(job);
+    }
+
+    const all = [];
+    for (let i = 0; i < total; i++) {
+      const segs = job.chunkResults[i] || [];
+      const offset = job.chunkOffsets[i] || 0;
       for (const seg of segs) {
         all.push({
           speaker: seg.speaker,
-          startTime: Math.max(0, seg.startTime + offset),
-          endTime: Math.max(0, seg.endTime + offset),
+          startTime: Math.max(0, (Number(seg.startTime) || 0) + offset),
+          endTime: Math.max(0, (Number(seg.endTime) || 0) + offset),
           text: seg.text,
         });
       }
     }
     all.sort((a, b) => a.startTime - b.startTime);
-    if (state.transcription.cancelled) throw new Cancelled();
 
     job.segments = all;
     job.status = 'done';
     job.progress = 100;
-    state.transcription = null;
     await updateJob(job);
+    state.transcription = null;
     toast('Transcription complete.');
     renderJobView(jobId);
   } catch (err) {
@@ -360,15 +431,30 @@ async function startTranscription() {
     if (err instanceof Cancelled) {
       job.status = 'draft';
       job.error = '';
+      job.chunkResults = [];
+      job.chunkOffsets = [];
+      job.chunksDone = 0;
+      await updateJob(job);
       toast('Transcription cancelled.');
+      renderJobView(jobId);
     } else {
       job.status = 'failed';
       job.error = err.message || 'Transcription failed';
+      await updateJob(job);
       toast('Transcription failed.');
+      renderJobView(jobId);
     }
-    await updateJob(job);
-    renderJobView(jobId);
   }
+}
+
+async function pauseJob(jobId) {
+  const job = await getJob(jobId);
+  if (!job) return;
+  job.status = 'paused';
+  await updateJob(job);
+  state.transcription = null;
+  toast('Paused. Resume continues from the last chunk.');
+  renderJobView(jobId);
 }
 
 class Cancelled extends Error {
@@ -378,8 +464,9 @@ class Cancelled extends Error {
   }
 }
 
-function cancelTranscription() {
-  if (state.transcription) state.transcription.cancelled = true;
+function resumeTranscription() {
+  if (state.transcription) return;
+  runTranscription(state.activeJobId);
 }
 
 function updateProgress(done, total) {
@@ -388,6 +475,63 @@ function updateProgress(done, total) {
   const pct = total ? Math.round((done / total) * 100) : 0;
   if (fill) fill.style.width = pct + '%';
   if (label) label.textContent = `Chunk ${Math.min(done + 1, total)} of ${total}`;
+}
+
+async function processQueue(jobIds) {
+  if (state.queue) {
+    toast('A queue is already running.');
+    return;
+  }
+  state.queue = { ids: jobIds.slice(), aborted: false };
+  try {
+    for (const id of state.queue.ids) {
+      if (state.queue.aborted) break;
+      state.activeJobId = id;
+      await renderJobView(id);
+      await runTranscription(id);
+      const job = await getJob(id);
+      if (job && (job.status === 'paused' || job.status === 'processing')) break;
+    }
+  } finally {
+    state.queue = null;
+  }
+  renderDashboard();
+}
+
+function abortQueue() {
+  if (state.queue) state.queue.aborted = true;
+  cancelTranscription();
+}
+
+function cancelTranscription() {
+  if (state.transcription) state.transcription.cancelled = true;
+}
+
+function pauseTranscription() {
+  if (state.transcription) state.transcription.pauseRequested = true;
+  toast('Pausing after the current chunk…');
+}
+
+async function saveEdits(jobId) {
+  const job = await getJob(jobId);
+  if (!job) return;
+  const rows = document.querySelectorAll('.seg-row');
+  const segments = Array.from(rows).map((row) => ({
+    speaker: row.querySelector('.seg-speaker').value.trim() || 'Speaker',
+    text: row.querySelector('.seg-text').value,
+    startTime: Number(row.dataset.start) || 0,
+    endTime: Number(row.dataset.end) || 0,
+  }));
+  if (!segments.length) {
+    toast('Nothing to save.');
+    return;
+  }
+  job.segments = segments;
+  job.chunkResults = [];
+  job.chunkOffsets = [];
+  await updateJob(job);
+  toast('Edits saved.');
+  renderJobView(jobId);
 }
 
 async function renderJobView(jobId) {
@@ -399,37 +543,50 @@ async function renderJobView(jobId) {
     renderDashboard();
     return;
   }
-  const segments = Array.isArray(job.segments) ? job.segments : [];
-  const isProcessing = job.status === 'processing';
-  const hasSegments = segments.length > 0;
-  const readyEmpty = !isProcessing && !hasSegments && job.status !== 'failed';
+  const segments = jobSegments(job);
+  const status = job.status;
+  const isProcessing = status === 'processing';
+  const isPaused = status === 'paused';
+  const isDone = status === 'done' && segments.length > 0;
+  const failed = status === 'failed';
 
   const segHtml = segments
     .map(
-      (seg) => `
-      <button class="segment" data-action="seek" data-sec="${Number(seg.startTime || 0)}">
-        <span class="segment-time">${formatTime(seg.startTime)} – ${formatTime(seg.endTime)}</span>
-        <span class="segment-speaker">${esc(seg.speaker)}</span>
-        <span class="segment-text">${esc(seg.text)}</span>
-      </button>`,
+      (seg, i) => `
+      <div class="seg-row" data-start="${Number(seg.startTime || 0)}" data-end="${Number(seg.endTime || 0)}" tabindex="-1">
+        <div class="segment-head">
+          <button class="seg-seek" data-action="seek" data-sec="${Number(seg.startTime || 0)}" title="Play from here">▶</button>
+          <span class="segment-time">${formatTime(seg.startTime)} – ${formatTime(seg.endTime)}</span>
+        </div>
+        <input class="seg-speaker" value="${esc(seg.speaker)}" aria-label="Speaker name" />
+        <textarea class="seg-text" rows="2" aria-label="Transcript text">${esc(seg.text)}</textarea>
+      </div>`,
     )
     .join('');
 
-  const banner =
-    job.status === 'failed'
-      ? `<div class="status-banner error">${esc(job.error || 'Transcription failed')}</div>`
-      : '';
+  const banner = failed ? `<div class="status-banner error">${esc(job.error || 'Transcription failed')}</div>` : '';
 
   const processingUI = isProcessing
     ? `<div class="status-banner">
          <div style="flex:1"><div class="progress-track"><div class="progress-fill" data-progress style="width:${job.progress || 0}%"></div></div></div>
          <span data-progress-label>Preparing audio…</span>
        </div>`
-    : '';
+    : isPaused
+      ? `<div class="status-banner"><strong style="color:var(--brand-blue)">Paused</strong><span>&nbsp;·&nbsp;Resume to continue from chunk ${job.chunksDone || 0} of ${job.chunksTotal || '?'}</span></div>`
+      : '';
 
   const metaParts = [statusChip(job), esc(job.model)];
-  if (hasSegments) metaParts.push(`${job.segments.length} segments`);
+  if (segments.length) metaParts.push(`${segments.length} segments`);
   if (job.durationSec) metaParts.push(`${formatTime(job.durationSec)} audio`);
+  if (job.chunksTotal) metaParts.push(`${job.chunksDone || 0}/${job.chunksTotal} chunks`);
+
+  const manageButtons = isProcessing
+    ? `<button class="app-btn-secondary" data-action="pause">Pause</button><button class="app-btn-secondary" data-action="cancel">Cancel</button>`
+    : isPaused
+      ? `<button class="btn-primary" data-action="resume">Resume</button><button class="app-btn-secondary" data-action="cancel">Cancel</button>`
+      : `<button class="app-btn-secondary" data-action="start-transcribe" title="Run the model over the audio again">Transcribe</button>`;
+  const manageOnDone = isDone ? `<button class="app-btn-secondary" data-action="save-edits">Save edits</button>` : '';
+  const exportEnabled = isDone && !state.queue;
 
   setView(`
     <button class="app-btn-secondary" data-action="dashboard">← All jobs</button>
@@ -442,32 +599,42 @@ async function renderJobView(jobId) {
         ${job.audioUrl ? '<div class="audio-shell"><audio controls data-audio></audio></div>' : ''}
         <div>
           <h3>Export</h3>
-          <p class="view-sub">Generated entirely in your browser.</p>
+          <p class="view-sub">Generated entirely in your browser. PDF uses an embedded Bangla font.</p>
           <div class="export-grid">
-            <button class="export-btn" data-action="export" data-format="txt" ${hasSegments ? '' : 'disabled'}>TXT</button>
-            <button class="export-btn" data-action="export" data-format="srt" ${hasSegments ? '' : 'disabled'}>SRT</button>
-            <button class="export-btn" data-action="export" data-format="json" ${hasSegments ? '' : 'disabled'}>JSON</button>
-            <button class="export-btn" data-action="export" data-format="docx" ${hasSegments ? '' : 'disabled'}>DOCX</button>
-            <button class="export-btn" data-action="export" data-format="pdf" ${hasSegments ? '' : 'disabled'}>PDF</button>
-            <button class="export-btn" data-action="export" data-format="zip" ${hasSegments ? '' : 'disabled'}>ZIP</button>
+            <button class="export-btn" data-action="export" data-format="txt" ${exportEnabled ? '' : 'disabled'}>TXT</button>
+            <button class="export-btn" data-action="export" data-format="srt" ${exportEnabled ? '' : 'disabled'}>SRT</button>
+            <button class="export-btn" data-action="export" data-format="json" ${exportEnabled ? '' : 'disabled'}>JSON</button>
+            <button class="export-btn" data-action="export" data-format="docx" ${exportEnabled ? '' : 'disabled'}>DOCX</button>
+            <button class="export-btn" data-action="export" data-format="pdf" ${exportEnabled ? '' : 'disabled'}>PDF</button>
+            <button class="export-btn" data-action="export" data-format="zip" ${exportEnabled ? '' : 'disabled'}>ZIP</button>
           </div>
         </div>
         <div>
           <h3>Manage</h3>
           <div class="app-actions-row">
-            <button class="app-btn-secondary" data-action="start-transcribe" title="Run the model over the audio again">Transcribe</button>
+            ${manageButtons}
             <button class="app-btn-secondary" data-action="delete-job" data-id="${esc(job.id)}">Delete</button>
           </div>
+          ${isDone ? '<button class="app-btn-secondary" data-action="save-edits" style="margin-top:0.5rem">Save edits</button>' : ''}
         </div>
       </div>
       <div class="detail-main">
-        ${readyEmpty ? `
+        ${failed ? `
+          <div class="empty-state">
+            <h3>Transcription failed</h3>
+            <p>${esc(job.error)}</p>
+            <p style="margin-top:1rem"><button class="btn-primary" data-action="start-transcribe">Try again</button></p>
+          </div>` : ''}
+        ${!failed && !isProcessing && !segments.length ? `
           <div class="empty-state">
             <h3>Ready to transcribe</h3>
             <p>Generate speaker-aware segments with the Gemini API.</p>
             <p style="margin-top:1rem"><button class="btn-primary" data-action="start-transcribe">Start transcription</button></p>
           </div>` : ''}
-        ${hasSegments ? `<div class="segments-list">${segHtml}</div>` : ''}
+        ${segments.length ? `
+          <div class="segments-list">${segHtml}</div>
+          ${isDone ? `<div class="app-actions-row" style="margin-top:1rem"><button class="btn-primary" data-action="save-edits">Save edits</button></div>` : ''}
+          ` : ''}
       </div>
     </div>
   `);
@@ -492,7 +659,7 @@ function startSync(audioEl, segments) {
         break;
       }
     }
-    document.querySelectorAll('.segment').forEach((el, j) => el.classList.toggle('active', j === active));
+    document.querySelectorAll('.seg-row').forEach((el, j) => el.classList.toggle('active', j === active));
   }, 250);
 }
 
@@ -506,14 +673,14 @@ function stopSync() {
 async function deleteJobAction(id) {
   if (!window.confirm('Delete this job and its stored audio? This cannot be undone.')) return;
   await deleteJob(id);
-  toast('Deleted.');
+  toast('Deleted');
   renderDashboard();
 }
 
 async function handleExport(format) {
   const job = await getJob(state.activeJobId);
-  if (!job || !Array.isArray(job.segments) || !job.segments.length) {
-    toast('Nothing to export yet.');
+  if (!job || job.status !== 'done' || !Array.isArray(job.segments) || !job.segments.length) {
+    toast('Export is available once the transcription is done.');
     return;
   }
   try {
@@ -540,7 +707,7 @@ async function saveSettingsDialog() {
   await saveSettings(settings);
   state.settings = settings;
   dialogEl.close();
-  toast('Settings saved.');
+  toast('Settings saved');
   renderDashboard();
 }
 
@@ -551,8 +718,8 @@ async function init() {
   const jobs = await listJobs();
   for (const job of jobs) {
     if (job.status === 'processing') {
-      job.status = 'draft';
-      job.error = 'Previous transcription was interrupted. You can start it again.';
+      job.status = 'paused';
+      job.error = '';
       await updateJob(job);
     }
   }
@@ -574,6 +741,11 @@ viewEl.addEventListener('click', (e) => {
     case 'open-settings':
       openSettings();
       break;
+    case 'transcribe-queue':
+      listJobs()
+        .then((jobs) => jobs.filter((j) => j.status === 'draft' || j.status === 'paused' || j.status === 'failed').map((j) => j.id))
+        .then((ids) => ids.length && processQueue(ids));
+      break;
     case 'open-job':
       renderJobView(target.dataset.id);
       break;
@@ -581,8 +753,7 @@ viewEl.addEventListener('click', (e) => {
       deleteJobAction(target.dataset.id);
       break;
     case 'clear-file':
-      state.draftBlob = null;
-      state.draftFileName = '';
+      state.draftFiles = [];
       renderNewView();
       break;
     case 'choose-file':
@@ -592,7 +763,19 @@ viewEl.addEventListener('click', (e) => {
       toggleRecording();
       break;
     case 'start-transcribe':
-      startTranscription();
+      runTranscription(state.activeJobId);
+      break;
+    case 'resume':
+      resumeTranscription();
+      break;
+    case 'pause':
+      pauseTranscription();
+      break;
+    case 'cancel':
+      cancelTranscription();
+      break;
+    case 'save-edits':
+      saveEdits(state.activeJobId);
       break;
     case 'export':
       handleExport(target.dataset.format);
@@ -614,7 +797,7 @@ viewEl.addEventListener('submit', (e) => {
   const form = e.target.closest('[data-new-form]');
   if (form) {
     e.preventDefault();
-    createJob();
+    createJobs();
   }
 });
 

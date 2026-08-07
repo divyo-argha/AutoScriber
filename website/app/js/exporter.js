@@ -43,24 +43,7 @@ export async function exportTranscript(result, format = 'txt', fileName = 'trans
       break;
     }
     case 'pdf': {
-      const { jsPDF } = await import('https://esm.sh/jspdf@2.5.2');
-      const doc = new jsPDF();
-      let y = 12;
-      for (const s of segments) {
-        const line = `[${formatTime(s.startTime)}] ${s.speaker}: ${s.text}`;
-        const wrapped = doc.splitTextToSize(line, 185);
-        if (y + wrapped.length * 5 > 285) {
-          doc.addPage();
-          y = 12;
-        }
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`[${formatTime(s.startTime)}] ${s.speaker}:`, 10, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(s.text, 10, y + 5);
-        y += 5 + 5 + wrapped.length * 5;
-      }
-      doc.save(`${safeName}.pdf`);
+      downloadBlob(await buildPdfBlob(segments), `${safeName}.pdf`);
       break;
     }
     case 'zip': {
@@ -89,6 +72,62 @@ export function transform(segments) {
     segmentCount: segments.length,
     segments,
   };
+}
+
+const BANGLA_FONT_PATH = '/app/fonts/NotoSansBengali-Regular.ttf';
+const BANGLA_FONT_FILE = 'NotoSansBengali-Regular.ttf';
+const BANGLA_FONT_NAME = 'NotoBengali';
+
+let banglaFontBase64 = null;
+
+export async function loadBanglaFont() {
+  if (banglaFontBase64) return banglaFontBase64;
+  const res = await fetch(BANGLA_FONT_PATH);
+  if (!res.ok) throw new Error(`Bangla font could not be loaded (HTTP ${res.status})`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  banglaFontBase64 = btoa(binary);
+  return banglaFontBase64;
+}
+
+async function embedBanglaFont(doc) {
+  const base64 = await loadBanglaFont();
+  doc.addFileToVFS(BANGLA_FONT_FILE, base64);
+  doc.addFont(BANGLA_FONT_FILE, BANGLA_FONT_NAME, 'normal');
+}
+
+export async function buildPdfBlob(segments) {
+  const { jsPDF } = await import('https://esm.sh/jspdf@2.5.2');
+  const doc = new jsPDF();
+  let usedFont = 'helvetica';
+  try {
+    await embedBanglaFont(doc);
+    usedFont = BANGLA_FONT_NAME;
+  } catch (err) {
+    console.warn('[exporter] Bangla font unavailable, using helvetica:', err.message);
+  }
+  doc.setFont(usedFont, 'normal');
+  let y = 12;
+  for (const s of segments) {
+    const heading = doc.splitTextToSize(`[${formatTime(s.startTime)}] ${s.speaker}:`, 185);
+    const body = doc.splitTextToSize(String(s.text || ''), 185);
+    const lines = heading.length + body.length;
+    if (y + lines * 5 + 5 > 282) {
+      doc.addPage();
+      y = 12;
+    }
+    doc.setFontSize(9);
+    doc.setFont(usedFont, 'bold');
+    doc.text(heading, 10, y);
+    y += heading.length * 5 + 1;
+    doc.setFont(usedFont, 'normal');
+    doc.text(body, 10, y);
+    y += body.length * 5 + 5;
+  }
+  return doc.output('blob');
 }
 
 export function downloadBlob(blob, filename) {
