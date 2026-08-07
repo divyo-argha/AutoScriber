@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /app/settings
+
+Sitemap: https://autoscriber.vercel.app/sitemap.xml
