@@ -261,6 +261,7 @@ body {
 }
 .btn-download:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,201,167,.35); }
 .dl-size { opacity: .7; font-weight: 400; font-size: .8rem; }
+.dl-actions { display: flex; flex-direction: column; gap: .6rem; align-items: center; }
 .install-cmd { max-width: 640px; margin: 0 auto 1.5rem; }
 .cmd-label { display: block; font-size: .75rem; color: var(--muted); margin-bottom: .5rem; text-transform: uppercase; letter-spacing: .05em; }
 .cmd-block {
