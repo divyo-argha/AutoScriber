@@ -1,1 +1,1 @@
-window.AUTOSCRIBER_APP_URL = 'https://autoscriber-app.vercel.app/app';
+window.AUTOSCRIBER_APP_URL = 'https://autoscriber-studio.vercel.app/app';
