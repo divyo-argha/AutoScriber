@@ -8,7 +8,8 @@
   <p>
     <strong>AI-powered Bangla audio transcription.</strong><br />
     Speaker diarization · Word-level sync · 6 export formats.<br />
-    Try the live web app: <strong><a href="https://autoscriber-web.vercel.app/">autoscriber-web.vercel.app</a></strong>
+    Try the live landing page: <strong><a href="https://autoscriber.vercel.app/">autoscriber.vercel.app</a></strong><br />
+    Try the transcription studio: <strong><a href="https://autoscriber-studio.vercel.app/">autoscriber-studio.vercel.app</a></strong>
   </p>
 
   <p>
