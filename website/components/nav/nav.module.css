@@ -100,6 +100,13 @@
   cursor: pointer;
   transition: opacity 0.2s, transform 0.2s;
   white-space: nowrap;
+  text-decoration: none;
+}
+
+.nav-cta-web {
+  background: transparent;
+  color: var(--brand-teal);
+  border: 1px solid var(--brand-teal);
 }
 
 .nav-cta:hover {
