@@ -1,5 +1,13 @@
 const COMPONENTS_READY = 'autoscriber:components-loaded';
 
+const APP_URL = window.AUTOSCRIBER_APP_URL ?? 'http://localhost:3000';
+
+function applyAppLinks() {
+  document.querySelectorAll('[data-app-link]').forEach((el) => {
+    el.href = APP_URL;
+  });
+}
+
 const COMPONENTS = ['nav', 'hero', 'features', 'models', 'pipeline', 'download', 'about', 'footer'];
 
 async function loadComponents() {
@@ -17,6 +25,7 @@ async function loadComponents() {
     console.error('autoScriber component loader:', err);
   }
   document.dispatchEvent(new CustomEvent(COMPONENTS_READY));
+  applyAppLinks();
   initRevealObserver();
 }
 
