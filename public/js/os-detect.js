@@ -20,14 +20,14 @@ export function detectOS() {
 }
 
 export const dlMap = {
-  'mac-arm': { label: 'Download for Apple Silicon', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1-arm64.dmg' },
-  'mac-intel': { label: 'Download for Intel Mac', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.dmg' },
-  'windows': { label: 'Download for Windows', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.exe' },
-  'linux': { label: 'Download for Linux', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
-  'ubuntu': { label: 'Download for Ubuntu', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
-  'fedora': { label: 'Download for Fedora', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
-  'debian': { label: 'Download for Debian', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
-  'arch': { label: 'Download for Arch Linux', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v2.0.1/autoScriber-2.0.1.AppImage' },
+  'mac-arm': { label: 'Download for Apple Silicon', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v3.0.0/autoScriber-3.0.0-arm64.dmg' },
+  'mac-intel': { label: 'Download for Intel Mac', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v3.0.0/autoScriber-3.0.0.dmg' },
+  'windows': { label: 'Download for Windows', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v3.0.0/autoScriber-3.0.0.exe' },
+  'linux': { label: 'Download for Linux', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v3.0.0/autoScriber-3.0.0.AppImage' },
+  'ubuntu': { label: 'Download for Ubuntu', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v3.0.0/autoScriber-3.0.0.AppImage' },
+  'fedora': { label: 'Download for Fedora', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v3.0.0/autoScriber-3.0.0.AppImage' },
+  'debian': { label: 'Download for Debian', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v3.0.0/autoScriber-3.0.0.AppImage' },
+  'arch': { label: 'Download for Arch Linux', url: 'https://github.com/divyo-argha/AutoScriber/releases/download/v3.0.0/autoScriber-3.0.0.AppImage' },
 };
 
 export const osToTab = {
