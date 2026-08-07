@@ -40,7 +40,7 @@ export function HistoryView() {
       {loading && jobs.length === 0 ? (
         <HistoryLoading />
       ) : jobs.length === 0 ? (
-        <HistoryEmpty onStart={() => router.push('/')} />
+        <HistoryEmpty onStart={() => router.push('/app')} />
       ) : (
         <div className={styles.jobsGroup}>
           {completedJobs.length > 0 && (

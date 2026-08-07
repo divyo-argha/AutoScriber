@@ -282,7 +282,7 @@ export function useSettingsForm() {
         description: 'Your AI engine & GCP credentials configuration are up to date.',
       });
 
-      router.push('/');
+      router.push('/app');
     } catch (err) {
       console.error(err);
       toast({

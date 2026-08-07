@@ -50,7 +50,7 @@ export function useHistoryView() {
           // Set the transcription result with the job ID so AudioPlayer can load audio from /api/audio
           setTranscriptionResult(result.segments, result.fullText, job.id, result.skippedChunks);
           useAppStore.getState().setCurrentView('result');
-          router.push('/');
+          router.push('/app');
           return;
         }
       }

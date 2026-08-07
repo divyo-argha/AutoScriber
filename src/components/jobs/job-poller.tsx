@@ -73,7 +73,7 @@ export function JobPoller() {
           });
           setTranscriptionResult(result.segments, result.fullText, job.id, result.skippedChunks);
           useAppStore.getState().setCurrentView('result');
-          router.push('/');
+          router.push('/app');
         }
       }
 

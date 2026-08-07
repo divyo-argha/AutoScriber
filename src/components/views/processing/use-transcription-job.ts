@@ -216,11 +216,11 @@ export function useTranscriptionJob() {
     startTranscription,
     resetAndGoBack: () => {
       hasStarted.current = false;
-      router.push('/');
+      router.push('/app');
     },
     resetAndOpenSettings: () => {
       hasStarted.current = false;
-      router.push('/settings');
+      router.push('/app/settings');
     },
     resetAndRetry: () => {
       hasStarted.current = false;

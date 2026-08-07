@@ -206,7 +206,7 @@ export function useUploadArea() {
         skippedChunks: [],
       }));
       setBatchJobs(jobs);
-      router.push('/batch');
+      router.push('/app/batch');
     });
   }, [pendingFiles, startPreflight, clearBatch, setBatchJobs, router]);
 

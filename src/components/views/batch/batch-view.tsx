@@ -36,7 +36,7 @@ export function BatchView() {
         downloadAllDisabled={false}
         onStop={stopBatch}
         onDownloadAll={downloadAll}
-        onNewBatch={() => { clearBatch(); router.push('/'); }}
+        onNewBatch={() => { clearBatch(); router.push('/app'); }}
       />
 
       {!allFinished && (

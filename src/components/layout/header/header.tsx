@@ -30,7 +30,7 @@ export function Header() {
   } = useAppStore();
 
   const hasGeminiKey = !!(userGeminiApiKey || geminiApiKey === '***');
-  const onStudio = pathname === '/';
+  const onStudio = pathname === '/app';
 
   function isModelAvailable(model?: typeof ALL_MODELS[number]) {
     if (!model) return false;
@@ -43,7 +43,7 @@ export function Header() {
 
   const goStudio = () => {
     if (isProcessing) setCurrentView('processing');
-    router.push('/');
+    router.push('/app');
   };
 
   const ModelOption = ({ model }: { model: typeof ALL_MODELS[number] }) => {
@@ -93,12 +93,12 @@ export function Header() {
               onClick={() => {
                 if (isProcessing) {
                   setCurrentView('processing');
-                  router.push('/');
+                  router.push('/app');
                   return;
                 }
                 reset();
                 setCurrentView('upload');
-                router.push('/');
+                router.push('/app');
               }}
             >
               <div className={styles.logoIcon}>
@@ -162,19 +162,19 @@ export function Header() {
                 <Mic className={styles.iconSm} />
                 <span className={styles.hiddenSmInline}>Studio</span>
               </Button>
-              <Button
-                variant={pathname === '/history' ? 'secondary' : 'ghost'}
+               <Button
+                variant={pathname === '/app/history' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => router.push('/history')}
+                onClick={() => router.push('/app/history')}
                 className={styles.actionBtn}
               >
                 <History className={styles.iconSm} />
                 <span className={styles.hiddenSmInline}>History</span>
               </Button>
               <Button
-                variant={pathname === '/settings' ? 'secondary' : 'ghost'}
+                variant={pathname === '/app/settings' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => router.push('/settings')}
+                onClick={() => router.push('/app/settings')}
                 className={styles.actionBtn}
               >
                 <Settings className={styles.iconSm} />
