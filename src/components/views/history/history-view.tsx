@@ -144,10 +144,13 @@ export function HistoryView() {
                     key={job.id}
                     job={job}
                     index={i}
+                    expanded={expandedJob === job.id}
                     deleting={deleting === job.id}
                     recovering={recoveringId === job.id}
+                    onToggle={() => toggleExpanded(job.id)}
                     onDelete={() => requestDelete(job)}
                     onRecover={() => handleRecover(job)}
+                    onExport={(format) => exportFromHistory(job, format)}
                   />
                 ))}
               </div>

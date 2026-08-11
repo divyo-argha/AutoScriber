@@ -104,10 +104,24 @@ export function useHistoryView() {
   }, []);
 
   const exportFromHistory = useCallback((job: JobRecord, format: ClientExportFormat) => {
-    const result = parseJobResult(job);
-    if (!result || result.segments.length === 0) return;
+    let segments: any[] = [];
+    if (job.status === 'completed') {
+      const result = parseJobResult(job);
+      if (result) {
+        segments = result.segments || [];
+      }
+    } else {
+      const rawChunks = parseChunkResults(job);
+      if (rawChunks && rawChunks.length > 0) {
+        const allSegments = (rawChunks as Array<{ segments: Array<{ startTime: number; endTime: number; speaker: string; text: string }> }>)
+          .flatMap(c => c.segments || []);
+        segments = cleanAndMergeSegments(allSegments);
+      }
+    }
+
+    if (segments.length === 0) return;
     const base = job.fileName.replace(/\.[^/.]+$/, '');
-    downloadTranscriptClient(result.segments, format, base);
+    downloadTranscriptClient(segments, format, base);
   }, []);
 
   const toggleExpanded = useCallback((jobId: string) => {
