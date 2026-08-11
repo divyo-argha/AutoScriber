@@ -13,6 +13,7 @@ import { ProcessingSteps } from './processing-steps';
 import { CancelledPanel } from './cancelled-panel';
 import { ErrorPanel } from './error-panel';
 import { ConfirmDialogs } from './confirm-dialogs';
+import { downloadPartialTranscript } from './download-partial';
 import styles from './processing-view.module.css';
 
 export function ProcessingView() {
@@ -82,7 +83,12 @@ export function ProcessingView() {
           />
 
           {job.isCancelled && (
-            <CancelledPanel chunksDone={job.chunksDone} chunksTotal={job.chunksTotal} />
+            <CancelledPanel 
+              chunksDone={job.chunksDone} 
+              chunksTotal={job.chunksTotal} 
+              onDownloadPartial={() => downloadPartialTranscript(job.liveChunkResults, 'cancelled')}
+              canDownload={job.liveChunkResults && job.liveChunkResults.length > 0}
+            />
           )}
 
           {job.isFailed && (
@@ -93,6 +99,8 @@ export function ProcessingView() {
               onGoBack={job.resetAndGoBack}
               onOpenSettings={job.resetAndOpenSettings}
               onRetry={job.resetAndRetry}
+              onDownloadPartial={() => downloadPartialTranscript(job.liveChunkResults, 'failed')}
+              canDownload={job.liveChunkResults && job.liveChunkResults.length > 0}
             />
           )}
         </div>

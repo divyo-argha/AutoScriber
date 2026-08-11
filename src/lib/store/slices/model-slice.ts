@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { AppState } from '../types';
-import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
+import { ALL_MODELS } from '@/lib/transcriber/types';
 
 export interface ModelSlice {
   selectedModel: string;
@@ -13,7 +13,7 @@ export interface ModelSlice {
 
 export const createModelSlice: StateCreator<AppState, [], [], ModelSlice> = set => ({
   selectedModel: 'gemini-2.0-flash',
-  availableModels: AVAILABLE_MODELS,
+  availableModels: ALL_MODELS,
   disabledModels: {},
 
   setSelectedModel: model => set({ selectedModel: model }),

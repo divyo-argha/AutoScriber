@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Globe, Wifi, Cpu, AlertTriangle, Settings } from 'lucide-react';
+import { Globe, Wifi, Cpu, AlertTriangle, Settings, Download } from 'lucide-react';
 import styles from './processing-view.module.css';
 
 interface Props {
@@ -9,9 +9,20 @@ interface Props {
   onGoBack: () => void;
   onOpenSettings: () => void;
   onRetry: () => void;
+  onDownloadPartial: () => void;
+  canDownload: boolean;
 }
 
-export function ErrorPanel({ isLocationError, isAuthError, processingStatus, onGoBack, onOpenSettings, onRetry }: Props) {
+export function ErrorPanel({ 
+  isLocationError, 
+  isAuthError, 
+  processingStatus, 
+  onGoBack, 
+  onOpenSettings, 
+  onRetry,
+  onDownloadPartial,
+  canDownload
+}: Props) {
   if (isLocationError) {
     return (
       <div className={styles.actionBox}>
@@ -89,7 +100,12 @@ export function ErrorPanel({ isLocationError, isAuthError, processingStatus, onG
         <Button variant="outline" onClick={onGoBack}>
           Go Back
         </Button>
-        <Button variant="brand" onClick={onRetry}>
+        {canDownload && (
+          <Button variant="outline" onClick={onDownloadPartial} style={{ marginLeft: '12px' }}>
+            <Download className={styles.iconSm} style={{ marginRight: '8px' }} /> Download Partial
+          </Button>
+        )}
+        <Button variant="brand" onClick={onRetry} style={{ marginLeft: '12px' }}>
           Retry
         </Button>
       </div>

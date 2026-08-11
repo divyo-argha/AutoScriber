@@ -161,7 +161,7 @@ export function Header() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_MODELS.map(model => {
+                  {ALL_MODELS.filter(m => (isModelAvailable(m) && !disabledModels[m.id]) || m.id === selectedModel).map(model => {
                     const available = isModelAvailable(model);
                     const disabledReason = disabledModels[model.id];
                     const isDisabled = !available || Boolean(disabledReason);
@@ -235,7 +235,7 @@ export function Header() {
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {ALL_MODELS.map(model => {
+                {ALL_MODELS.filter(m => (isModelAvailable(m) && !disabledModels[m.id]) || m.id === selectedModel).map(model => {
                   const available = isModelAvailable(model);
                   const disabledReason = disabledModels[model.id];
                   const isDisabled = !available || Boolean(disabledReason);

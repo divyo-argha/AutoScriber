@@ -27,6 +27,8 @@ export async function GET() {
   }
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
         geminiApiKey: body.userGeminiApiKey !== undefined ? body.userGeminiApiKey : undefined,
         gcpProjectId: body.gcpProjectId || '',
         gcpLocation: body.gcpLocation || 'us-central1',
-        ...(hasJson ? { gcpCredentialsJson: newJson || null } : {}),
+        ...(hasJson ? { gcpCredentialsJson: newJson || '' } : {}),
       } as any,
       create: {
         id: 'default',
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
         geminiApiKey: body.userGeminiApiKey || '',
         gcpProjectId: body.gcpProjectId || '',
         gcpLocation: body.gcpLocation || 'us-central1',
-        gcpCredentialsJson: newJson || null,
+        gcpCredentialsJson: newJson || '',
       } as any,
     });
 

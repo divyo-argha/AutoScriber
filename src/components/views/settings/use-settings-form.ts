@@ -95,6 +95,7 @@ export function useSettingsForm() {
         if (data.gcpProjectId) setGcpProjectId(data.gcpProjectId);
         if (data.gcpLocation) setGcpLocation(data.gcpLocation);
         if (data.gcpCredentialsPath) setGcpCredentialsPath(data.gcpCredentialsPath);
+        if (data.gcpCredentialsJson) setGcpCredentialsJson(data.gcpCredentialsJson);
         if (data.gcpCredentialsStatus) setGcpStatus(data.gcpCredentialsStatus as GcpStatus);
         if (data.gcpCredentialsStatus?.projectId && !data.gcpProjectId) {
           setGcpProjectId(data.gcpCredentialsStatus.projectId);

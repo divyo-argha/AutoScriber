@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAudioDuration } from '@/lib/audio/slicer';
 import { getGcpCredentialsInfo, getGcpCredentialsInfoFromJson } from '@/lib/transcriber/gcp-credentials';
-import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
+import { ALL_MODELS } from '@/lib/transcriber/types';
 import { processTranscriptionJob } from '@/lib/jobs';
 import { ensureAudioStorageDir, saveUploadedFile, savePersistentAudio } from '@/lib/server/audio-storage';
 import fs from 'fs';
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const modelInfo = AVAILABLE_MODELS.find(m => m.id === modelId);
+    const modelInfo = ALL_MODELS.find(m => m.id === modelId);
     if (!modelInfo) {
       return NextResponse.json({ error: 'Invalid model selected' }, { status: 400 });
     }

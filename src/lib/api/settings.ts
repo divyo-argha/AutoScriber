@@ -11,6 +11,7 @@ export interface AppSettings {
   gcpProjectId: string;
   gcpLocation: string;
   gcpCredentialsPath: string;
+  gcpCredentialsJson?: string;
   gcpCredentialsStatus?: GcpCredentialsInfo;
 }
 

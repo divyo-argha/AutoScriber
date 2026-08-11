@@ -4,8 +4,7 @@ import { mergeChunkResults } from '@/lib/transcriber/merger';
 import { formatTime } from '@/lib/format-utils';
 import { transcribeChunk } from '@/lib/transcriber';
 import { classifyGeminiError } from '@/lib/transcriber/error-utils';
-import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
-import type { TranscriptionResult, ChunkResult } from '@/lib/transcriber/types';
+import type { TranscriptionResult, ChunkResult, ModelInfo } from '@/lib/transcriber/types';
 import type { ChunkInfo } from '@/lib/audio/types';
 import {
   getJobControlStatus,
@@ -20,7 +19,7 @@ export interface TranscriptionJobParams {
   jobId: string;
   filePath: string;
   tempDir: string;
-  modelInfo: typeof AVAILABLE_MODELS[number];
+  modelInfo: ModelInfo;
   modelId: string;
   geminiApiKey: string;
   chunkDuration: number;

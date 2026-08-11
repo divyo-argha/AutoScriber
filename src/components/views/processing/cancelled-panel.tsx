@@ -1,12 +1,15 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import styles from './processing-view.module.css';
 
 interface Props {
   chunksDone: number;
   chunksTotal: number;
+  onDownloadPartial: () => void;
+  canDownload: boolean;
 }
 
-export function CancelledPanel({ chunksDone, chunksTotal }: Props) {
+export function CancelledPanel({ chunksDone, chunksTotal, onDownloadPartial, canDownload }: Props) {
   const detail = chunksDone > 0
     ? `${chunksDone} of ${chunksTotal} chunk(s) had been transcribed.`
     : 'No chunks were transcribed.';
@@ -22,6 +25,13 @@ export function CancelledPanel({ chunksDone, chunksTotal }: Props) {
           </p>
         </div>
       </div>
+      {canDownload && (
+        <div className={styles.actionRow}>
+          <Button variant="outline" onClick={onDownloadPartial}>
+            <Download className={styles.iconSm} style={{ marginRight: '8px' }} /> Download Partial Transcript
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { AppState, BatchJob, HistoryJob } from './types';
-import { AVAILABLE_MODELS } from '@/lib/transcriber/types';
+import { ALL_MODELS } from '@/lib/transcriber/types';
 
 /**
  * Returns a fresh copy of the default store data fields. Called once when the
@@ -11,7 +11,7 @@ export function createInitialState(): Partial<AppState> {
   return {
     currentView: 'upload',
     selectedModel: 'gemini-2.0-flash',
-    availableModels: AVAILABLE_MODELS,
+    availableModels: ALL_MODELS,
     disabledModels: {},
 
     uploadedFile: null,
