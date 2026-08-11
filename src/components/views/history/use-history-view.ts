@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
-import { listJobs, getJob, deleteJob, parseJobResult } from '@/lib/api';
+import { listJobs, getJob, deleteJob, parseJobResult, parseChunkResults } from '@/lib/api';
 import type { JobRecord } from '@/lib/api';
 import { downloadTranscriptClient } from '@/lib/transcript/download';
 import type { ClientExportFormat } from '@/lib/transcript/download';
 import { useToast } from '@/hooks/use-toast';
+import { cleanAndMergeSegments } from '@/lib/transcriber/merger';
+import { formatTime } from '@/lib/format-utils';
 
 export type { JobRecord };
 
@@ -112,8 +114,51 @@ export function useHistoryView() {
     setExpandedJob(prev => (prev === jobId ? null : jobId));
   }, []);
 
+  const recoverPartial = useCallback(async (job: JobRecord) => {
+    const rawChunks = parseChunkResults(job);
+    if (!rawChunks || rawChunks.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No Partial Data',
+        description: 'No chunk data was saved for this job — nothing to recover.',
+      });
+      return;
+    }
+    try {
+      // Merge all saved chunk segments into a partial result
+      const allSegments = (rawChunks as Array<{ segments: Array<{ startTime: number; endTime: number; speaker: string; text: string }> }>)
+        .flatMap(c => c.segments || []);
+      const merged = cleanAndMergeSegments(allSegments);
+      if (merged.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Empty Partial',
+          description: 'Chunk data exists but produced no readable segments.',
+        });
+        return;
+      }
+      const fullText = merged.map(s => `[${formatTime(s.startTime)}] ${s.speaker}: ${s.text}`).join('\n');
+      setUploadedFile(null);
+      setTranscriptionResult(merged, fullText, job.id, undefined);
+      useAppStore.getState().setCurrentView('result');
+      router.push('/app');
+      toast({
+        title: '⚠️ Partial Recovery',
+        description: `Recovered ${merged.length} segments from the ${job.status} transcription. Some audio may be missing.`,
+      });
+    } catch (err) {
+      console.error('Partial recovery failed:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Recovery Failed',
+        description: 'Could not recover partial transcription data.',
+      });
+    }
+  }, [setTranscriptionResult, setUploadedFile, router, toast]);
+
   const completedJobs = jobs.filter(j => j.status === 'completed');
-  const otherJobs = jobs.filter(j => j.status !== 'completed');
+  const failedJobs = jobs.filter(j => j.status === 'failed' || j.status === 'cancelled');
+  const otherJobs = jobs.filter(j => !['completed', 'failed', 'cancelled'].includes(j.status));
 
   return {
     jobs,
@@ -122,6 +167,7 @@ export function useHistoryView() {
     deleting,
     confirmDeleteJob,
     completedJobs,
+    failedJobs,
     otherJobs,
     loadJobs,
     loadJob,
@@ -129,6 +175,7 @@ export function useHistoryView() {
     confirmDelete,
     cancelDelete,
     exportFromHistory,
+    recoverPartial,
     toggleExpanded,
   };
 }

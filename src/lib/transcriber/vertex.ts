@@ -15,7 +15,7 @@ export interface VertexOptions {
 }
 
 const VERTEX_FALLBACK_MODELS = [
-  'gemini-3.1-flash',
+  'gemini-1.5-flash',
   'gemini-2.5-flash',
   'gemini-2.0-flash',
   'gemini-2.5-pro',
@@ -237,7 +237,7 @@ export async function testVertexConnection(options?: VertexOptions, modelId?: st
   const modelsToTest = Array.from(new Set([
     primaryModel,
     'gemini-2.0-flash',
-    'gemini-3.1-flash',
+    'gemini-1.5-flash',
     'gemini-2.5-flash',
     ...VERTEX_FALLBACK_MODELS,
   ]));

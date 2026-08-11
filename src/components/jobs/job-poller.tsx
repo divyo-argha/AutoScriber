@@ -39,6 +39,36 @@ export function JobPoller() {
 
       const liveResults: ChunkResult[] = parseChunkResults(job) as ChunkResult[];
 
+      // If the job is already completed with a result, transition immediately
+      // without cycling through the 'Deduplicating...' intermediate status.
+      if (job.status === 'completed' && job.result) {
+        stopPolling();
+        try { localStorage.removeItem(ACTIVE_JOB_KEY); } catch {}
+        const result = parseJobResult(job);
+        if (result && result.segments.length > 0) {
+          setProcessingState({
+            paused: false,
+            isProcessing: false,
+            processingProgress: 100,
+            processingStatus: 'Transcription complete!',
+            liveChunkResults: liveResults,
+          });
+          setTranscriptionResult(result.segments, result.fullText, job.id, result.skippedChunks);
+          useAppStore.getState().setCurrentView('result');
+          router.push('/app');
+          return;
+        }
+        // result JSON exists but is empty/corrupt — treat as failed
+        setProcessingState({
+          paused: false,
+          isProcessing: false,
+          processingProgress: job.progress ?? 100,
+          processingStatus: 'Failed: transcription result was empty or unreadable.',
+          liveChunkResults: liveResults,
+        });
+        return;
+      }
+
       setProcessingState({
         paused: job.controlStatus === 'paused',
         processingProgress: job.progress ?? 0,
@@ -53,29 +83,10 @@ export function JobPoller() {
               : `Transcribing segment ${Math.min(job.chunksDone + 1, job.chunksTotal)}/${job.chunksTotal}...`
           : job.status === 'chunking'
             ? 'Splitting audio into chunks with FFmpeg...'
-            : job.status === 'completed'
-              ? 'Deduplicating overlaps & finalizing merged transcript...'
-              : job.status === 'failed'
-                ? job.errorMessage || 'Transcription failed'
-                : job.status,
+            : job.status === 'failed'
+              ? job.errorMessage || 'Transcription failed'
+              : job.status,
       });
-
-      if (job.status === 'completed' && job.result) {
-        stopPolling();
-        try { localStorage.removeItem(ACTIVE_JOB_KEY); } catch {}
-        const result = parseJobResult(job);
-        if (result) {
-          setProcessingState({
-            paused: false,
-            isProcessing: false,
-            processingProgress: 100,
-            processingStatus: 'Transcription complete!',
-          });
-          setTranscriptionResult(result.segments, result.fullText, job.id, result.skippedChunks);
-          useAppStore.getState().setCurrentView('result');
-          router.push('/app');
-        }
-      }
 
       if (job.status === 'failed') {
         stopPolling();
