@@ -3,7 +3,8 @@ import { splitAudioIntoChunks, cleanupChunks } from '@/lib/audio/slicer';
 import { mergeChunkResults } from '@/lib/transcriber/merger';
 import { formatTime } from '@/lib/format-utils';
 import { transcribeChunk } from '@/lib/transcriber';
-import { classifyGeminiError } from '@/lib/transcriber/error-utils';
+import { classifyGeminiError, isQuotaError } from '@/lib/transcriber/error-utils';
+import { isHardQuotaError } from '@/lib/transcriber/retry';
 import type { TranscriptionResult, ChunkResult, ModelInfo } from '@/lib/transcriber/types';
 import type { ChunkInfo } from '@/lib/audio/types';
 import {
@@ -63,20 +64,6 @@ export async function processTranscriptionJob(params: TranscriptionJobParams) {
   } = params;
   let chunks: ChunkInfo[] = [];
 
-  const transcribe = (chunk: ChunkInfo, activeModel: string) =>
-    transcribeChunk({
-      filePath: chunk.filePath,
-      modelId: activeModel,
-      chunkIndex: chunk.index,
-      timeOffset: chunk.startTime,
-      aiProvider,
-      geminiApiKey,
-      gcpProjectId,
-      gcpLocation,
-      gcpCredentialsPath,
-      gcpCredentialsJson,
-    });
-
   try {
     try {
       chunks = await splitAudioIntoChunks(filePath, { chunkDuration, overlapDuration });
@@ -106,53 +93,143 @@ export async function processTranscriptionJob(params: TranscriptionJobParams) {
 
     const completedChunkResults: { chunk: typeof chunks[0]; result: ChunkResult }[] = [];
     const failedChunks: typeof chunks = [];
-    let chunksDone = 0;
     let fallbackUsed = false;
-    // Once a fallback model proves to work (e.g. the primary is quota-limited),
-    // prefer it for the remaining chunks instead of retrying the dead one.
     let activeModel = modelId;
 
-    for (const chunk of chunks) {
-      const control = await getJobControlStatus(jobId);
-      if (isCancelRequested(control)) {
-        console.log(`[transcribe] Job ${jobId} cancelled by user before chunk ${chunk.index}.`);
-        await cancelJob(jobId, audioPath);
-        return;
-      }
-      if (control === 'paused') {
-        console.log(`[transcribe] Job ${jobId} paused before chunk ${chunk.index}. Waiting for resume...`);
-        const resumed = await waitWhilePaused(jobId);
-        if (resumed === 'cancelled') {
-          console.log(`[transcribe] Job ${jobId} cancelled while paused.`);
-          await cancelJob(jobId, audioPath);
-          return;
+    // Resume from existing progress if available
+    const dbJobInit = await db.transcriptionJob.findUnique({
+      where: { id: jobId },
+      select: { chunkResults: true },
+    });
+    if (dbJobInit?.chunkResults) {
+      try {
+        const parsed = JSON.parse(dbJobInit.chunkResults) as ChunkResult[];
+        if (Array.isArray(parsed)) {
+          console.log(`[transcribe] Found ${parsed.length} already completed chunks. Restoring progress...`);
+          for (const res of parsed) {
+            const matchingChunk = chunks.find(c => c.index === res.chunkIndex);
+            if (matchingChunk) {
+              completedChunkResults.push({ chunk: matchingChunk, result: res });
+            }
+          }
         }
+      } catch (err) {
+        console.error('[transcribe] Failed to parse existing chunkResults:', err);
+      }
+    }
+
+    let chunksDone = 0;
+
+    for (const chunk of chunks) {
+      const alreadyCompleted = completedChunkResults.find(c => c.chunk.index === chunk.index);
+      if (alreadyCompleted) {
+        console.log(`[transcribe] Chunk ${chunk.index} already completed. Skipping.`);
+        if (alreadyCompleted.result.model) activeModel = alreadyCompleted.result.model;
+        if (alreadyCompleted.result.fallbackUsed) fallbackUsed = true;
+        chunksDone++;
+        continue;
       }
 
       let result: ChunkResult | null = null;
       let chunkAttempts = 0;
+      const baseMaxAttempts = MAX_CHUNK_ATTEMPTS;
+      const rateLimitMaxAttempts = 15;
 
-      while (chunkAttempts < MAX_CHUNK_ATTEMPTS && !result) {
-        if (isCancelRequested(await getJobControlStatus(jobId))) {
-          console.log(`[transcribe] Job ${jobId} cancelled during chunk ${chunk.index} attempts.`);
+      while (!result) {
+        const control = await getJobControlStatus(jobId);
+        if (isCancelRequested(control)) {
+          console.log(`[transcribe] Job ${jobId} cancelled by user during chunk ${chunk.index}.`);
           await cancelJob(jobId, audioPath);
           return;
         }
+        if (control === 'paused') {
+          console.log(`[transcribe] Job ${jobId} paused before chunk ${chunk.index}. Waiting for resume...`);
+          const resumed = await waitWhilePaused(jobId);
+          if (resumed === 'cancelled') {
+            console.log(`[transcribe] Job ${jobId} cancelled while paused.`);
+            await cancelJob(jobId, audioPath);
+            return;
+          }
+          // Reset attempts count when resuming
+          chunkAttempts = 0;
+        }
+
+        // Fetch latest settings & model choice from DB
+        const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
+        const currentApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
+        const currentGcpJson = settings?.gcpCredentialsJson || '';
+
+        const dbJob = await db.transcriptionJob.findUnique({
+          where: { id: jobId },
+          select: { model: true },
+        });
+        if (dbJob?.model) {
+          activeModel = dbJob.model;
+        }
+
         chunkAttempts++;
         try {
-          result = await transcribe(chunk, activeModel);
+          result = await transcribeChunk({
+            filePath: chunk.filePath,
+            modelId: activeModel,
+            chunkIndex: chunk.index,
+            timeOffset: chunk.startTime,
+            aiProvider: settings?.aiProvider || 'auto',
+            geminiApiKey: currentApiKey,
+            gcpProjectId: settings?.gcpProjectId,
+            gcpLocation: settings?.gcpLocation,
+            gcpCredentialsPath: settings?.gcpCredentialsPath,
+            gcpCredentialsJson: currentGcpJson || null,
+          });
         } catch (chunkErr) {
           const errMsg = chunkErr instanceof Error ? chunkErr.message : String(chunkErr);
-          console.warn(`[transcribe] Chunk ${chunk.index} attempt ${chunkAttempts}/${MAX_CHUNK_ATTEMPTS} failed: ${errMsg}`);
-          if (chunkAttempts < MAX_CHUNK_ATTEMPTS) {
-            const waited = await sleepWithControl(jobId, RETRY_WAIT_MS);
-            if (waited === 'cancelled') {
-              console.log(`[transcribe] Job ${jobId} cancelled while waiting between chunk attempts.`);
-              await cancelJob(jobId, audioPath);
-              return;
+          const isHardQuota = isHardQuotaError(chunkErr);
+          const isRateLimit = isQuotaError(chunkErr) || errMsg.includes('429');
+
+          if (isHardQuota) {
+            console.warn(`[transcribe] Chunk ${chunk.index} failed: Daily quota limit reached.`);
+            // Pause the job and ask user to change key/model
+            await db.transcriptionJob.update({
+              where: { id: jobId },
+              data: {
+                controlStatus: 'paused',
+                errorMessage: 'Daily quota limit reached. Please switch model or update API key in Settings, then Resume.',
+              },
+            });
+            // Reset attempts so when they resume we try this chunk fresh
+            chunkAttempts = 0;
+            continue;
+          }
+
+          if (isRateLimit) {
+            const maxLimit = rateLimitMaxAttempts;
+            console.warn(`[transcribe] Chunk ${chunk.index} rate limited (attempt ${chunkAttempts}/${maxLimit}). Waiting 30s...`);
+            if (chunkAttempts < maxLimit) {
+              const waited = await sleepWithControl(jobId, 30000); // Wait 30 seconds
+              if (waited === 'cancelled') {
+                console.log(`[transcribe] Job ${jobId} cancelled during rate-limit sleep.`);
+                await cancelJob(jobId, audioPath);
+                return;
+              }
+            } else {
+              console.error(`[transcribe] Chunk ${chunk.index} failed after ${maxLimit} rate-limit attempts.`);
+              throw chunkErr;
             }
           } else {
-            console.error(`[transcribe] Chunk ${chunk.index} failed all ${MAX_CHUNK_ATTEMPTS} attempts.`);
+            // Other errors (e.g. transient 5xx, or network)
+            const maxLimit = baseMaxAttempts;
+            console.warn(`[transcribe] Chunk ${chunk.index} attempt ${chunkAttempts}/${maxLimit} failed: ${errMsg}`);
+            if (chunkAttempts < maxLimit) {
+              const waited = await sleepWithControl(jobId, RETRY_WAIT_MS);
+              if (waited === 'cancelled') {
+                console.log(`[transcribe] Job ${jobId} cancelled during retry sleep.`);
+                await cancelJob(jobId, audioPath);
+                return;
+              }
+            } else {
+              console.error(`[transcribe] Chunk ${chunk.index} failed after all ${maxLimit} attempts.`);
+              throw chunkErr;
+            }
           }
         }
       }
@@ -195,7 +272,24 @@ export async function processTranscriptionJob(params: TranscriptionJobParams) {
           return;
         }
         try {
-          const result = await transcribe(chunk, activeModel);
+          // Reload settings
+          const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
+          const currentApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
+          const currentGcpJson = settings?.gcpCredentialsJson || '';
+
+          const result = await transcribeChunk({
+            filePath: chunk.filePath,
+            modelId: activeModel,
+            chunkIndex: chunk.index,
+            timeOffset: chunk.startTime,
+            aiProvider: settings?.aiProvider || 'auto',
+            geminiApiKey: currentApiKey,
+            gcpProjectId: settings?.gcpProjectId,
+            gcpLocation: settings?.gcpLocation,
+            gcpCredentialsPath: settings?.gcpCredentialsPath,
+            gcpCredentialsJson: currentGcpJson || null,
+          });
+
           console.log(`[transcribe] Chunk ${chunk.index} recovered on retry: ${result.segments.length} segments`);
           completedChunkResults.push({ chunk, result });
           if (result.model) activeModel = result.model;
@@ -269,7 +363,11 @@ export async function processTranscriptionJob(params: TranscriptionJobParams) {
   } finally {
     // Clean up the FFmpeg chunk files (they live in their own temp dir)
     try { cleanupChunks(chunks); } catch {}
-    try { fs.unlinkSync(filePath); } catch {}
+    try {
+      if (filePath && filePath !== audioPath) {
+        fs.unlinkSync(filePath);
+      }
+    } catch {}
     try { fs.rmdirSync(tempDir); } catch {}
   }
 }

@@ -578,3 +578,51 @@
     gap: 0;
   }
 }
+
+.pausedModelSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: var(--radius-small);
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+  border: 1px dashed var(--border);
+  margin-top: 1.5rem !important;
+}
+
+.pausedModelLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.modelSelect {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--border);
+  background-color: var(--background);
+  color: var(--foreground);
+  outline: none;
+}
+
+.modelSelect:focus {
+  border-color: var(--brand-500);
+}
+
+.settingsLinkRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+.settingsLinkBtn {
+  font-size: 0.75rem;
+  color: var(--brand-600);
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}

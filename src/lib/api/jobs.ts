@@ -30,8 +30,8 @@ export function getJob(jobId: string): Promise<JobRecord> {
   return apiRequest<JobRecord>(`/api/jobs?id=${encodeURIComponent(jobId)}`);
 }
 
-export function controlJob(id: string, action: JobAction): Promise<JobRecord> {
-  return apiRequest<JobRecord>('/api/jobs', { method: 'POST', body: { id, action } });
+export function controlJob(id: string, action: JobAction, model?: string): Promise<JobRecord> {
+  return apiRequest<JobRecord>('/api/jobs', { method: 'POST', body: { id, action, model } });
 }
 
 export function deleteJob(jobId: string): Promise<{ success: boolean }> {

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { processTranscriptionJob } from '@/lib/jobs';
+import { ALL_MODELS } from '@/lib/transcriber/types';
 import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,7 +53,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
-    if (!['pending', 'uploading', 'chunking', 'processing'].includes(job.status)) {
+    // Allow resuming if status is failed, cancelled, or processing
+    const allowedStatuses = ['pending', 'uploading', 'chunking', 'processing', 'failed', 'cancelled'];
+    if (!allowedStatuses.includes(job.status)) {
       return NextResponse.json({ error: `Cannot ${action} a job that is already "${job.status}"` }, { status: 400 });
     }
 
@@ -58,12 +64,50 @@ export async function POST(request: NextRequest) {
         ? { status: 'cancelled', controlStatus: 'cancelled' }
         : action === 'pause'
         ? { controlStatus: 'paused' }
-        : { controlStatus: 'running' };
+        : {
+            controlStatus: 'running',
+            status: 'processing',
+            ...(body.model ? { model: body.model } : {}),
+            errorMessage: null,
+          };
 
     const updated = await db.transcriptionJob.update({
       where: { id },
       data: updateData,
     });
+
+    if (action === 'resume') {
+      const settings = await db.appSettings.findUnique({ where: { id: 'default' } });
+      const geminiApiKey = settings?.geminiApiKey || process.env.GEMINI_API_KEY || '';
+      const storedGcpJson = settings?.gcpCredentialsJson || '';
+
+      const tempDir = path.join(os.tmpdir(), `autoscribe-resume-${job.id}`);
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      const activeModelId = body.model || updated.model || job.model;
+      const modelInfo = ALL_MODELS.find(m => m.id === activeModelId) || ALL_MODELS[0];
+
+      // Re-trigger the background process
+      void processTranscriptionJob({
+        jobId: job.id,
+        filePath: job.audioPath || '',
+        tempDir,
+        modelInfo,
+        modelId: activeModelId,
+        geminiApiKey,
+        chunkDuration: settings?.chunkDuration || 300,
+        overlapDuration: settings?.overlapDuration || 30,
+        duration: job.duration,
+        audioPath: job.audioPath,
+        aiProvider: settings?.aiProvider || 'auto',
+        gcpProjectId: settings?.gcpProjectId,
+        gcpLocation: settings?.gcpLocation,
+        gcpCredentialsPath: settings?.gcpCredentialsPath,
+        gcpCredentialsJson: storedGcpJson || null,
+      });
+    }
 
     return NextResponse.json(updated);
   } catch (err) {

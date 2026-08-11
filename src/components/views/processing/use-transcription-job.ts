@@ -183,6 +183,17 @@ export function useTranscriptionJob() {
     }
   }, [uploadedFile, selectedModel, chunkDuration, overlapDuration, setProcessingState]);
 
+  const updateJobModel = useCallback(async (newModelId: string) => {
+    if (!jobId) return;
+    try {
+      await controlJob(jobId, 'resume', newModelId);
+      useAppStore.getState().setSelectedModel(newModelId);
+      setProcessingState({ paused: false, processingStatus: 'Resuming with new model...' });
+    } catch (err) {
+      console.error('Failed to change model:', err);
+    }
+  }, [jobId, setProcessingState]);
+
   useEffect(() => {
     if (uploadedFile && !hasStarted.current) {
       startTranscription();
@@ -212,6 +223,7 @@ export function useTranscriptionJob() {
     isCancelled,
     isFailed,
     sendControl,
+    updateJobModel,
     setCurrentView: (view: 'upload' | 'processing' | 'result') => useAppStore.getState().setCurrentView(view),
     startTranscription,
     resetAndGoBack: () => {

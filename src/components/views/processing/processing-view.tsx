@@ -64,6 +64,34 @@ export function ProcessingView() {
             onRequestCancel={() => job.setConfirmCancelOpen(true)}
           />
 
+          {job.paused && (
+            <div className={styles.pausedModelSelector}>
+              <p className={styles.pausedModelLabel}>Choose a different model to resume with:</p>
+              <select
+                className={styles.modelSelect}
+                value={job.selectedModel}
+                onChange={(e) => {
+                  job.updateJobModel(e.target.value);
+                }}
+              >
+                {useAppStore.getState().availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} ({m.provider.toUpperCase()})
+                  </option>
+                ))}
+              </select>
+              <div className={styles.settingsLinkRow}>
+                <button
+                  type="button"
+                  className={styles.settingsLinkBtn}
+                  onClick={job.resetAndOpenSettings}
+                >
+                  Need to update your API Key? Go to Settings
+                </button>
+              </div>
+            </div>
+          )}
+
           <ProcessingInfoGrid
             uploadedFileName={job.uploadedFileName}
             modelName={modelName}

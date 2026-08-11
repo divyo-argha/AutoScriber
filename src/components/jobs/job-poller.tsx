@@ -69,6 +69,11 @@ export function JobPoller() {
         return;
       }
 
+      // Sync selected model in store
+      if (job.model && useAppStore.getState().selectedModel !== job.model) {
+        useAppStore.getState().setSelectedModel(job.model);
+      }
+
       setProcessingState({
         paused: job.controlStatus === 'paused',
         processingProgress: job.progress ?? 0,
@@ -77,7 +82,7 @@ export function JobPoller() {
         liveChunkResults: liveResults,
         processingStatus: job.status === 'processing'
           ? job.controlStatus === 'paused'
-            ? 'Paused — press Resume to continue'
+            ? job.errorMessage || 'Paused — press Resume to continue'
             : job.chunksDone >= job.chunksTotal && job.chunksTotal > 0
               ? 'Deduplicating overlaps & finalizing merged transcript...'
               : `Transcribing segment ${Math.min(job.chunksDone + 1, job.chunksTotal)}/${job.chunksTotal}...`
