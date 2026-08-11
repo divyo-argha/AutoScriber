@@ -36,6 +36,7 @@ export function HistoryView() {
     cancelDelete,
     exportFromHistory,
     recoverPartial,
+    resumeJob,
     toggleExpanded,
   } = useHistoryView();
 
@@ -150,6 +151,7 @@ export function HistoryView() {
                     onToggle={() => toggleExpanded(job.id)}
                     onDelete={() => requestDelete(job)}
                     onRecover={() => handleRecover(job)}
+                    onResume={() => resumeJob(job)}
                     onExport={(format) => exportFromHistory(job, format)}
                   />
                 ))}

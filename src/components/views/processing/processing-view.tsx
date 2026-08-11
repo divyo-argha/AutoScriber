@@ -127,6 +127,8 @@ export function ProcessingView() {
               onGoBack={job.resetAndGoBack}
               onOpenSettings={job.resetAndOpenSettings}
               onRetry={job.resetAndRetry}
+              onResume={(newModel) => job.updateJobModel(newModel || job.selectedModel)}
+              selectedModel={job.selectedModel}
               onDownloadPartial={() => downloadPartialTranscript(job.liveChunkResults, 'failed')}
               canDownload={job.liveChunkResults && job.liveChunkResults.length > 0}
             />

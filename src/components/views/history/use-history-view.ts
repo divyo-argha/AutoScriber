@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
-import { listJobs, getJob, deleteJob, parseJobResult, parseChunkResults } from '@/lib/api';
+import { listJobs, getJob, controlJob, deleteJob, parseJobResult, parseChunkResults } from '@/lib/api';
 import type { JobRecord } from '@/lib/api';
 import { downloadTranscriptClient } from '@/lib/transcript/download';
 import type { ClientExportFormat } from '@/lib/transcript/download';
@@ -18,7 +18,7 @@ export type { JobRecord };
 export function useHistoryView() {
   const router = useRouter();
   const { toast } = useToast();
-  const { setTranscriptionResult, setUploadedFile } = useAppStore();
+  const { setTranscriptionResult, setUploadedFile, setProcessingState } = useAppStore();
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
@@ -170,6 +170,34 @@ export function useHistoryView() {
     }
   }, [setTranscriptionResult, setUploadedFile, router, toast]);
 
+  const resumeJob = useCallback(async (job: JobRecord) => {
+    try {
+      await controlJob(job.id, 'resume');
+      setUploadedFile(null);
+      setProcessingState({
+        isProcessing: true,
+        paused: false,
+        jobId: job.id,
+        processingProgress: job.progress ?? 0,
+        chunksTotal: job.chunksTotal ?? 0,
+        chunksDone: job.chunksDone ?? 0,
+        processingStatus: 'Resuming transcription from last chunk...',
+      });
+      try {
+        localStorage.setItem('autoscribe_active_job_id', job.id);
+      } catch {}
+      useAppStore.getState().setCurrentView('processing');
+      router.push('/app');
+    } catch (err) {
+      console.error('Failed to resume job:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Resume Failed',
+        description: 'Could not resume this transcription job.',
+      });
+    }
+  }, [setProcessingState, setUploadedFile, router, toast]);
+
   const completedJobs = jobs.filter(j => j.status === 'completed');
   const failedJobs = jobs.filter(j => j.status === 'failed' || j.status === 'cancelled');
   const otherJobs = jobs.filter(j => !['completed', 'failed', 'cancelled'].includes(j.status));
@@ -190,6 +218,7 @@ export function useHistoryView() {
     cancelDelete,
     exportFromHistory,
     recoverPartial,
+    resumeJob,
     toggleExpanded,
   };
 }

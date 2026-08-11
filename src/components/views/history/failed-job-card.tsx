@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { XCircle, Ban, Trash2, Loader2, Layers, Play, Download } from 'lucide-react';
+import { XCircle, Ban, Trash2, Loader2, Layers, Play, Download, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseChunkResults } from '@/lib/api';
 import type { JobRecord } from '@/lib/api';
@@ -25,6 +25,7 @@ interface FailedJobCardProps {
   onToggle: () => void;
   onDelete: () => void;
   onRecover: () => void;
+  onResume: () => void;
   onExport: (format: 'txt' | 'md' | 'srt') => void;
 }
 
@@ -37,6 +38,7 @@ export function FailedJobCard({
   onToggle,
   onDelete,
   onRecover,
+  onResume,
   onExport,
 }: FailedJobCardProps) {
   const isFailed = job.status === 'failed';
@@ -124,6 +126,19 @@ export function FailedJobCard({
 
           {/* Actions */}
           <div className={styles.failedActions}>
+            <Button
+              variant="brand"
+              size="sm"
+              className={styles.recoverBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                onResume();
+              }}
+              disabled={deleting || recovering}
+            >
+              <RotateCw className={styles.iconXs} />
+              Resume Job
+            </Button>
             {canRecover && (
               <Button
                 variant="outline"

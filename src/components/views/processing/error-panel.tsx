@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Globe, Wifi, Cpu, AlertTriangle, Settings, Download } from 'lucide-react';
+import { Globe, Wifi, Cpu, AlertTriangle, Settings, Download, RotateCw } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 import styles from './processing-view.module.css';
 
 interface Props {
@@ -9,6 +11,8 @@ interface Props {
   onGoBack: () => void;
   onOpenSettings: () => void;
   onRetry: () => void;
+  onResume?: (modelId?: string) => void;
+  selectedModel?: string;
   onDownloadPartial: () => void;
   canDownload: boolean;
 }
@@ -20,9 +24,14 @@ export function ErrorPanel({
   onGoBack, 
   onOpenSettings, 
   onRetry,
+  onResume,
+  selectedModel,
   onDownloadPartial,
   canDownload
 }: Props) {
+  const [modelChoice, setModelChoice] = useState(selectedModel || 'gemini-2.0-flash');
+  const availableModels = useAppStore(s => s.availableModels);
+
   if (isLocationError) {
     return (
       <div className={styles.actionBox}>
@@ -92,21 +101,42 @@ export function ErrorPanel({
       <div className={styles.errorBox}>
         <AlertTriangle className={styles.errorIcon} />
         <div className={styles.messageInner}>
-          <p className={styles.messageTitle}>Transcription Failed</p>
+          <p className={styles.messageTitle}>Transcription Stopped / Failed</p>
           <p className={styles.messageSub}>{processingStatus.replace(/^(Failed|Error):\s*/, '')}</p>
         </div>
       </div>
+
+      <div className={styles.pausedModelSelector}>
+        <p className={styles.pausedModelLabel}>Switch model or API key to resume without losing completed progress:</p>
+        <select
+          className={styles.modelSelect}
+          value={modelChoice}
+          onChange={(e) => setModelChoice(e.target.value)}
+        >
+          {availableModels.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name} ({m.provider.toUpperCase()})
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className={styles.actionRow}>
         <Button variant="outline" onClick={onGoBack}>
           Go Back
         </Button>
         {canDownload && (
-          <Button variant="outline" onClick={onDownloadPartial} style={{ marginLeft: '12px' }}>
-            <Download className={styles.iconSm} style={{ marginRight: '8px' }} /> Download Partial
+          <Button variant="outline" onClick={onDownloadPartial}>
+            <Download className={styles.iconSm} style={{ marginRight: '6px' }} /> Partial Text
           </Button>
         )}
-        <Button variant="brand" onClick={onRetry} style={{ marginLeft: '12px' }}>
-          Retry
+        {onResume && (
+          <Button variant="brand" onClick={() => onResume(modelChoice)}>
+            <RotateCw className={styles.iconSm} style={{ marginRight: '6px' }} /> Resume Job
+          </Button>
+        )}
+        <Button variant="ghost" onClick={onRetry} style={{ fontSize: '0.75rem' }}>
+          Start Over
         </Button>
       </div>
     </div>
