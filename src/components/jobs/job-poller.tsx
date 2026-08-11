@@ -64,7 +64,7 @@ export function JobPoller() {
         stopPolling();
         try { localStorage.removeItem(ACTIVE_JOB_KEY); } catch {}
         const result = parseJobResult(job);
-        if (result && result.segments.length > 0) {
+        if (result) {
           setProcessingState({
             paused: false,
             isProcessing: false,

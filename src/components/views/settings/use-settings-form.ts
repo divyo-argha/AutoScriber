@@ -264,7 +264,7 @@ export function useSettingsForm() {
         gcpProjectId: projectIdFromJson || gcpProjectId,
         gcpLocation,
         gcpCredentialsPath,
-        gcpCredentialsJson: gcpCredentialsJson.trim() || undefined,
+        gcpCredentialsJson: gcpCredentialsJson.trim(),
       };
 
       setSettings({

@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const isNum = (v: unknown): v is number => typeof v === 'number' && !isNaN(v);
 
-    const newJson = typeof body.gcpCredentialsJson === 'string' ? body.gcpCredentialsJson.trim() : '';
+    const hasJson = 'gcpCredentialsJson' in body;
+    const newJson = typeof body.gcpCredentialsJson === 'string' ? body.gcpCredentialsJson.trim() : undefined;
     if (newJson) {
       const validation = validateGcpCredentialsJson(newJson);
       if (!validation.valid) {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
         geminiApiKey: body.userGeminiApiKey !== undefined ? body.userGeminiApiKey : undefined,
         gcpProjectId: body.gcpProjectId || '',
         gcpLocation: body.gcpLocation || 'us-central1',
-        ...(newJson ? { gcpCredentialsJson: newJson } : {}),
+        ...(hasJson ? { gcpCredentialsJson: newJson || null } : {}),
       } as any,
       create: {
         id: 'default',
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
         geminiApiKey: body.userGeminiApiKey || '',
         gcpProjectId: body.gcpProjectId || '',
         gcpLocation: body.gcpLocation || 'us-central1',
-        gcpCredentialsJson: newJson,
+        gcpCredentialsJson: newJson || null,
       } as any,
     });
 
