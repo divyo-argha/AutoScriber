@@ -270,16 +270,19 @@
 .dropZone {
   border: 2px dashed color-mix(in oklab, var(--muted-foreground) 25%, transparent);
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .tabCard {
   display: flex;
   border: 2px dashed color-mix(in oklab, var(--muted-foreground) 25%, transparent);
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .tabCard:hover {
-  border-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+  border-color: var(--brand-500);
+  background-color: color-mix(in oklab, var(--brand-500) 3%, transparent);
 }
 
 .tabCardInner {
@@ -301,7 +304,8 @@
 }
 
 .dropZone:hover {
-  border-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+  border-color: var(--brand-500);
+  background-color: color-mix(in oklab, var(--brand-500) 3%, transparent);
 }
 
 .dropZoneActive {

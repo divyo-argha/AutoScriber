@@ -64,7 +64,12 @@
 
 .jobCard {
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.jobCard:hover {
+  box-shadow: 0 4px 12px -2px color-mix(in oklab, var(--black) 6%, transparent);
 }
 
 .jobCardDone {
@@ -249,6 +254,12 @@
   gap: 0.25rem;
   padding-inline: 0.5rem;
   font-size: 11px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.downloadBtn:hover {
+  transform: translateY(-1px);
 }
 
 .doneBanner {

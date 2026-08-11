@@ -135,11 +135,13 @@
 
 .jobCard {
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  cursor: pointer;
 }
 
 .jobCard:hover {
-  border-color: color-mix(in oklab, var(--brand-500) 30%, transparent);
+  border-color: color-mix(in oklab, var(--brand-500) 40%, transparent);
+  box-shadow: 0 4px 14px -2px color-mix(in oklab, var(--black) 8%, transparent);
 }
 
 .jobHeader {
