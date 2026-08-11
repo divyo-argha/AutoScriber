@@ -101,7 +101,9 @@ export function useSettingsForm() {
         }
         if (data.userGeminiApiKey) {
           setLocalGeminiKey(data.userGeminiApiKey);
-          setSettings({ userGeminiApiKey: data.userGeminiApiKey });
+          setSettings({ userGeminiApiKey: data.userGeminiApiKey, hasVertexKey: !!data.gcpCredentialsStatus?.exists });
+        } else {
+          setSettings({ hasVertexKey: !!data.gcpCredentialsStatus?.exists });
         }
 
         const provider = data.aiProvider || 'auto';
@@ -269,6 +271,7 @@ export function useSettingsForm() {
         chunkDuration: body.chunkDuration,
         overlapDuration: body.overlapDuration,
         userGeminiApiKey: localGeminiKey,
+        hasVertexKey: !!(projectIdFromJson || gcpProjectId || (jsonValidation && jsonValidation.valid) || (body.gcpCredentialsJson && body.gcpCredentialsJson.trim().length > 0)),
       });
 
       const data = await saveSettings(body);

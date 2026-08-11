@@ -118,6 +118,7 @@ export function JobPoller() {
               overlapDuration: typeof data.overlapDuration === 'number' ? data.overlapDuration : 30,
               geminiApiKey: data.geminiApiKey ?? '',
               userGeminiApiKey: data.userGeminiApiKey || '',
+              hasVertexKey: !!data.gcpCredentialsStatus?.exists,
             });
           }
         }

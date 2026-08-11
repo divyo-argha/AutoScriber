@@ -6,6 +6,7 @@ export interface SettingsSlice {
   chunkDuration: number;
   overlapDuration: number;
   userGeminiApiKey: string;
+  hasVertexKey: boolean;
   setSettings: (settings: Partial<SettingsState>) => void;
 }
 
@@ -14,6 +15,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
   chunkDuration: 300,
   overlapDuration: 30,
   userGeminiApiKey: '',
+  hasVertexKey: false,
 
   setSettings: settings => set(prev => ({ ...prev, ...settings })),
 });

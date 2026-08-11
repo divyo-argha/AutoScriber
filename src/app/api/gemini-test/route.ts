@@ -23,9 +23,8 @@ export async function GET(request: NextRequest) {
 
     const modelsToTry = [
       modelId,
+      'gemini-3.1-flash',
       'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
       'gemini-2.5-flash',
       'gemini-2.5-flash-lite',
       'gemini-2.5-pro',
@@ -55,10 +54,6 @@ export async function GET(request: NextRequest) {
           errMsg.includes('API key not valid') ||
           errMsg.includes('invalid API key') ||
           errMsg.includes('401');
-
-        if (isAuthError) {
-          break;
-        }
       }
     }
 

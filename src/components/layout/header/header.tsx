@@ -61,6 +61,7 @@ export function Header() {
     reset,
     isProcessing,
     processingProgress,
+    hasVertexKey,
   } = useAppStore();
 
   const hasGeminiKey = !!(userGeminiApiKey || geminiApiKey === '***');
@@ -68,8 +69,7 @@ export function Header() {
 
   function isModelAvailable(model?: typeof ALL_MODELS[number]) {
     if (!model) return false;
-    // Vertex models are authenticated via service account credentials (configured in Settings).
-    if (model.provider !== 'gemini') return true;
+    if (model.provider === 'vertex') return hasVertexKey;
     return hasGeminiKey;
   }
 

@@ -51,6 +51,7 @@ export type SettingsState = {
   overlapDuration: number;
   geminiApiKey: string;
   userGeminiApiKey: string;
+  hasVertexKey: boolean;
 };
 
 /** A seek command broadcast through the store so any component can drive the active player. */
@@ -111,6 +112,7 @@ export interface AppState {
   chunkDuration: number;
   overlapDuration: number;
   userGeminiApiKey: string;
+  hasVertexKey: boolean;
   setSettings: (settings: Partial<SettingsState>) => void;
 
   historyJobs: HistoryJob[];

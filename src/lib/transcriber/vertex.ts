@@ -15,10 +15,9 @@ export interface VertexOptions {
 }
 
 const VERTEX_FALLBACK_MODELS = [
+  'gemini-3.1-flash',
   'gemini-2.5-flash',
   'gemini-2.0-flash',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
   'gemini-2.5-pro',
   'gemini-2.5-flash-lite',
   'gemini-2.0-flash-lite',
@@ -115,8 +114,9 @@ async function transcribeChunkWithVertexInternal(
   options?: VertexOptions
 ): Promise<ChunkResult> {
   const { client } = createVertexClient(options);
+  const actualModelId = modelId.endsWith('-vertex') ? modelId.replace('-vertex', '') : modelId;
   const generativeModel = client.getGenerativeModel({
-    model: modelId,
+    model: actualModelId,
     generationConfig: {
       temperature: 0,
       maxOutputTokens: 16384,
@@ -231,12 +231,14 @@ export function explainVertexError(err: any): string {
 }
 
 export async function testVertexConnection(options?: VertexOptions, modelId?: string): Promise<{ success: boolean; projectId: string; location: string; model?: string; error?: string }> {
-  const primaryModel = modelId || 'gemini-2.0-flash';
+  let primaryModel = modelId || 'gemini-2.0-flash';
+  primaryModel = primaryModel.endsWith('-vertex') ? primaryModel.replace('-vertex', '') : primaryModel;
+
   const modelsToTest = Array.from(new Set([
     primaryModel,
     'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
+    'gemini-3.1-flash',
+    'gemini-2.5-flash',
     ...VERTEX_FALLBACK_MODELS,
   ]));
 
